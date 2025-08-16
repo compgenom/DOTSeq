@@ -10,11 +10,7 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr
-Depends: 
-    R (>= 4.2),
-    stats,
-    utils
-Imports: 
+Depends:
     IRanges,
     GenomicRanges,
     SummarizedExperiment,
