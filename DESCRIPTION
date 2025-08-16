@@ -19,10 +19,10 @@ Depends:
     satuRn,
     locfdr,
     ggplot2
-Remotes: 
-    Bioconductor/IRanges,
-    Bioconductor/GenomicRanges,
-    Bioconductor/SummarizedExperiment,
-    Bioconductor/rtracklayer,
-    Bioconductor/DEXSeq,
-    Bioconductor/satuRn
+#Remotes: 
+#    Bioconductor/IRanges,
+#    Bioconductor/GenomicRanges,
+#    Bioconductor/SummarizedExperiment,
+#    Bioconductor/rtracklayer,
+#    Bioconductor/DEXSeq,
+#    Bioconductor/satuRn
