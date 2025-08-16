@@ -80,8 +80,6 @@ prepHeatMapData <- function(results, sigRes, species_dataset, symbol_col) {
     mart = ensembl
     )
 
-  symbol_col <- attributes[2]
-
   genesUnique <- genes[!duplicated(genes[c("ensembl_gene_id", symbol_col)]), ]
   genesUniqueSorted <- genesUnique[match(ensembIds, genesUnique$ensembl_gene_id), ]
 
@@ -185,12 +183,12 @@ plotHeatmap <- function(sigMaxDiffMatClean,
 #' @param output_file PDF file name
 #'
 #' @export
-runDotHeatmap <- function(results, sigRes, species_dataset, symbol_col, output_file = "dot.pdf") {
+runDotHeatmap <- function(results, sigRes, species_dataset, symbol_col, output_file) {
   prep_out <- prepHeatMapData(
     results = results,
     sigRes = sigRes,
     species_dataset = species_dataset,
-    attributes = attributes
+    symbol_col = symbol_col
   )
   
   plotHeatmap(
