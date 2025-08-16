@@ -14,7 +14,6 @@ Depends:
     IRanges,
     GenomicRanges,
     SummarizedExperiment,
-    rtracklayer,
     DEXSeq,
     satuRn,
     locfdr,
@@ -25,6 +24,5 @@ Remotes:
     Bioconductor/IRanges,
     Bioconductor/GenomicRanges,
     Bioconductor/SummarizedExperiment,
-    Bioconductor/rtracklayer,
     Bioconductor/DEXSeq,
     Bioconductor/satuRn
