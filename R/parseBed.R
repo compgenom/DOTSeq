@@ -22,9 +22,9 @@ parseBed <- function(bed, dxd) {
   colnames(bedDf) <- c("chr", "start", "end", "name", "score", "strand")
   
   # Convert to GRanges
-  bedGR <- GenomicRanges::GRanges(
+  bedGR <- GRanges(
     seqnames = bedDf$chr,
-    ranges = IRanges::IRanges(start = bedDf$start + 1, end = bedDf$end),
+    ranges = IRanges(start = bedDf$start + 1, end = bedDf$end),
     strand = bedDf$strand,
     name = bedDf$name,
     label = bedDf$score
