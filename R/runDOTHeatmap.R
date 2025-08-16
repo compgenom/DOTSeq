@@ -57,7 +57,7 @@ prepHeatMapData <- function(results, sigRes, species_dataset, symbol_col) {
   colorBreaks <- seq(-absMax, absMax, length.out = 101)
   colorPalette <- colorRampPalette(c("blue", "white", "red"))(100)
 
-  ordered_matrix <- sigMaxDiffMatClean[row_order, ]
+  ordered_matrix <- sigMaxDiffMatClean
   sigResFiltered <- sigRes[
     sigRes$labels %in% colnames(ordered_matrix) &
     sigRes$groupID %in% rownames(ordered_matrix),
