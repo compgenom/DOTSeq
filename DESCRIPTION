@@ -11,18 +11,22 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr
 Depends: 
+    R (>= 4.2),
+    stats,
+    utils
+Imports: 
     IRanges,
     GenomicRanges,
     SummarizedExperiment,
+    rtracklayer,
     DEXSeq,
     satuRn,
     locfdr,
-    ggplot2,
-    stats,
-    utils
+    ggplot2
 Remotes: 
     Bioconductor/IRanges,
     Bioconductor/GenomicRanges,
     Bioconductor/SummarizedExperiment,
+    Bioconductor/rtracklayer,
     Bioconductor/DEXSeq,
     Bioconductor/satuRn
