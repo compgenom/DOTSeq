@@ -93,5 +93,5 @@ write.table(sigRes, "DotSeq_sigRes.csv")
 # Visualisation
 To plot a heatmap:
 ```{r heatmap}
-runDotHeatmap(results, "hsapiens_gene_ensembl", "hgnc_symbol", "ly_heatmap.pdf")
+runDOTHeatmap(results, "hsapiens_gene_ensembl", "hgnc_symbol", "dot.pdf")
 ```
