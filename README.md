@@ -1,5 +1,13 @@
 # DOTSeq
-DOTSeq is an R package for identifying differentially translated open reading frames (ORFs) from ribosome profiling and matched RNA-seq datasets. Unlike most existing tools that operate at gene level, DOTSeq performs analysis at the ORF level, enabling the detection of differential translation efficiency between conditions, and occupancy shifts of ribosomes on ORFs within a single gene. DOTSeq integrates both ribosome profiling and RNA-seq read counts into quasi-binomial generalised linear model (GLM) using a modified design matrix and model fitting formula inspired by Riborex and satuRn. At present, DOTSeq accepts count data generated with featureCounts. Development is underway to extend support for additional quantification tools, including mmquant and HTseq. The package also provides functions for visualisation and exploration of results.
+DOTSeq is an R package for identifying differentially translated open reading frames (ORFs) from ribosome profiling and matched RNA-seq datasets. 
+Unlike most existing tools that operate at gene level, DOTSeq performs analysis at the ORF level, enabling analysis of 
+differential translation efficiency between conditions, and occupancy shifts of ribosomes on ORFs within a single gene. 
+DOTSeq integrates both ribosome profiling and RNA-seq read counts into quasi-binomial generalised linear model (GLM) 
+using a modified design matrix and model fitting formula inspired by [Riborex](https://github.com/smithlabcode/riborex) and 
+[satuRn](https://github.com/statOmics/satuRn). At present, DOTSeq accepts count data generated with 
+[featureCounts](https://subread.sourceforge.net/featureCounts.html). 
+Development is underway to extend support for additional quantification tools, including mmquant and HTseq. 
+The package also provides functions for visualisation and exploration of results.
 
 ## DEPENDENCIES
 * R (>= 4.5.0)
