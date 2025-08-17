@@ -13,32 +13,36 @@ DOTSeq is an R package for identifying differentially translated open reading fr
 * locfdr (>= 1.1-8)
 
 ## INSTALLATION
-Please make sure you have the above dependencies installed prior to installing DOTSeq.
-Then start R and enter:
+Please ensure the dependencies listed above are installed using the following steps before installing DOTSeq:
 ```r
-  if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
+# Install BiocManager if not already available
+if (!require("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
 
-  # The following initializes usage of Bioc devel
-  BiocManager::install(version='devel')
-  
-  BiocManager::install(c(
-    "biomaRt@2.65.0",
-    "IRanges@2.43.0",
-    "GenomicRanges@1.61.1",
-    "SummarizedExperiment@1.39.1",
-    "rtracklayer@1.69.1",
-    "DEXSeq@1.55.1",
-    "satuRn@1.17.0",
-    "locfdr@1.1-8"))
-    
-  # When prompted with "Update all/some/none? [a/s/n]:", enter 'n' to skip updates.
-  
-  install.packages("devtools")
-  library(devtools)
-  options(unzip="internal")
-  
-  devtools::install_github("compgenom/DOTSeq")
+# Initialize usage of Bioconductor devel version
+BiocManager::install(version = "devel")
+
+# Install required Bioconductor packages
+BiocManager::install(c(
+  "biomaRt@2.65.0",
+  "IRanges@2.43.0",
+  "GenomicRanges@1.61.1",
+  "SummarizedExperiment@1.39.1",
+  "rtracklayer@1.69.1",
+  "DEXSeq@1.55.1",
+  "satuRn@1.17.0",
+  "locfdr@1.1-8"
+))
+
+# When prompted with "Update all/some/none? [a/s/n]:", enter 'n' to skip updates.
+
+# Install devtools if not already available
+install.packages("devtools")
+library(devtools)
+options(unzip = "internal")
+
+# Install DOTSeq from GitHub
+devtools::install_github("compgenom/DOTSeq")
 ```
 
 ## DOCUMENTATION
