@@ -5,7 +5,7 @@
 \title{Plot DOT heatmap}
 \usage{
 plotHeatmap(
-  sigMaxDiffMatClean,
+  orderedMatrix,
   rowDendClean,
   highlight_df,
   gene_labels,
@@ -16,7 +16,7 @@ plotHeatmap(
 )
 }
 \arguments{
-\item{sigMaxDiffMatClean}{matrix of values to plot}
+\item{orderedMatrix}{matrix of values to plot}
 
 \item{rowDendClean}{dendrogram for row ordering}
 

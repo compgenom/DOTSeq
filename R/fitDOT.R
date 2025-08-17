@@ -21,6 +21,12 @@
 #'   - TRUE: keep ORFs where all replicates in at least one condition pass \code{minCount}.
 #'   - FALSE: keep ORFs where all replicates in at least one condition-strategy group pass \code{minCount}.
 #'   - NULL: keep ORFs where total counts across replicates pass \code{minCount}.
+#' @param seed An optional integer. Use to set the seed for the random number
+#'   generator to ensure reproducible results (default: NULL).
+#' @param parallel A logical value indicating whether to use parallel
+#'   computation. If `TRUE`, the function will distribute tasks across
+#'   multiple cores as configured by the `BiocParallel` package. If `FALSE`,
+#'   the function will run sequentially on a single core (default: FALSE).
 #' @param verbose Logical; if TRUE, prints progress messages (default: FALSE).
 #'
 #' @return A named list with the following elements:
@@ -47,6 +53,7 @@
 #'   pseudoCnt = 1e-6,
 #'   minCount = 1,
 #'   stringent = TRUE,
+#'   seed = 42,
 #'   verbose = TRUE
 #' )
 #' head(result$absoluteTE)
@@ -58,7 +65,23 @@ fitDOT <- function(countTable, conditionTable,
                    flattenedFile, bed, 
                    rnaSuffix = ".rna", riboSuffix = ".ribo", 
                    pseudoCnt = 1e-6, minCount = 1, 
-                   stringent = NULL, verbose = FALSE) {
+                   stringent = NULL, 
+                   seed = NULL, parallel = FALSE,
+                   verbose = FALSE) {
+  if (!is.null(seed)) {
+    old_seed <- .GlobalEnv$.Random.seed
+    on.exit({
+      if (is.null(old_seed)) {
+        rm(.Random.seed, envir = .GlobalEnv)
+      } else {
+        .GlobalEnv$.Random.seed <- old_seed
+      }
+    })
+    
+    # Set the seed
+    set.seed(seed)
+  }
+  
   # Define expected column names
   cntCols <- c("Geneid", "Chr", "Start",  "End", "Strand", "Length")
   
@@ -352,8 +375,8 @@ fitDOT <- function(countTable, conditionTable,
       }
       sumExp <- satuRn::fitDTU(object = sumExp,
                                formula = fmla,
-                               parallel = FALSE,
-                               BPPARAM = BiocParallel::bpparam(),
+                               parallel = parallel,
+                               BPPARAM = BiocParallel::bpparam(RNGseed = seed),
                                verbose = TRUE)
       
       L <- contrastMatrix(sumExp, fmla)

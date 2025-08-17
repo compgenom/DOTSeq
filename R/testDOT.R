@@ -14,6 +14,8 @@
 #' @param diagplot1 Logical; if TRUE, produces the first diagnostic plot of z-scores (default: FALSE).
 #' @param diagplot2 Logical; if TRUE, produces the second diagnostic plot of empirical z-scores (default: FALSE).
 #' @param main Character string to set the title for diagnostic plots (default: NULL).
+#' @param seed An optional integer. Use to set the seed for the random number
+#'   generator to ensure reproducible results (default: NULL).
 #'
 #' @return A \code{data.frame} containing the following columns:
 #' \describe{
@@ -29,12 +31,26 @@
 #' @examples
 #' \dontrun{
 #' results <- testDOT(sumExp = mySummarizedExp, contrast = c(0,1,0), 
-#'                    df = 7, bre = 120, diagplot1 = TRUE, diagplot2 = TRUE, main = "Sample ORFs")
+#'                    df = 7, bre = 120, diagplot1 = TRUE, diagplot2 = TRUE, main = "Sample ORFs", seed = 42)
 #' head(results)
 #' }
 #'
 #' @export
-testDOT <- function(sumExp, contrast, df = 7, bre = 120, diagplot1 = FALSE, diagplot2 = FALSE, main = NULL) {
+testDOT <- function(sumExp, contrast, df = 7, bre = 120, diagplot1 = FALSE, diagplot2 = FALSE, main = NULL, seed = NULL) {
+  if (!is.null(seed)) {
+    old_seed <- .GlobalEnv$.Random.seed
+    on.exit({
+      if (is.null(old_seed)) {
+        rm(.Random.seed, envir = .GlobalEnv)
+      } else {
+        .GlobalEnv$.Random.seed <- old_seed
+      }
+    })
+    
+    # Set the seed
+    set.seed(seed)
+  }
+  
   # Input validation checks
   if (!is(sumExp, "SummarizedExperiment")) {
     stop("Input `sumExp_filtered` must be a SummarizedExperiment object.")

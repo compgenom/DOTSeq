@@ -39,12 +39,30 @@ parseBed <- function(bed, dxd) {
   beds  <- bedGR[subjectHits(hits)]
   
   # Filter for exact matches
+  # exactHits <- which(
+  #   seqnames(orfs) == seqnames(beds) &
+  #     start(orfs) == start(beds) &
+  #     end(orfs) == end(beds) &
+  #     strand(orfs) == strand(beds)
+  # )
+  # Coerce to character/integer vectors
+  orfs_chr   <- as.character(seqnames(orfs))
+  beds_chr   <- as.character(seqnames(beds))
+  orfs_start <- start(orfs)
+  beds_start <- start(beds)
+  orfs_end   <- end(orfs)
+  beds_end   <- end(beds)
+  orfs_str   <- as.character(strand(orfs))
+  beds_str   <- as.character(strand(beds))
+  
+  # Compare element-wise
   exactHits <- which(
-    seqnames(orfs) == seqnames(beds) &
-      start(orfs) == start(beds) &
-      end(orfs) == end(beds) &
-      strand(orfs) == strand(beds)
+    orfs_chr == beds_chr &
+      orfs_start == beds_start &
+      orfs_end == beds_end &
+      orfs_str == beds_str
   )
+  
   
   # Put ORF label back
   exactBeds <- beds[exactHits]
@@ -54,6 +72,7 @@ parseBed <- function(bed, dxd) {
   mcols(exactORFs)$labels <- mcols(exactBeds)$label
   
   orfDf <- as.data.frame(exactORFs)
+  rownames(orfDf) <- paste0(orfDf$groupID, ":", orfDf$featureID)
   
   return(orfDf = orfDf)
 }

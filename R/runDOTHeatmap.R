@@ -1,69 +1,45 @@
 #' Prepare data and plot DOT heatmap
 #'
 #' @param results A data frame containing estimates, labels, and groupID.
-#' @param sigRes A data frame containing significant results.
 #' @param output_file PDF file name for saving the heatmap.
 #' @param species_dataset string, e.g. "hsapiens_gene_ensembl"
 #' @param symbol_col Name of the gene symbol column in Ensembl for your species,
 #'        e.g. "hgnc_symbol" for human, "mgi_symbol" for mouse
 #'
-#' @importFrom biomaRt useEnsembl getBM
+# @importFrom biomaRt useEnsembl getBM
 #'
-prepHeatMapData <- function(results, sigRes, species_dataset, symbol_col) {
-  results$absEstimates <- abs(results$estimates)
-  splitList <- split(results, results$groupID)
-
-  maxList <- lapply(splitList, function(results) {
-    sapply(unique(results$labels), function(label) {
-      subdf <- results[results$labels == label, ]
-      subdf$estimates[which.max(subdf$absEstimates)]
-    })
-  })
-
-  allLabels <- unique(unlist(lapply(maxList, names)))
-  maxDiff <- data.frame(groupID = names(maxList), stringsAsFactors = FALSE)
-  for (label in allLabels) {
-    maxDiff[[label]] <- sapply(maxList, function(x) if (label %in% names(x)) x[[label]] else NA)
-  }
+pairedData <- function(results, orf_type, species_dataset, symbol_col, threshold = 0.05) {
+  sigRes <- results[results$empirical.fdr<threshold,]
   
-  allLabels <- unique(unlist(lapply(maxList, names)))
-  maxDiff <- data.frame(groupID = names(maxList), stringsAsFactors = FALSE)
-  for (label in allLabels) {
-    maxDiff[[label]] <- sapply(maxList, function(x) if (label %in% names(x)) x[[label]] else NA)
-  }
+  orfSig <- sigRes[sigRes$labels==orf_type, ][, c("groupID", "estimates")]
+  mORFRes <- results[results$labels=="mORF", ][, c("groupID", "estimates")]
+  sigMat <- merge(orfSig, mORFRes, by = "groupID")
+  names(sigMat) <- c("groupID", orf_type, "mORF")
+  
+  rownames(sigMat) <- sigMat$groupID
+  sigMat$groupID <- NULL
+  sigMat[] <- lapply(sigMat, as.numeric)
+  sigMat <- as.matrix(sigMat)
+  sigMatClean <- sigMat[complete.cases(sigMat), ]
 
-  uORFSig <- sigRes[sigRes$labels=="uORF", ]
-  mORFSig <- sigRes[sigRes$labels=="mORF", ]
-  dORFSig <- sigRes[sigRes$labels=="dORF", ]
-
-  sigMaxDiff <- maxDiff[maxDiff$groupID %in% unique(uORFSig$groupID), ]
-  sigMaxDiff$dORF <- NULL
-
-  sigMaxDiffMat <- sigMaxDiff
-  rownames(sigMaxDiffMat) <- sigMaxDiffMat$groupID
-  sigMaxDiffMat$groupID <- NULL
-  sigMaxDiffMat[] <- lapply(sigMaxDiffMat, as.numeric)
-  sigMaxDiffMat <- as.matrix(sigMaxDiffMat)
-  sigMaxDiffMat <- sigMaxDiffMat[, c("uORF", "mORF")]
-  sigMaxDiffMatClean <- sigMaxDiffMat[complete.cases(sigMaxDiffMat), ]
-
-  rowClusterClean <- hclust(dist(sigMaxDiffMatClean))
+  rowClusterClean <- hclust(dist(sigMatClean))
   rowDendClean <- as.dendrogram(rowClusterClean)
 
-  minVal <- min(sigMaxDiffMatClean, na.rm = TRUE)
-  maxVal <- max(sigMaxDiffMatClean, na.rm = TRUE)
+  minVal <- min(sigMatClean, na.rm = TRUE)
+  maxVal <- max(sigMatClean, na.rm = TRUE)
   absMax <- max(abs(minVal), abs(maxVal))
 
   colorBreaks <- seq(-absMax, absMax, length.out = 101)
   colorPalette <- colorRampPalette(c("blue", "white", "red"))(100)
-
-  ordered_matrix <- sigMaxDiffMatClean[row_order, ]
+  
+  row_order <- order.dendrogram(rowDendClean)
+  orderedMatrix <- sigMatClean[row_order, ]
   sigResFiltered <- sigRes[
-    sigRes$labels %in% colnames(ordered_matrix) &
-    sigRes$groupID %in% rownames(ordered_matrix),
+    sigRes$labels %in% colnames(orderedMatrix) &
+    sigRes$groupID %in% rownames(orderedMatrix),
     ]
-  group_to_row <- setNames(seq_len(nrow(ordered_matrix)), rownames(ordered_matrix))
-  label_to_col <- setNames(seq_len(ncol(ordered_matrix)), colnames(ordered_matrix))
+  group_to_row <- setNames(seq_len(nrow(orderedMatrix)), rownames(orderedMatrix))
+  label_to_col <- setNames(seq_len(ncol(orderedMatrix)), colnames(orderedMatrix))
   highlight_df <- data.frame(
     row = group_to_row[sigResFiltered$groupID],
     col = label_to_col[sigResFiltered$labels],
@@ -71,7 +47,7 @@ prepHeatMapData <- function(results, sigRes, species_dataset, symbol_col) {
   )
   highlight_df <- highlight_df[complete.cases(highlight_df), ]
 
-  ensembIds <- sub("\\..*", "", rownames(ordered_matrix))
+  ensembIds <- sub("\\..*", "", rownames(orderedMatrix))
   ensembl <- useEnsembl(biomart = "genes", dataset = species_dataset)
   genes <- getBM(
     attributes = c("ensembl_gene_id", symbol_col, "go_id", "name_1006", "namespace_1003"),
@@ -84,7 +60,7 @@ prepHeatMapData <- function(results, sigRes, species_dataset, symbol_col) {
   genesUniqueSorted <- genesUnique[match(ensembIds, genesUnique$ensembl_gene_id), ]
 
   return(list(
-    sigMaxDiffMatClean = sigMaxDiffMatClean,
+    orderedMatrix = orderedMatrix,
     rowDendClean = rowDendClean,
     highlight_df = highlight_df,
     gene_labels = genesUniqueSorted[[symbol_col]],
@@ -95,7 +71,7 @@ prepHeatMapData <- function(results, sigRes, species_dataset, symbol_col) {
 }
 #' Plot DOT heatmap
 #'
-#' @param sigMaxDiffMatClean matrix of values to plot
+#' @param orderedMatrix matrix of values to plot
 #' @param rowDendClean dendrogram for row ordering
 #' @param highlight_df dataframe for highlighting tiles
 #' @param gene_labels vector of gene labels
@@ -103,7 +79,7 @@ prepHeatMapData <- function(results, sigRes, species_dataset, symbol_col) {
 #' @param color_breaks breaks for colors
 #' @param abs_max maximum absolute value
 #' @param output_file filename for PDF output
-plotHeatmap <- function(sigMaxDiffMatClean,
+plotHeatmap <- function(orderedMatrix,
                            rowDendClean,
                            highlight_df,
                            gene_labels,
@@ -112,8 +88,10 @@ plotHeatmap <- function(sigMaxDiffMatClean,
                            abs_max,
                            output_file = "dot.pdf") {
 
-  n_rows <- nrow(sigMaxDiffMatClean)
-  n_cols <- ncol(sigMaxDiffMatClean)
+  # n_rows <- nrow(sigMatClean)
+  # n_cols <- ncol(sigMatClean)
+  n_rows <- nrow(orderedMatrix)
+  n_cols <- ncol(orderedMatrix)
   
   # Dynamic scaling
   cex_row <- ifelse(n_rows > 50, 0.5, 0.8)
@@ -131,13 +109,13 @@ plotHeatmap <- function(sigMaxDiffMatClean,
   plot(rowDendClean, horiz = TRUE, axes = FALSE, yaxs = "i")
   
   ## Panel 2: Heatmap
-  row_order <- order.dendrogram(rowDendClean)
-  ordered_matrix <- sigMaxDiffMatClean[row_order, ]
+  # row_order <- order.dendrogram(rowDendClean)
+  # orderedMatrix <- sigMatClean[row_order, ]
   
   par(mar = c(5, 0.5, 4, right_margin))
-  image(x = 1:ncol(ordered_matrix),
-        y = 1:nrow(ordered_matrix),
-        z = t(ordered_matrix),
+  image(x = 1:ncol(orderedMatrix),
+        y = 1:nrow(orderedMatrix),
+        z = t(orderedMatrix),
         col = color_palette,
         breaks = color_breaks,
         axes = FALSE,
@@ -154,10 +132,10 @@ plotHeatmap <- function(sigMaxDiffMatClean,
     )
   }
   
-  axis(1, at = 1:ncol(ordered_matrix), labels = colnames(ordered_matrix), las = 2, cex.axis = cex_col)
-  axis(4, at = 1:nrow(ordered_matrix), labels = gene_labels, las = 2, cex.axis = cex_row)
+  axis(1, at = 1:ncol(orderedMatrix), labels = colnames(orderedMatrix), las = 2, cex.axis = cex_col)
+  axis(4, at = 1:nrow(orderedMatrix), labels = gene_labels, las = 2, cex.axis = cex_row)
   
-  mtext("Differential TE", side = 3, line = 1.5, cex = 1.2, adj = 0.5)
+  mtext("Differential ORF translation", side = 3, line = 1.5, cex = 1.2, adj = 0.5)
   
   ## Color key
   par(fig = c(0.55, 1, key_bottom, key_top), new = TRUE, mar = c(0, 0, 2, 4))
@@ -167,7 +145,7 @@ plotHeatmap <- function(sigMaxDiffMatClean,
   tick_vals <- pretty(c(-abs_max, abs_max), n = 5)
   tick_pos <- (tick_vals - (-abs_max)) / (2 * abs_max)
   axis(1, at = tick_pos, labels = tick_vals, las = 1, cex.axis = 0.7)
-  mtext("Log-odds", side = 1, line = 2, cex = 0.8)
+  mtext("log-odds", side = 1, line = 2, cex = 0.8)
   
   dev.off()
   par(mfrow = c(1, 1))
@@ -183,16 +161,16 @@ plotHeatmap <- function(sigMaxDiffMatClean,
 #' @param output_file PDF file name
 #'
 #' @export
-runDotHeatmap <- function(results, sigRes, species_dataset, symbol_col, output_file) {
-  prep_out <- prepHeatMapData(
+pairedDOTHeatmap <- function(results, orf_type, species_dataset, symbol_col, output_file) {
+  prep_out <- pairedData(
     results = results,
-    sigRes = sigRes,
+    orf_type = orf_type,
     species_dataset = species_dataset,
     symbol_col = symbol_col
   )
   
   plotHeatmap(
-    sigMaxDiffMatClean = prep_out$sigMaxDiffMatClean,
+    orderedMatrix = prep_out$orderedMatrix,
     rowDendClean = prep_out$rowDendClean,
     highlight_df = prep_out$highlight_df,
     gene_labels = prep_out$gene_labels,
