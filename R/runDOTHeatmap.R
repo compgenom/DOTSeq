@@ -68,6 +68,7 @@ pairedData <- function(results, orf_type, species_dataset, symbol_col, threshold
     orderedMatrix = orderedMatrix,
     rowDendClean = rowDendClean,
     highlight_df = highlight_df,
+    genes = genes,
     gene_labels = genesUniqueSorted[[symbol_col]],
     color_palette = colorPalette,
     color_breaks = colorBreaks,
@@ -85,16 +86,15 @@ pairedData <- function(results, orf_type, species_dataset, symbol_col, threshold
 #' @param abs_max maximum absolute value
 #' @param output_file filename for PDF output
 plotHeatmap <- function(orderedMatrix,
-                           rowDendClean,
-                           highlight_df,
-                           gene_labels,
-                           color_palette,
-                           color_breaks,
-                           abs_max,
-                           output_file = "dot.pdf") {
+                        rowDendClean,
+                        highlight_df,
+                        gene_labels,
+                        color_palette,
+                        color_breaks,
+                        abs_max,
+                        width = 4, height = 4.5,
+                        output_file = "dot.pdf") {
 
-  # n_rows <- nrow(sigMatClean)
-  # n_cols <- ncol(sigMatClean)
   n_rows <- nrow(orderedMatrix)
   n_cols <- ncol(orderedMatrix)
   
@@ -106,7 +106,7 @@ plotHeatmap <- function(orderedMatrix,
   key_bottom <- ifelse(n_rows > 50, 0.05, 0.13)
   key_top <- key_bottom + 0.12
   
-  pdf(output_file, width = 4, height = 4.5)
+  pdf(output_file, width = width, height = height)
   layout(matrix(c(1, 2), nrow = 1), widths = layout_widths)
   
   ## Panel 1: Dendrogram
@@ -114,9 +114,6 @@ plotHeatmap <- function(orderedMatrix,
   plot(rowDendClean, horiz = TRUE, axes = FALSE, yaxs = "i")
   
   ## Panel 2: Heatmap
-  # row_order <- order.dendrogram(rowDendClean)
-  # orderedMatrix <- sigMatClean[row_order, ]
-  
   par(mar = c(5, 0.5, 4, right_margin))
   image(x = 1:ncol(orderedMatrix),
         y = 1:nrow(orderedMatrix),
@@ -140,7 +137,7 @@ plotHeatmap <- function(orderedMatrix,
   axis(1, at = 1:ncol(orderedMatrix), labels = colnames(orderedMatrix), las = 2, cex.axis = cex_col)
   axis(4, at = 1:nrow(orderedMatrix), labels = gene_labels, las = 2, cex.axis = cex_row)
   
-  mtext("Differential ORF translation", side = 3, line = 1.5, cex = 1.2, adj = 0.5)
+  mtext("Differential ORF translation", side = 3, line = 1.5, cex = 1.2, adj = 0.5, font = 2)
   
   ## Color key
   par(fig = c(0.55, 1, key_bottom, key_top), new = TRUE, mar = c(0, 0, 2, 4))
