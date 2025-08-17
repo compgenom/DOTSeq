@@ -91,7 +91,7 @@ write.table(sigRes, "DotSeq_sigRes.csv")
 ```
 
 # Visualisation
-To plot a heatmap:
+Users can specify which ORF they want to compare on the heatmap. For example, this heatmap is showing the differential translation between dORF and mORF:
 ```{r heatmap}
-runDOTHeatmap(results, "hsapiens_gene_ensembl", "hgnc_symbol", "dot.pdf")
+pairedDOTHeatmap(results, "dORF", "hsapiens_gene_ensembl", "hgnc_symbol", "dot.pdf")
 ```
