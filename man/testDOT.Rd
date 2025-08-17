@@ -11,7 +11,8 @@ testDOT(
   bre = 120,
   diagplot1 = FALSE,
   diagplot2 = FALSE,
-  main = NULL
+  main = NULL,
+  seed = NULL
 )
 }
 \arguments{
@@ -29,6 +30,9 @@ Must contain fitted models in \code{rowData(sumExp)[["fitDTUModels"]]}.}
 \item{diagplot2}{Logical; if TRUE, produces the second diagnostic plot of empirical z-scores (default: FALSE).}
 
 \item{main}{Character string to set the title for diagnostic plots (default: NULL).}
+
+\item{seed}{An optional integer. Use to set the seed for the random number
+generator to ensure reproducible results (default: NULL).}
 }
 \value{
 A \code{data.frame} containing the following columns:
@@ -52,7 +56,7 @@ and empirical null fitting.
 \examples{
 \dontrun{
 results <- testDOT(sumExp = mySummarizedExp, contrast = c(0,1,0), 
-                   df = 7, bre = 120, diagplot1 = TRUE, diagplot2 = TRUE, main = "Sample ORFs")
+                   df = 7, bre = 120, diagplot1 = TRUE, diagplot2 = TRUE, main = "Sample ORFs", seed = 42)
 head(results)
 }
 
