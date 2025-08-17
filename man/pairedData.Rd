@@ -2,20 +2,24 @@
 % Please edit documentation in R/runDOTHeatmap.R
 \name{pairedData}
 \alias{pairedData}
-\title{Prepare data and plot DOT heatmap}
+\title{Prepare Data and Plot DOT Heatmap}
 \usage{
 pairedData(results, orf_type, species_dataset, symbol_col, threshold = 0.05)
 }
 \arguments{
-\item{results}{A data frame containing estimates, labels, and groupID.}
+\item{results}{An output data frame from testDOT containing estimates, gene labels, and groupID.}
 
-\item{species_dataset}{string, e.g. "hsapiens_gene_ensembl"}
+\item{orf_type}{Character string specifying the ORF type to compare with mORF.
+Accepts either "uORF" or "dORF".}
 
-\item{symbol_col}{Name of the gene symbol column in Ensembl for your species,
-e.g. "hgnc_symbol" for human, "mgi_symbol" for mouse}
+\item{species_dataset}{A string specifying the Ensembl dataset, e.g., "hsapiens_gene_ensembl".}
 
-\item{output_file}{PDF file name for saving the heatmap.}
+\item{symbol_col}{A string indicating the column name for gene symbols in Ensembl,
+e.g., "hgnc_symbol" for human or "mgi_symbol" for mouse.}
+
+\item{threshold}{Numeric value specifying the empirical FDR threshold (default = 0.05).}
 }
 \description{
-Prepare data and plot DOT heatmap
+This function generates a DOT (Differential ORF Translation) heatmap using
+estimates from a results data frame, comparing mORFs with either uORFs or dORFs.
 }

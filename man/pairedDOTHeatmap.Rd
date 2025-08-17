@@ -9,14 +9,12 @@ pairedDOTHeatmap(results, orf_type, species_dataset, symbol_col, output_file)
 \arguments{
 \item{results}{A data frame containing estimates, labels, and groupID}
 
-\item{species_dataset}{Ensembl dataset string, e.g. "hsapiens_gene_ensembl"}
+\item{species_dataset}{A string specifying the Ensembl dataset, e.g., "hsapiens_gene_ensembl".}
 
-\item{symbol_col}{Name of the gene symbol column in Ensembl for your species,
-e.g. "hgnc_symbol" for human, "mgi_symbol" for mouse}
+\item{symbol_col}{A string indicating the column name for gene symbols in Ensembl,
+e.g., "hgnc_symbol" for human or "mgi_symbol" for mouse.}
 
 \item{output_file}{PDF file name}
-
-\item{sigRes}{A data frame containing significant results}
 }
 \description{
 Run DOT heatmap wrapper
