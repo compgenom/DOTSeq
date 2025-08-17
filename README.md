@@ -19,7 +19,7 @@ Please ensure the dependencies listed above are installed using the following st
 if (!require("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 
-# Initialize usage of Bioconductor devel version
+# Initialise usage of Bioconductor devel version
 BiocManager::install(version = "devel")
 
 # Install required Bioconductor packages
@@ -49,9 +49,7 @@ devtools::install_github("compgenom/DOTSeq")
 Please refer to [vignettes](https://github.com/compgenom/DOTSeq/tree/main/vignettes) for how to use DOTSeq.
 
 ## CONTACTS AND BUG REPORTS
-Chun Shen Lim
-chunshen.lim@otago.ac.nz
+- Chun Shen Lim: chunshen [dot] lim [at] otago [dot] ac [dot] nz
+- Gabrielle Chieng: gabrielle [dot] chieng [at] postgrad [dot] otago [dot] ac [dot] nz
 
-Gabrielle Chieng
-gabrielle.chieng@postgrad.otago.ac.nz
 
