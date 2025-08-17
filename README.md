@@ -3,11 +3,11 @@ DOTSeq is a R package for identifying differentially translated open reading fra
 
 ## DEPENDENCIES
 * R (>= 4.5.0)
+* DEXSeq (>= 1.55.1)
 * IRanges (>= 2.43.0)
 * GenomicRanges (>= 1.61.1)
-* rtracklayer (>= 1.69.1)
 * SummarizedExperiment (>= 1.39.1)
-* DEXSeq (>= 1.55.1)
+* rtracklayer (>= 1.69.1)
 * satuRn (>= 1.17.0)
 * locfdr (>= 1.1-8)
 
