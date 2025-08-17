@@ -46,7 +46,7 @@ devtools::install_github("compgenom/DOTSeq")
 ```
 
 ## DOCUMENTATION
-Please refer to vignettes/DOTSeq.html for how to use DOTSeq.
+Please refer to [vignettes](https://github.com/compgenom/DOTSeq/tree/main/vignettes) for how to use DOTSeq.
 
 ## CONTACTS AND BUG REPORTS
 Chun Shen Lim
