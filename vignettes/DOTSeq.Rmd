@@ -96,14 +96,14 @@ sigRes <- results[results$empirical.fdr<0.05,]
 Users can specify which ORF they want to compare on the heatmap. For example, this heatmap is showing the differential translation between uORF and mORF:
 ```{r uORF_heatmap}
 pairedDOTHeatmap(results, "uORF", "hsapiens_gene_ensembl", "hgnc_symbol", "uORF.dot.pdf")
-knitr::include_graphics("uORF.dot.pdf")
 ```
+![uORF_hm](figures/uORF.dot.pdf)
 
 and this heatmap is showing the differential translation between dORF and mORF:
 ```{r dORF_heatmap}
 pairedDOTHeatmap(results, "dORF", "hsapiens_gene_ensembl", "hgnc_symbol", "dORF.dot.pdf")
-knitr::include_graphics("dORF.dot.pdf")
 ```
+![dORF_hm](figures/dORF.dot.pdf)
 
 # Session Info
 ```{r sessionInfo}
