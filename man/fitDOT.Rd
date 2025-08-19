@@ -63,6 +63,7 @@ the function will run sequentially on a single core (default: FALSE).}
 \value{
 A named list with the following elements:
 \describe{
+\item{rawCnts}{Raw counts matrix for all samples.}
 \item{normCnts}{Normalized counts matrix for all samples.}
 \item{orfs}{Data frame of ORFs derived from the BED file matched to the DOTSeq object.}
 \item{absoluteTE}{Matrix of translational efficiency values per ORF and sample.}

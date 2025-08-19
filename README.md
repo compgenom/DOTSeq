@@ -42,8 +42,6 @@ BiocManager::install(c(
   "locfdr@1.1-8"
 ))
 
-# When prompted with "Update all/some/none? [a/s/n]:", enter 'n' to skip updates.
-
 # Install devtools if not already available
 install.packages("devtools")
 library(devtools)
