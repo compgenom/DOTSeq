@@ -4,8 +4,8 @@
 """
 @author      CS Lim
 @create date 2025-08-18 17:23:00
-@modify date 2025-08-18 18:55:04
-@desc        RIBOSS module for generating flatten, ORF-centric GTF files
+@modify date 2025-08-19 07:32:55
+@desc        Generate ORF-centric, flatten GTF files for DOTSeq
 """
 
 import os
@@ -16,7 +16,7 @@ import pandas as pd
 import pyranges as pr
 import csv
 from riboss.orfs import orf_finder
-from riboss.gtf import flatten_orfs, bed6_to_bed12, bed12_to_gtf
+from riboss.utils import flatten_orfs, bed6_to_bed12, bed12_to_gtf
 
 
 def main():
@@ -41,9 +41,9 @@ def main():
 
     orf_df, gt_map = flatten_orfs(df, args.gtf)
     bed12_df = bed6_to_bed12(orf_df)
-    dotseq_gff = bed12_to_gtf(bed12_df, gt_map)
+    dotseq_gtf = bed12_to_gtf(bed12_df, gt_map)
 
-    dotseq_gff.to_csv(f"{args.output}.gtf", sep="\t", header=False, index=False,
+    dotseq_gtf.to_csv(f"{args.output}.gtf", sep="\t", header=False, index=False,
                       quoting=csv.QUOTE_NONE, quotechar='')
     orf_df.to_csv(f"{args.output}.bed", sep="\t", header=False, index=False)
     
