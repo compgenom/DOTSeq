@@ -33,6 +33,7 @@
 #'
 #' @return A named list with the following elements:
 #' \describe{
+#'   \item{rawCnts}{Raw counts matrix for all samples.}
 #'   \item{normCnts}{Normalized counts matrix for all samples.}
 #'   \item{orfs}{Data frame of ORFs derived from the BED file matched to the DOTSeq object.}
 #'   \item{absoluteTE}{Matrix of translational efficiency values per ORF and sample.}
@@ -406,6 +407,7 @@ fitDOT <- function(countTable, conditionTable,
   }
   
   return(list(
+    rawCnts = dcounts,
     normCnts = normCnts,
     orfs = orfDf,
     absoluteTE = te$absoluteTE,
