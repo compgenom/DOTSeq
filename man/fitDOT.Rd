@@ -11,6 +11,7 @@ fitDOT(
   bed,
   rnaSuffix = ".rna",
   riboSuffix = ".ribo",
+  batchCol = NULL,
   pseudoCnt = 1e-06,
   minCount = 1,
   stringent = NULL,
@@ -34,6 +35,9 @@ Must include columns: run, strategy, condition, replicate.}
 \item{rnaSuffix}{Character suffix to identify RNA-seq columns (default: \code{".rna"}).}
 
 \item{riboSuffix}{Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).}
+
+\item{batchCol}{String; name of the column in \code{conditionTable} that specifies batch assignments, e.g., "batch".
+If NULL, batch effects are not modeled (default: NULL).}
 
 \item{pseudoCnt}{Numeric pseudo-count to avoid division by zero when computing TE (default: 1e-6).}
 
@@ -73,7 +77,7 @@ A named list with the following elements:
 This function performs the complete DOTSeq analysis pipeline:
 loading count data, aligning with sample metadata, filtering ORFs,
 normalizing counts, calculating translational efficiency (TE), and
-fitting quasi-binomial generalized linear models for differential ORF
+fitting quasi-binomial generalised linear models for differential ORF
 translation using \code{satuRn::fitDTU}.
 }
 \examples{

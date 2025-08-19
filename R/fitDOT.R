@@ -3,7 +3,7 @@
 #' This function performs the complete DOTSeq analysis pipeline:
 #' loading count data, aligning with sample metadata, filtering ORFs,
 #' normalizing counts, calculating translational efficiency (TE), and
-#' fitting quasi-binomial generalized linear models for differential ORF
+#' fitting quasi-binomial generalised linear models for differential ORF
 #' translation using \code{satuRn::fitDTU}.
 #'
 #' @param countTable Either a path to a count table file or a data frame.
@@ -15,6 +15,8 @@
 #' @param bed Path to a BED file with ORF annotations.
 #' @param rnaSuffix Character suffix to identify RNA-seq columns (default: \code{".rna"}).
 #' @param riboSuffix Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).
+#' @param batchCol String; name of the column in `conditionTable` that specifies batch assignments, e.g., "batch". 
+#'    If NULL, batch effects are not modeled (default: NULL).
 #' @param pseudoCnt Numeric pseudo-count to avoid division by zero when computing TE (default: 1e-6).
 #' @param minCount Minimum count threshold for filtering ORFs (default: 1).
 #' @param stringent Logical or NULL; determines the filtering strategy:
@@ -64,6 +66,7 @@
 fitDOT <- function(countTable, conditionTable, 
                    flattenedFile, bed, 
                    rnaSuffix = ".rna", riboSuffix = ".ribo", 
+                   batchCol = NULL,
                    pseudoCnt = 1e-6, minCount = 1, 
                    stringent = NULL, 
                    seed = NULL, parallel = FALSE,
@@ -90,7 +93,7 @@ fitDOT <- function(countTable, conditionTable,
     # Read the first line to get column names
     firstLine <- readLines(countTable, n = 1)
     cntHeader <- strsplit(firstLine, "\t|,|\\s+")[[1]]
-
+    
     # Check if all expected columns are present
     if (all(cntCols %in% cntHeader)) {
       cond <- read.table(countTable, header = TRUE, comment.char = "#", stringsAsFactors = FALSE)
@@ -109,29 +112,29 @@ fitDOT <- function(countTable, conditionTable,
   condCols <- c("run", "strategy", "condition", "replicate")
   
   # Helper to normalize column names
-  normalize_names <- function(x) tolower(trimws(x))
+  normaliseNamesnames <- function(x) tolower(trimws(x))
   
   if (is.character(conditionTable) && file.exists(conditionTable)) {
     # Read header line and normalize
     firstLine <- readLines(conditionTable, n = 1)
-    condHeader <- normalize_names(strsplit(firstLine, "\t|,|\\s+")[[1]])
+    condHeader <- normaliseNamesnames(strsplit(firstLine, "\t|,|\\s+")[[1]])
     
-    missingCols <- setdiff(normalize_names(condCols), condHeader)
+    missingCols <- setdiff(normaliseNamesnames(condCols), condHeader)
     
     if (length(missingCols) == 0) {
       cond <- read.table(conditionTable, header = TRUE, comment.char = "#", stringsAsFactors = FALSE)
-      names(cond) <- normalize_names(names(cond))
+      names(cond) <- normaliseNamesnames(names(cond))
     } else {
       stop(paste("Missing expected columns (case-insensitive match):", paste(missingCols, collapse = ", ")))
     }
     
   } else if (is.data.frame(conditionTable)) {
-    condHeader <- normalize_names(names(conditionTable))
-    missingCols <- setdiff(normalize_names(condCols), condHeader)
+    condHeader <- normaliseNamesnames(names(conditionTable))
+    missingCols <- setdiff(normaliseNamesnames(condCols), condHeader)
     
     if (length(missingCols) == 0) {
       cond <- conditionTable
-      names(cond) <- normalize_names(names(cond))
+      names(cond) <- normaliseNamesnames(names(cond))
     } else {
       stop(paste("Data frame is missing expected columns (case-insensitive match):", paste(missingCols, collapse = ", ")))
     }
@@ -163,7 +166,7 @@ fitDOT <- function(countTable, conditionTable,
   } else {
     stop("Number of samples in countTable and conditionTable doesn't match.")
   }
-
+  
   riboCond <- cond[cond$strategy=="ribo",]
   rnaCond <- cond[cond$strategy=="rna",]
   
@@ -178,10 +181,19 @@ fitDOT <- function(countTable, conditionTable,
   # Rearrange the data frame
   combinedCond <- combinedCond[, c(colsToFront, remainingCols)]
   
-  numCond <- ncol(combinedCond)
   numRNASmps <- nrow(rnaCond)
   numRiboSmps <- nrow(riboCond)
   
+  # Extract batch column if present
+  hasBatch <- !is.null(batchCol) && batchCol %in% colnames(combinedCond)
+  if (hasBatch) {
+    batch <- combinedCond[[batchCol]]
+    combinedCond[[batchCol]] <- NULL
+  }
+  
+  numCond <- ncol(combinedCond)
+  
+  # Duplicate condition columns
   combinedCond <- combinedCond[, rep(1:numCond, 2)]
   
   # Add modality column
@@ -197,6 +209,10 @@ fitDOT <- function(countTable, conditionTable,
     combinedCond[1:numRNASmps, i] <- combinedCond[1, i]
   }
   
+  # Add batch back
+  if (hasBatch) {
+    combinedCond$batch <- batch
+  }
   # Create formula dynamically
   extendedConds <- colnames(combinedCond)
   fmla <- as.formula(paste("~ 0 +", paste(extendedConds, collapse= "+")))
@@ -220,7 +236,7 @@ fitDOT <- function(countTable, conditionTable,
   exons <- sapply(splitted, "[[", 2)
   genesrle <- sapply(splitted, "[[", 1)
   
-
+  
   if (!is.null(flattenedFile)) {
     if (verbose) {
       cat(" - Parse the flattened GFF file\n")
@@ -295,7 +311,7 @@ fitDOT <- function(countTable, conditionTable,
       design = ~ sample + exon + condition:exon
       dxd <- DEXSeqDataSet(dcounts, combinedCond, design, exons, 
                            genesrle, exoninfo[matching], transcripts[matching])
-        
+      
       counts <- counts(dxd)
       
       if (stringent == TRUE) {
@@ -385,10 +401,10 @@ fitDOT <- function(countTable, conditionTable,
       mismatches <- which(cnt_meta$key != gff_meta$key)
       print(head(data.frame(cnt_key = cnt_meta$key[mismatches], gff_key = gff_meta$key[mismatches])))
       stop("The orders of the count table and flatten GFF don't match!")
-      }
-    
     }
     
+  }
+  
   return(list(
     normCnts = normCnts,
     orfs = orfDf,
