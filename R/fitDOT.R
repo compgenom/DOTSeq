@@ -64,27 +64,19 @@
 #' }
 #'
 #' @export
-fitDOT <- function(countTable, conditionTable, 
-                   flattenedFile, bed, 
-                   rnaSuffix = ".rna", riboSuffix = ".ribo", 
+fitDOT <- function(countTable, 
+                   conditionTable, 
+                   flattenedFile, 
+                   bed, 
+                   rnaSuffix = ".rna", 
+                   riboSuffix = ".ribo", 
                    batchCol = NULL,
-                   pseudoCnt = 1e-6, minCount = 1, 
+                   pseudoCnt = 1e-6, 
+                   minCount = 1, 
                    stringent = NULL, 
-                   seed = NULL, parallel = FALSE,
+                   seed = NULL, 
+                   parallel = FALSE,
                    verbose = FALSE) {
-  if (!is.null(seed)) {
-    old_seed <- .GlobalEnv$.Random.seed
-    on.exit({
-      if (is.null(old_seed)) {
-        rm(.Random.seed, envir = .GlobalEnv)
-      } else {
-        .GlobalEnv$.Random.seed <- old_seed
-      }
-    })
-    
-    # Set the seed
-    set.seed(seed)
-  }
   
   # Define expected column names
   cntCols <- c("Geneid", "Chr", "Start",  "End", "Strand", "Length")

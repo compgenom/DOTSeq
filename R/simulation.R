@@ -40,20 +40,6 @@ simDOT <- function(
     num_batches = 1,
     seed = NULL) {
   
-  if (!is.null(seed)) {
-    old_seed <- .GlobalEnv$.Random.seed
-    on.exit({
-      if (is.null(old_seed)) {
-        rm(.Random.seed, envir = .GlobalEnv)
-      } else {
-        .GlobalEnv$.Random.seed <- old_seed
-      }
-    })
-    
-    # Set the seed
-    set.seed(seed)
-  }
-  
   if (!(is.matrix(ribo) || is.data.frame(ribo)) || !(is.matrix(rna) || is.data.frame(rna))) {
     stop("Both 'ribo' and 'rna' must be matrices or data frames.")
   }
@@ -118,9 +104,9 @@ simDOT <- function(
   
   # Run the simulation for the expanded number of samples
   sim_ribo_filtered <- create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0,
-                                           beta = coeffs_ribo, mod = mod, seed = 32332)
+                                           beta = coeffs_ribo, mod = mod, seed = seed)
   sim_rna_filtered <- create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0,
-                                          beta = coeffs_rna, mod = mod, seed = 32332)
+                                          beta = coeffs_rna, mod = mod, seed = seed)
   
   # Create final matrices with all original genes and new sample columns
   final_cols_ribo <- paste0("sample", 1:final_total_samples, ".condition", group, ".batch", batch, ".ribo")

@@ -461,7 +461,10 @@ bed &lt;- file.path(dir, &quot;dotseq.bed.gz&quot;)</code></pre>
 Ribo- and RNAseq data.</p>
 <pre class="r"><code>meta &lt;- read.table(file.path(dir, &quot;metadata.txt&quot;))
 names(meta) &lt;-  c(&quot;run&quot;,&quot;strategy&quot;,&quot;replicate&quot;,&quot;treatment&quot;,&quot;condition&quot;)
-cond &lt;- meta[meta$treatment==&quot;chx&quot;,]
+View(meta)</code></pre>
+<p>In this example, we will only look at the cells treated with
+cyclohexamide (chx).</p>
+<pre class="r"><code>cond &lt;- meta[meta$treatment==&quot;chx&quot;,]
 cond$treatment &lt;- NULL</code></pre>
 </div>
 <div id="testing-for-differential-orf-translation" class="section level1">
@@ -544,33 +547,31 @@ and mORF:</p>
 ## [1] stats4    stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] rmarkdown_2.29              knitr_1.50                  ggplot2_3.5.2               DOTSeq_0.11                 locfdr_1.1-8               
+##  [1] rmarkdown_2.29              knitr_1.50                  polyester_1.29.1            DOTSeq_0.12                 locfdr_1.1-8               
 ##  [6] satuRn_1.17.0               DEXSeq_1.55.1               RColorBrewer_1.1-3          AnnotationDbi_1.71.1        DESeq2_1.49.4              
 ## [11] BiocParallel_1.43.4         SummarizedExperiment_1.39.1 Biobase_2.69.0              MatrixGenerics_1.21.0       matrixStats_1.5.0          
 ## [16] rtracklayer_1.69.1          GenomicRanges_1.61.1        Seqinfo_0.99.2              IRanges_2.43.0              S4Vectors_0.47.0           
 ## [21] BiocGenerics_0.55.1         generics_0.1.4              biomaRt_2.65.1             
 ## 
 ## loaded via a namespace (and not attached):
-##   [1] jsonlite_2.0.0           rstudioapi_0.17.1        magrittr_2.0.3           farver_2.1.2             fs_1.6.6                 BiocIO_1.19.0           
-##   [7] vctrs_0.6.5              memoise_2.0.1            Rsamtools_2.25.2         RCurl_1.98-1.17          htmltools_0.5.8.1        S4Arrays_1.9.1          
-##  [13] usethis_3.1.0            progress_1.2.3           curl_6.4.0               SparseArray_1.9.1        sass_0.4.10              bslib_0.9.0             
-##  [19] htmlwidgets_1.6.4        desc_1.4.3               plyr_1.8.9               httr2_1.2.1              cachem_1.1.0             GenomicAlignments_1.45.2
-##  [25] mime_0.13                lifecycle_1.0.4          pkgconfig_2.0.3          Matrix_1.7-3             R6_2.6.1                 fastmap_1.2.0           
-##  [31] shiny_1.11.1             numDeriv_2016.8-1.1      digest_0.6.37            ps_1.9.1                 geneplotter_1.87.0       pkgload_1.4.0           
-##  [37] RSQLite_2.4.2            hwriter_1.3.2.1          filelock_1.0.3           labeling_0.4.3           httr_1.4.7               abind_1.4-8             
-##  [43] compiler_4.5.0           remotes_2.5.0            bit64_4.6.0-1            withr_3.0.2              DBI_1.2.3                pkgbuild_1.4.8          
-##  [49] MASS_7.3-65              rappdirs_0.3.3           DelayedArray_0.35.2      sessioninfo_1.2.3        rjson_0.2.23             tools_4.5.0             
-##  [55] httpuv_1.6.16            glue_1.8.0               restfulr_0.0.16          callr_3.7.6              promises_1.3.3           grid_4.5.0              
-##  [61] rsconnect_1.5.0          gtable_0.3.6             hms_1.1.3                xml2_1.3.8               XVector_0.49.0           pillar_1.11.0           
-##  [67] stringr_1.5.1            emdbook_1.3.14           limma_3.65.3             genefilter_1.91.0        later_1.4.2              splines_4.5.0           
-##  [73] dplyr_1.1.4              BiocFileCache_2.99.5     lattice_0.22-7           survival_3.8-3           bit_4.6.0                annotate_1.87.0         
-##  [79] tidyselect_1.2.1         locfit_1.5-9.12          Biostrings_2.77.2        miniUI_0.1.2             pbapply_1.7-4            xfun_0.52               
-##  [85] statmod_1.5.0            devtools_2.4.5           stringi_1.8.7            yaml_2.3.10              boot_1.3-31              evaluate_1.0.4          
-##  [91] codetools_0.2-20         bbmle_1.0.25.1           tibble_3.3.0             BiocManager_1.30.26      cli_3.6.5                xtable_1.8-4            
-##  [97] jquerylib_0.1.4          processx_3.8.6           Rcpp_1.1.0               dbplyr_2.5.0             coda_0.19-4.1            png_0.1-8               
-## [103] bdsmatrix_1.3-7          XML_3.99-0.18            parallel_4.5.0           ellipsis_0.3.2           blob_1.2.4               prettyunits_1.2.0       
-## [109] profvis_0.4.0            urlchecker_1.0.1         bitops_1.0-9             mvtnorm_1.3-3            apeglm_1.31.0            scales_1.4.0            
-## [115] purrr_1.1.0              crayon_1.5.3             rlang_1.1.6              KEGGREST_1.49.1</code></pre>
+##   [1] DBI_1.2.3                bitops_1.0-9             pbapply_1.7-4            httr2_1.2.1              remotes_2.5.0            rlang_1.1.6             
+##   [7] magrittr_2.0.3           compiler_4.5.0           RSQLite_2.4.2            png_0.1-8                callr_3.7.6              vctrs_0.6.5             
+##  [13] profvis_0.4.0            stringr_1.5.1            pkgconfig_2.0.3          crayon_1.5.3             fastmap_1.2.0            dbplyr_2.5.0            
+##  [19] XVector_0.49.0           ellipsis_0.3.2           logspline_2.1.22         Rsamtools_2.25.2         promises_1.3.3           sessioninfo_1.2.3       
+##  [25] ps_1.9.1                 purrr_1.1.0              bit_4.6.0                xfun_0.52                cachem_1.1.0             jsonlite_2.0.0          
+##  [31] progress_1.2.3           blob_1.2.4               later_1.4.2              DelayedArray_0.35.2      parallel_4.5.0           prettyunits_1.2.0       
+##  [37] R6_2.6.1                 bslib_0.9.0              stringi_1.8.7            limma_3.65.3             genefilter_1.91.0        pkgload_1.4.0           
+##  [43] boot_1.3-31              jquerylib_0.1.4          Rcpp_1.1.0               usethis_3.1.0            httpuv_1.6.16            Matrix_1.7-3            
+##  [49] splines_4.5.0            tidyselect_1.2.1         rstudioapi_0.17.1        abind_1.4-8              yaml_2.3.10              miniUI_0.1.2            
+##  [55] codetools_0.2-20         hwriter_1.3.2.1          curl_6.4.0               processx_3.8.6           pkgbuild_1.4.8           lattice_0.22-7          
+##  [61] tibble_3.3.0             withr_3.0.2              shiny_1.11.1             KEGGREST_1.49.1          evaluate_1.0.4           desc_1.4.3              
+##  [67] survival_3.8-3           urlchecker_1.0.1         BiocFileCache_2.99.5     xml2_1.3.8               Biostrings_2.77.2        pillar_1.11.0           
+##  [73] filelock_1.0.3           RCurl_1.98-1.17          hms_1.1.3                ggplot2_3.5.2            scales_1.4.0             xtable_1.8-4            
+##  [79] glue_1.8.0               tools_4.5.0              BiocIO_1.19.0            annotate_1.87.0          locfit_1.5-9.12          GenomicAlignments_1.45.2
+##  [85] fs_1.6.6                 XML_3.99-0.18            grid_4.5.0               devtools_2.4.5           restfulr_0.0.16          cli_3.6.5               
+##  [91] rappdirs_0.3.3           S4Arrays_1.9.1           dplyr_1.1.4              gtable_0.3.6             sass_0.4.10              digest_0.6.37           
+##  [97] SparseArray_1.9.1        htmlwidgets_1.6.4        geneplotter_1.87.0       rjson_0.2.23             farver_2.1.2             memoise_2.0.1           
+## [103] htmltools_0.5.8.1        lifecycle_1.0.4          httr_1.4.7               statmod_1.5.0            mime_0.13                bit64_4.6.0-1</code></pre>
 <div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
 <div id="ref-Ly2024" class="csl-entry">
 Ly, Jimmy, KeHui Xiang, Kuan-Chung Su, Gunter B. Sissoko, David P.
