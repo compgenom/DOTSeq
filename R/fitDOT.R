@@ -156,7 +156,7 @@ fitDOT <- function(countTable, conditionTable,
   cnt <- cbind(cnt[names(cnt) %in% cntCols], cnt_aligned)
   
   # Rename header
-  rownames(cond) <- apply(cond[, c("condition", "replicate", "strategy")], 1, function(x) {
+  rownames(cond) <- apply(cond[, c("run","condition", "replicate", "strategy")], 1, function(x) {
     paste0(trimws(x[1]), trimws(x[2]), ".", trimws(x[3]))
   })
   # Find the indices of the columns that match cond$run
@@ -370,6 +370,7 @@ fitDOT <- function(countTable, conditionTable,
       names(orfDf)[names(orfDf) == "exonBaseMean"] <- "orfBaseMean"
       names(orfDf)[names(orfDf) == "exonBaseVar"] <- "orfBaseVar"
       
+      
       te <- calculateTE(normCnts, rnaSuffix = rnaSuffix, riboSuffix = riboSuffix, pseudoCnt = pseudoCnt)
       
       # Run satuRn::fitDTU
@@ -400,7 +401,7 @@ fitDOT <- function(countTable, conditionTable,
       
     } else {
       mismatches <- which(cnt_meta$key != gff_meta$key)
-      print(head(data.frame(cnt_key = cnt_meta$key[mismatches], gff_key = gff_meta$key[mismatches])))
+      print(colnames(data.frame(cnt_key = cnt_meta$key[mismatches], gff_key = gff_meta$key[mismatches])))
       stop("The orders of the count table and flatten GFF don't match!")
     }
     
