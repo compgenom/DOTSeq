@@ -74,8 +74,8 @@ simDOT <- function(
   mod <- model.matrix(~ -1 + batch + group)
   
   # Get polyester parameters from the original filtered data
-  params_ribo <- get_params(counts_ribo_filtered)
-  params_rna  <- get_params(counts_rna_filtered)
+  params_ribo <- polyester:::get_params(counts_ribo_filtered)
+  params_rna  <- polyester:::get_params(counts_rna_filtered)
   
   # Define and select ORFs and batch-affected genes from the filtered set
   dTE_genes <- round(te_genes * nrow(counts_ribo_filtered) / 100, 0)
@@ -99,9 +99,9 @@ simDOT <- function(
   coeffs_rna <- cbind(bcoeffs, gcoeffs_rna)
   
   # Run the simulation for the expanded number of samples
-  sim_ribo_filtered <- create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0,
+  sim_ribo_filtered <- polyester:::create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0,
                                            beta = coeffs_ribo, mod = mod, seed = 32332)
-  sim_rna_filtered <- create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0,
+  sim_rna_filtered <- polyester:::create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0,
                                           beta = coeffs_rna, mod = mod, seed = 32332)
   
   # Create final matrices with all original genes and new sample columns
