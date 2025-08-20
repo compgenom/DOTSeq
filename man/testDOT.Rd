@@ -30,9 +30,6 @@ Must contain fitted models in \code{rowData(sumExp)[["fitDTUModels"]]}.}
 \item{diagplot2}{Logical; if TRUE, produces the second diagnostic plot of empirical z-scores (default: FALSE).}
 
 \item{main}{Character string to set the title for diagnostic plots (default: NULL).}
-
-\item{seed}{An optional integer. Use to set the seed for the random number
-generator to ensure reproducible results (default: NULL).}
 }
 \value{
 A \code{data.frame} containing the following columns:

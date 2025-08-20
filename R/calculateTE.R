@@ -28,7 +28,11 @@
 #' head(result$occupancyShift)
 #'
 #' @export
-calculateTE <- function(normCnts, rnaSuffix = ".rna", riboSuffix = ".ribo", pseudoCnt = 1e-6) {
+calculateTE <- function(normCnts, 
+                        rnaSuffix = ".rna", 
+                        riboSuffix = ".ribo", 
+                        pseudoCnt = 1e-6) {
+  
   # Identify RNA and Ribo columns (match anywhere in name)
   rnaCols <- grep(rnaSuffix, colnames(normCnts), value = TRUE)
   riboCols <- grep(riboSuffix, colnames(normCnts), value = TRUE)
