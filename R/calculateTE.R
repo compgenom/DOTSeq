@@ -29,6 +29,7 @@
 #'
 #' @export
 calculateTE <- function(normCnts, 
+                        sampleDelim = NULL, 
                         rnaSuffix = ".rna", 
                         riboSuffix = ".ribo", 
                         pseudoCnt = 1e-6) {
@@ -37,9 +38,18 @@ calculateTE <- function(normCnts,
   rnaCols <- grep(rnaSuffix, colnames(normCnts), value = TRUE)
   riboCols <- grep(riboSuffix, colnames(normCnts), value = TRUE)
   
+  # Escape special regex characters
+  escapedDelim <- gsub("([\\^$.|?*+(){}])", "\\\\\\1", sampleDelim)
+  # Construct regex pattern using sampleDelim
+  pattern <- paste0("^[^", escapedDelim, "]+", escapedDelim)
+  
+  # Remove sample ID using the constructed pattern
+  rnaPrefixes <- sub(pattern, "", rnaCols)
+  riboPrefixes <- sub(pattern, "", riboCols)
+  
   # Extract sample prefixes by removing everything from the suffix onward
-  rnaPrefixes <- sub(paste0(rnaSuffix, ".*"), "", rnaCols)
-  riboPrefixes <- sub(paste0(riboSuffix, ".*"), "", riboCols)
+  rnaPrefixes <- sub(paste0(rnaSuffix, ".*"), "", rnaPrefixes)
+  riboPrefixes <- sub(paste0(riboSuffix, ".*"), "", riboPrefixes)
   
   # Find common sample prefixes
   commonPrefixes <- intersect(rnaPrefixes, riboPrefixes)
@@ -53,8 +63,8 @@ calculateTE <- function(normCnts,
   colnames(te) <- paste0(commonPrefixes, ".te")
   
   for (prefix in commonPrefixes) {
-    rnaCol <- grep(paste0("^", prefix, rnaSuffix), colnames(normCnts), value = TRUE)
-    riboCol <- grep(paste0("^", prefix, riboSuffix), colnames(normCnts), value = TRUE)
+    rnaCol <- grep(paste0(prefix, rnaSuffix), colnames(normCnts), value = TRUE)
+    riboCol <- grep(paste0(prefix, riboSuffix), colnames(normCnts), value = TRUE)
     if (length(rnaCol) != 1 || length(riboCol) != 1) {
       warning("Ambiguous or missing match for prefix: ", prefix)
       next

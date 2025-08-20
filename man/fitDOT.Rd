@@ -15,7 +15,6 @@ fitDOT(
   pseudoCnt = 1e-06,
   minCount = 1,
   stringent = NULL,
-  seed = NULL,
   parallel = FALSE,
   verbose = FALSE
 )
@@ -50,15 +49,15 @@ If NULL, batch effects are not modeled (default: NULL).}
 \item NULL: keep ORFs where total counts across replicates pass \code{minCount}.
 }}
 
-\item{seed}{An optional integer. Use to set the seed for the random number
-generator to ensure reproducible results (default: NULL).}
-
 \item{parallel}{A logical value indicating whether to use parallel
 computation. If \code{TRUE}, the function will distribute tasks across
 multiple cores as configured by the \code{BiocParallel} package. If \code{FALSE},
 the function will run sequentially on a single core (default: FALSE).}
 
 \item{verbose}{Logical; if TRUE, prints progress messages (default: FALSE).}
+
+\item{seed}{An optional integer. Use to set the seed for the random number
+generator to ensure reproducible results (default: NULL).}
 }
 \value{
 A named list with the following elements:

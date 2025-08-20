@@ -64,17 +64,14 @@
 #' }
 #'
 #' @export
-fitDOT <- function(countTable, 
-                   conditionTable, 
-                   flattenedFile, 
-                   bed, 
+fitDOT <- function(countTable, conditionTable, 
+                   flattenedFile, bed, 
                    rnaSuffix = ".rna", 
                    riboSuffix = ".ribo", 
                    batchCol = NULL,
                    pseudoCnt = 1e-6, 
                    minCount = 1, 
                    stringent = NULL, 
-                   seed = NULL, 
                    parallel = FALSE,
                    verbose = FALSE) {
   
@@ -140,16 +137,20 @@ fitDOT <- function(countTable,
   rownames(cond) <- cond$run
   # Find common identifiers
   common <- intersect(rownames(cond), names(cnt))
-  # Subset and reorder cnt columns to match cond rownames
-  cnt_aligned <- cnt[, common, drop = FALSE]
+  # # Subset and reorder cnt columns to match cond rownames
+  # cnt_aligned <- cnt[, common, drop = FALSE]
   # Subset cond to match cnt columns
   cond <- cond[common, , drop = FALSE]
+  
+  cond <- cond[order(cond$strategy, cond$replicate), ]
+  
   # Combine with metadata columns
-  cnt <- cbind(cnt[names(cnt) %in% cntCols], cnt_aligned)
+  # cnt <- cbind(cnt[names(cnt) %in% cntCols], cnt_aligned)
+  cnt <- cnt[, c(cntCols, rownames(cond))]
   
   # Rename header
   rownames(cond) <- apply(cond[, c("run","condition", "replicate", "strategy")], 1, function(x) {
-    paste0(trimws(x[1]), trimws(x[2]), ".", trimws(x[3]))
+    paste0(trimws(x[1]), ".", trimws(x[2]), ".", trimws(x[3]), ".", trimws(x[4]))
   })
   # Find the indices of the columns that match cond$run
   libIndices <- match(cond$run, names(cnt))
@@ -362,8 +363,7 @@ fitDOT <- function(countTable,
       names(orfDf)[names(orfDf) == "exonBaseMean"] <- "orfBaseMean"
       names(orfDf)[names(orfDf) == "exonBaseVar"] <- "orfBaseVar"
       
-      
-      te <- calculateTE(normCnts, rnaSuffix = rnaSuffix, riboSuffix = riboSuffix, pseudoCnt = pseudoCnt)
+      te <- calculateTE(normCnts, sampleDelim = ".", rnaSuffix = rnaSuffix, riboSuffix = riboSuffix, pseudoCnt = pseudoCnt)
       
       # Run satuRn::fitDTU
       exonInfo <- rowData(dxd)

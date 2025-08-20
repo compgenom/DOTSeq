@@ -6,6 +6,7 @@
 \usage{
 calculateTE(
   normCnts,
+  sampleDelim = NULL,
   rnaSuffix = ".rna",
   riboSuffix = ".ribo",
   pseudoCnt = 1e-06
