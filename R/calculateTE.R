@@ -29,13 +29,13 @@
 #'
 #' @export
 calculateTE <- function(normCnts, rnaSuffix = ".rna", riboSuffix = ".ribo", pseudoCnt = 1e-6) {
-  # Identify RNA and Ribo columns
-  rnaCols <- grep(paste0(rnaSuffix, "$"), colnames(normCnts), value = TRUE)
-  riboCols <- grep(paste0(riboSuffix, "$"), colnames(normCnts), value = TRUE)
+  # Identify RNA and Ribo columns (match anywhere in name)
+  rnaCols <- grep(rnaSuffix, colnames(normCnts), value = TRUE)
+  riboCols <- grep(riboSuffix, colnames(normCnts), value = TRUE)
   
-  # Extract sample prefixes
-  rnaPrefixes <- sub(paste0(rnaSuffix, "$"), "", rnaCols)
-  riboPrefixes <- sub(paste0(riboSuffix, "$"), "", riboCols)
+  # Extract sample prefixes by removing everything from the suffix onward
+  rnaPrefixes <- sub(paste0(rnaSuffix, ".*"), "", rnaCols)
+  riboPrefixes <- sub(paste0(riboSuffix, ".*"), "", riboCols)
   
   # Find common sample prefixes
   commonPrefixes <- intersect(rnaPrefixes, riboPrefixes)
@@ -46,18 +46,21 @@ calculateTE <- function(normCnts, rnaSuffix = ".rna", riboSuffix = ".ribo", pseu
   # Initialize TE matrix
   te <- matrix(NA, nrow = nrow(normCnts), ncol = length(commonPrefixes))
   rownames(te) <- rownames(normCnts)
-  colnames(te) <- commonPrefixes
-  
-  for (prefix in commonPrefixes) {
-    rnaCol <- paste0(prefix, rnaSuffix)
-    riboCol <- paste0(prefix, riboSuffix)
-    rnaVals <- normCnts[, rnaCol]
-    riboVals <- normCnts[, riboCol]
-    te[, prefix] <- (riboVals + pseudoCnt) / (rnaVals + pseudoCnt)
-  }
   colnames(te) <- paste0(commonPrefixes, ".te")
   
-  # Compute log2(riboProportion / rnaProportion) within genes across all samples at once
+  for (prefix in commonPrefixes) {
+    rnaCol <- grep(paste0("^", prefix, rnaSuffix), colnames(normCnts), value = TRUE)
+    riboCol <- grep(paste0("^", prefix, riboSuffix), colnames(normCnts), value = TRUE)
+    if (length(rnaCol) != 1 || length(riboCol) != 1) {
+      warning("Ambiguous or missing match for prefix: ", prefix)
+      next
+    }
+    rnaVals <- normCnts[, rnaCol]
+    riboVals <- normCnts[, riboCol]
+    te[, paste0(prefix, ".te")] <- (riboVals + pseudoCnt) / (rnaVals + pseudoCnt)
+  }
+  
+  # Compute occupancy shift
   gene_ids <- sub(":O.*", "", rownames(normCnts))
   riboMat <- normCnts[, riboCols, drop = FALSE]
   rnaMat <- normCnts[, rnaCols, drop = FALSE]

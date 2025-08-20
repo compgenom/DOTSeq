@@ -12,7 +12,8 @@ simDOT(
   num_samples = 4,
   conditions = 2,
   bcoeff = 0.9,
-  num_batches = 1
+  num_batches = 1,
+  seed = NULL
 )
 }
 \arguments{
@@ -29,6 +30,11 @@ simDOT(
 \item{conditions}{Integer. Number of experimental conditions (default: 2).}
 
 \item{bcoeff}{Numeric. Magnitude of batch effect coefficient (default: 0.9).}
+
+\item{num_batches}{Integer. Number of batches (default: 1).}
+
+\item{seed}{An optional integer. Use to set the seed for the random number
+generator to ensure reproducible results (default: NULL).}
 }
 \value{
 A list with two elements:
@@ -41,7 +47,7 @@ replicate, strategy ("ribo" or "rna"), and batch assignment.
 }
 }
 \description{
-This function simulates matched ribosome profiling and RNA-seq count matrices.
+This function simulates ribosome profiling and matched RNA-seq count matrices.
 }
 \examples{
 # Simulate DOT with default settings

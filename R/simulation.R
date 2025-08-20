@@ -1,6 +1,6 @@
 #' Simulate Differentially Translated ORFs
 #'
-#' This function simulates matched ribosome profiling and RNA-seq count matrices.
+#' This function simulates ribosome profiling and matched RNA-seq count matrices.
 #'
 #' @param ribo A matrix or data frame of ribosome profiling counts (genes x samples).
 #' @param rna A matrix or data frame of RNA-seq counts (genes x samples).
@@ -9,6 +9,9 @@
 #' @param num_samples Integer. Number of biological replicates per condition (default: 4).
 #' @param conditions Integer. Number of experimental conditions (default: 2).
 #' @param bcoeff Numeric. Magnitude of batch effect coefficient (default: 0.9).
+#' @param num_batches Integer. Number of batches (default: 1).
+#' @param seed An optional integer. Use to set the seed for the random number
+#'   generator to ensure reproducible results (default: NULL).
 #'
 #' @return A list with two elements:
 #' \itemize{
@@ -34,7 +37,22 @@ simDOT <- function(
     num_samples = 4,
     conditions = 2,
     bcoeff = 0.9,
-    num_batches = 1) {
+    num_batches = 1,
+    seed = NULL) {
+  
+  if (!is.null(seed)) {
+    old_seed <- .GlobalEnv$.Random.seed
+    on.exit({
+      if (is.null(old_seed)) {
+        rm(.Random.seed, envir = .GlobalEnv)
+      } else {
+        .GlobalEnv$.Random.seed <- old_seed
+      }
+    })
+    
+    # Set the seed
+    set.seed(seed)
+  }
   
   if (!(is.matrix(ribo) || is.data.frame(ribo)) || !(is.matrix(rna) || is.data.frame(rna))) {
     stop("Both 'ribo' and 'rna' must be matrices or data frames.")
@@ -74,10 +92,10 @@ simDOT <- function(
   mod <- model.matrix(~ -1 + batch + group)
   
   # Get polyester parameters from the original filtered data
-  params_ribo <- polyester:::get_params(counts_ribo_filtered)
-  params_rna  <- polyester:::get_params(counts_rna_filtered)
+  params_ribo <- get_params(counts_ribo_filtered)
+  params_rna  <- get_params(counts_rna_filtered)
   
-  # Define and select ORFs and batch-affected genes from the filtered set
+  # Define and select DOTs and batch-affected genes from the filtered set
   dTE_genes <- round(te_genes * nrow(counts_ribo_filtered) / 100, 0)
   bgenes <- round(bgenes * nrow(counts_ribo_filtered) / 100, 0)
   
@@ -99,9 +117,9 @@ simDOT <- function(
   coeffs_rna <- cbind(bcoeffs, gcoeffs_rna)
   
   # Run the simulation for the expanded number of samples
-  sim_ribo_filtered <- polyester:::create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0,
+  sim_ribo_filtered <- create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0,
                                            beta = coeffs_ribo, mod = mod, seed = 32332)
-  sim_rna_filtered <- polyester:::create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0,
+  sim_rna_filtered <- create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0,
                                           beta = coeffs_rna, mod = mod, seed = 32332)
   
   # Create final matrices with all original genes and new sample columns
@@ -124,11 +142,11 @@ simDOT <- function(
   replicate <- rep(rep(seq(1, num_samples), conditions), num_batches)
   
   coldata <- data.frame(
+    run = colnames(merged),
     condition = rep(group, 2),
     replicate = rep(replicate, 2),
     strategy = rep(c("ribo", "rna"), each = final_total_samples),
-    batch = rep(batch, 2),
-    row.names = colnames(merged)
+    batch = rep(batch, 2)
   )
   
   labels <- rep(0, length(original_genes))
