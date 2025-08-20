@@ -77,7 +77,7 @@ A named list with the following elements:
 \description{
 This function performs the complete DOTSeq analysis pipeline:
 loading count data, aligning with sample metadata, filtering ORFs,
-normalizing counts, calculating translational efficiency (TE), and
+normalising counts, calculating translational efficiency (TE), and
 fitting quasi-binomial generalised linear models for differential ORF
 translation using \code{satuRn::fitDTU}.
 }
