@@ -6,7 +6,7 @@ DOTSeq integrates both ribosome profiling and RNA-seq read counts into quasi-bin
 using a modified design matrix and model fitting formula inspired by [Riborex](https://github.com/smithlabcode/riborex) and 
 [satuRn](https://github.com/statOmics/satuRn). At present, DOTSeq accepts count data generated with 
 [featureCounts](https://subread.sourceforge.net/featureCounts.html). 
-Development is underway to extend support for additional quantification tools, including mmquant and HTseq. 
+Development is underway to extend support for additional quantification tools, including `mmquant` and `HTseq`. 
 The package also provides functions for visualisation and exploration of results.
 
 ## DEPENDENCIES
