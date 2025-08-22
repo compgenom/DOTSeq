@@ -9,12 +9,13 @@
 #' @param normCnts A numeric matrix or data frame of normalized counts,
 #'   where rows correspond to ORFs and columns correspond to samples. 
 #'   RNA-seq and Ribo-seq reads are distinguished by suffixes.
+#' @param sampleDelim Delimiter used in sample name (default: NULL).
 #' @param rnaSuffix Character string indicating the suffix of RNA-seq
-#'   samples in the column names. Default is ".rna".
+#'   samples in the column names (default is ".rna").
 #' @param riboSuffix Character string indicating the suffix of Ribo-seq
-#'   samples in the column names. Default is ".ribo".
-#' @param pseudoCnt Numeric value added to counts to avoid division by zero.
-#'   Default is 1e-6.
+#'   samples in the column names (default is ".ribo").
+#' @param pseudoCnt Numeric value added to counts to avoid division by zero
+#'   (default is 1e-6).
 #'
 #' @return A list with two elements:
 #' \describe{
@@ -29,23 +30,29 @@
 #'
 #' @export
 calculateTE <- function(normCnts, 
-                        sampleDelim = NULL, 
                         rnaSuffix = ".rna", 
                         riboSuffix = ".ribo", 
+                        sampleDelim = NULL,
                         pseudoCnt = 1e-6) {
   
   # Identify RNA and Ribo columns (match anywhere in name)
   rnaCols <- grep(rnaSuffix, colnames(normCnts), value = TRUE)
   riboCols <- grep(riboSuffix, colnames(normCnts), value = TRUE)
   
-  # Escape special regex characters
-  escapedDelim <- gsub("([\\^$.|?*+(){}])", "\\\\\\1", sampleDelim)
-  # Construct regex pattern using sampleDelim
-  pattern <- paste0("^[^", escapedDelim, "]+", escapedDelim)
-  
-  # Remove sample ID using the constructed pattern
-  rnaPrefixes <- sub(pattern, "", rnaCols)
-  riboPrefixes <- sub(pattern, "", riboCols)
+  if (!is.null(sampleDelim)) {
+    # Escape special regex characters
+    escapedDelim <- gsub("([\\^$.|?*+(){}])", "\\\\\\1", sampleDelim)
+    # Construct regex pattern using sampleDelim
+    pattern <- paste0("^[^", escapedDelim, "]+", escapedDelim)
+    
+    # Remove sample ID using the constructed pattern
+    rnaPrefixes <- sub(pattern, "", rnaCols)
+    riboPrefixes <- sub(pattern, "", riboCols)
+  } else {
+    # If no sampleDelim, use full column name
+    rnaPrefixes <- rnaCols
+    riboPrefixes <- riboCols
+  }
   
   # Extract sample prefixes by removing everything from the suffix onward
   rnaPrefixes <- sub(paste0(rnaSuffix, ".*"), "", rnaPrefixes)

@@ -6,9 +6,9 @@
 \usage{
 calculateTE(
   normCnts,
-  sampleDelim = NULL,
   rnaSuffix = ".rna",
   riboSuffix = ".ribo",
+  sampleDelim = NULL,
   pseudoCnt = 1e-06
 )
 }
@@ -18,13 +18,15 @@ where rows correspond to ORFs and columns correspond to samples.
 RNA-seq and Ribo-seq reads are distinguished by suffixes.}
 
 \item{rnaSuffix}{Character string indicating the suffix of RNA-seq
-samples in the column names. Default is ".rna".}
+samples in the column names (default is ".rna").}
 
 \item{riboSuffix}{Character string indicating the suffix of Ribo-seq
-samples in the column names. Default is ".ribo".}
+samples in the column names (default is ".ribo").}
 
-\item{pseudoCnt}{Numeric value added to counts to avoid division by zero.
-Default is 1e-6.}
+\item{sampleDelim}{Delimiter used in sample name (default: NULL).}
+
+\item{pseudoCnt}{Numeric value added to counts to avoid division by zero
+(default is 1e-6).}
 }
 \value{
 A list with two elements:

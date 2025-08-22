@@ -1,4 +1,4 @@
-#' Simulate Differentially Translated ORFs
+#' Simulate Differential ORF Translation
 #'
 #' This function simulates ribosome profiling and matched RNA-seq count matrices.
 #'

@@ -11,6 +11,7 @@ fitDOT(
   bed,
   rnaSuffix = ".rna",
   riboSuffix = ".ribo",
+  sampleDelim = NULL,
   batchCol = NULL,
   pseudoCnt = 1e-06,
   minCount = 1,
@@ -34,6 +35,8 @@ Must include columns: run, strategy, condition, replicate.}
 \item{rnaSuffix}{Character suffix to identify RNA-seq columns (default: \code{".rna"}).}
 
 \item{riboSuffix}{Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).}
+
+\item{sampleDelim}{Delimiter used in sample name (default: NULL).}
 
 \item{batchCol}{String; name of the column in \code{conditionTable} that specifies batch assignments, e.g., "batch".
 If NULL, batch effects are not modeled (default: NULL).}

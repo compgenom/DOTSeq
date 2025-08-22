@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulation.R
 \name{simDOT}
 \alias{simDOT}
-\title{Simulate Differentially Translated ORFs}
+\title{Simulate Differential ORF Translation}
 \usage{
 simDOT(
   ribo,
