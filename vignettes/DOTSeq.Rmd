@@ -27,7 +27,8 @@ DOTSeq is a R package for identifying differentially translated open reading fra
 * Differential translation between conditions, and
 * Occupancy shifts of ribosomes on ORFs within a single gene
 
-DOTSeq integrates both Ribo- and RNAseq read counts into a single generalized linear model (GLM) using a modified design matrix inspired by Riborex and the formula/testDTU approach from SatuRn[@riborex,@saturn]. At present, DOTSeq accepts count data generated with `featureCounts`[@featurecounts]. Development is underway to extend support for additional quantification tools, including `mmquant` and `HTseq`.
+DOTSeq integrates both Ribo- and RNAseq read counts into a single generalized linear model (GLM) using a modified design matrix and model fitting formula inspired by [Riborex](https://github.com/smithlabcode/riborex) and 
+[satuRn](https://github.com/statOmics/satuRn) respectively. At present, DOTSeq only accepts count data generated with [featureCounts](https://subread.sourceforge.net/featureCounts.html). Development is underway to extend support for additional quantification tools, including `mmquant` and `HTseq`.
 
 # Load Library
 First, we need to load the DOTSeq library.
