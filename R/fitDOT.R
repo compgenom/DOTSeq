@@ -15,6 +15,7 @@
 #' @param bed Path to a BED file with ORF annotations.
 #' @param rnaSuffix Character suffix to identify RNA-seq columns (default: \code{".rna"}).
 #' @param riboSuffix Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).
+#' @param sampleDelim Delimiter used in sample name (default: NULL).
 #' @param batchCol String; name of the column in `conditionTable` that specifies batch assignments, e.g., "batch". 
 #'    If NULL, batch effects are not modeled (default: NULL).
 #' @param pseudoCnt Numeric pseudo-count to avoid division by zero when computing TE (default: 1e-6).
@@ -68,6 +69,7 @@ fitDOT <- function(countTable, conditionTable,
                    flattenedFile, bed, 
                    rnaSuffix = ".rna", 
                    riboSuffix = ".ribo", 
+                   sampleDelim = NULL,
                    batchCol = NULL,
                    pseudoCnt = 1e-6, 
                    minCount = 1, 
@@ -363,18 +365,21 @@ fitDOT <- function(countTable, conditionTable,
       names(orfDf)[names(orfDf) == "exonBaseMean"] <- "orfBaseMean"
       names(orfDf)[names(orfDf) == "exonBaseVar"] <- "orfBaseVar"
       
-      te <- calculateTE(normCnts, sampleDelim = ".", rnaSuffix = rnaSuffix, riboSuffix = riboSuffix, pseudoCnt = pseudoCnt)
+      te <- calculateTE(normCnts, sampleDelim = sampleDelim, rnaSuffix = rnaSuffix, riboSuffix = riboSuffix, pseudoCnt = pseudoCnt)
       
       # Run satuRn::fitDTU
       exonInfo <- rowData(dxd)
       colnames(exonInfo)[1:2] <- c("isoform_id", "gene_id")
       exonInfo$isoform_id <- rownames(exonInfo)
       
-      # Get sampleAnnotation and set effect1 to none for RNA-seq samples
+      # Get sampleAnnotation and set effect1 and batch to none for RNA-seq samples
       anno <- sampleAnnotation(dxd)
       anno$modality <- as.factor(anno$modality)
       anno$effect1 <- ifelse(anno$modality == "RIBO", as.character(anno$condition), "none")
       anno$effect1 <- factor(anno$effect1)
+      
+      anno$batch <- ifelse(anno$modality == "RIBO", as.character(anno$condition), "none")
+      anno$batch <- factor(anno$batch)
       
       sumExp <- SummarizedExperiment::SummarizedExperiment(assays = list(counts=featureCounts(dxd)), 
                                                            colData = anno, 
