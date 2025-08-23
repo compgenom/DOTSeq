@@ -1,8 +1,16 @@
 ---
 title: "DOTSeq: Differential ORF Translation"
 author: 
-- name: Chun Shen Lim, Gabrielle Chieng
-  affiliation: University of Otago, Dunedin, New Zealand
+  - name: "Chun Shen Lim*"
+    affiliation: |
+      1 Department of Biochemistry, School of Biomedical Sciences, University of Otago, Dunedin, New Zealand.  
+      2 Genetics Otago, University of Otago, Dunedin, New Zealand.  
+      3 Maurice Wilkins Centre for Molecular Biodiscovery, Centres of Research Excellence, New Zealand.  
+    email: "chunshen.lim@otago.ac.nz"
+  - name: "Gabrielle S.W. Chieng"
+    affiliation: |
+      1 Department of Biochemistry, School of Biomedical Sciences, University of Otago, Dunedin, New Zealand.  
+      2 Genetics Otago, University of Otago, Dunedin, New Zealand.
 date: "2025"
 output: 
   html_document:
