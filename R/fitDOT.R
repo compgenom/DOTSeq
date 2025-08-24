@@ -15,9 +15,10 @@
 #' @param bed Path to a BED file with ORF annotations.
 #' @param rnaSuffix Character suffix to identify RNA-seq columns (default: \code{".rna"}).
 #' @param riboSuffix Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).
-#' @param sampleDelim Delimiter used in sample name (default: NULL).
-#' @param batchCol String; name of the column in `conditionTable` that specifies batch assignments, e.g., "batch". 
-#'    If NULL, batch effects are not modeled (default: NULL).
+#' @param sampleDelim Delimiter used in sample name. Use "." if sample IDs are unique, 
+#'    e.g. SRR, DRR, or ERR run accessions (default: NULL).
+#' @param batchCol String; name of the column in `conditionTable` that specifies batch assignments, 
+#'    e.g., "batch". If NULL, batch effects are not modeled (default: NULL).
 #' @param pseudoCnt Numeric pseudo-count to avoid division by zero when computing TE (default: 1e-6).
 #' @param minCount Minimum count threshold for filtering ORFs (default: 1).
 #' @param stringent Logical or NULL; determines the filtering strategy:
@@ -69,15 +70,16 @@ fitDOT <- function(countTable, conditionTable,
                    flattenedFile, bed, 
                    rnaSuffix = ".rna", 
                    riboSuffix = ".ribo", 
+                   formula = NULL,
                    sampleDelim = NULL,
                    batchCol = NULL,
                    pseudoCnt = 1e-6, 
                    minCount = 1, 
                    stringent = NULL, 
                    parallel = FALSE,
+                   seed = NULL,
                    verbose = FALSE) {
   
-  # Define expected column names
   cntCols <- c("Geneid", "Chr", "Start",  "End", "Strand", "Length")
   
   if (is.character(countTable) && file.exists(countTable)) {
@@ -104,29 +106,29 @@ fitDOT <- function(countTable, conditionTable,
   condCols <- c("run", "strategy", "condition", "replicate")
   
   # Helper to normalize column names
-  normaliseNamesnames <- function(x) tolower(trimws(x))
+  normaliseNames <- function(x) tolower(trimws(x))
   
   if (is.character(conditionTable) && file.exists(conditionTable)) {
     # Read header line and normalize
     firstLine <- readLines(conditionTable, n = 1)
-    condHeader <- normaliseNamesnames(strsplit(firstLine, "\t|,|\\s+")[[1]])
+    condHeader <- normaliseNames(strsplit(firstLine, "\t|,|\\s+")[[1]])
     
-    missingCols <- setdiff(normaliseNamesnames(condCols), condHeader)
+    missingCols <- setdiff(normaliseNames(condCols), condHeader)
     
     if (length(missingCols) == 0) {
       cond <- read.table(conditionTable, header = TRUE, comment.char = "#", stringsAsFactors = FALSE)
-      names(cond) <- normaliseNamesnames(names(cond))
+      names(cond) <- normaliseNames(names(cond))
     } else {
       stop(paste("Missing expected columns (case-insensitive match):", paste(missingCols, collapse = ", ")))
     }
     
   } else if (is.data.frame(conditionTable)) {
-    condHeader <- normaliseNamesnames(names(conditionTable))
-    missingCols <- setdiff(normaliseNamesnames(condCols), condHeader)
+    condHeader <- normaliseNames(names(conditionTable))
+    missingCols <- setdiff(normaliseNames(condCols), condHeader)
     
     if (length(missingCols) == 0) {
       cond <- conditionTable
-      names(cond) <- normaliseNamesnames(names(cond))
+      names(cond) <- normaliseNames(names(cond))
     } else {
       stop(paste("Data frame is missing expected columns (case-insensitive match):", paste(missingCols, collapse = ", ")))
     }
@@ -164,54 +166,44 @@ fitDOT <- function(countTable, conditionTable,
   }
   
   riboCond <- cond[cond$strategy=="ribo",]
+  riboCond$strategy <- 1
   rnaCond <- cond[cond$strategy=="rna",]
+  rnaCond$strategy <- 0
   
   # Combine and duplicate columns
   combinedCond <- rbind(rnaCond, riboCond)
-  combinedCond <- combinedCond[, !(names(combinedCond) %in% c("run","strategy"))]
   
-  # Specify the columns to move
-  colsToFront <- c("condition", "replicate")
-  # Get the remaining columns in their original order
-  remainingCols <- setdiff(names(combinedCond), colsToFront)
-  # Rearrange the data frame
-  combinedCond <- combinedCond[, c(colsToFront, remainingCols)]
+  combinedCond <- combinedCond[, !(names(combinedCond) %in% "run")]
   
-  numRNASmps <- nrow(rnaCond)
-  numRiboSmps <- nrow(riboCond)
-  
-  # Extract batch column if present
-  hasBatch <- !is.null(batchCol) && batchCol %in% colnames(combinedCond)
-  if (hasBatch) {
-    batch <- combinedCond[[batchCol]]
-    combinedCond[[batchCol]] <- NULL
+  # Robust batch column detection if batchCol is NULL
+  if (is.null(batchCol)) {
+    possibleBatchCols <- grep("^batch$", names(combinedCond), ignore.case = TRUE, value = TRUE)
+    if (length(possibleBatchCols) > 0) {
+      batchCol <- possibleBatchCols[1]
+      if (verbose) cat(" - Auto-detected batch column:", batchCol, "\n")
+    }
+  } else if (batchCol==FALSE) {
+    possibleBatchCols <- grep("^batch$", names(combinedCond), ignore.case = TRUE, value = TRUE)
+    if (length(possibleBatchCols) > 0) {
+      batchCol <- possibleBatchCols[1]
+      combinedCond[[batchCol]] <- NULL
+      if (verbose) cat(" - Auto-removed batch column:", batchCol, "\n")
+    }
   }
   
-  numCond <- ncol(combinedCond)
-  
-  # Duplicate condition columns
-  combinedCond <- combinedCond[, rep(1:numCond, 2)]
-  
-  # Add modality column
-  modality <- c(rep("mRNA", numRNASmps), rep("RIBO", numRiboSmps))
-  combinedCond <- cbind(combinedCond[1:numCond], modality, combinedCond[(numCond+1):ncol(combinedCond)])
-  
-  # Standardise duplicated column names
-  effectCols <- (numCond + 2):ncol(combinedCond)
-  colnames(combinedCond)[effectCols] <- paste0("effect", seq_along(effectCols))
-  
-  # Overwrite RNA rows with first row values for EXTRA columns
-  for (i in effectCols) {
-    combinedCond[1:numRNASmps, i] <- combinedCond[1, i]
+  # Convert to factors
+  for (col in colnames(combinedCond)) {
+    if (is.character(combinedCond[[col]])) {
+      combinedCond[[col]] <- factor(combinedCond[[col]])
+    }
   }
   
-  # Add batch back
-  if (hasBatch) {
-    combinedCond$batch <- batch
-  }
-  # Create formula dynamically
-  extendedConds <- colnames(combinedCond)
-  fmla <- as.formula(paste("~ 0 +", paste(extendedConds, collapse= "+")))
+  # Remove columns with fewer than 2 levels
+  validCols <- sapply(combinedCond, function(x) !(is.factor(x) && length(unique(x)) < 2))
+  combinedCond <- combinedCond[, validCols]
+  
+  fmla <- as.formula(formula)
+  
   if (verbose) {
     cat(" - Design formula:", deparse(fmla), "\n")
   }
@@ -304,6 +296,16 @@ fitDOT <- function(countTable, conditionTable,
       if (verbose) {
         cat(" - Create a DEXSeq object\n")
       }
+      
+      # Convert integer-like and character columns to factors if they are meant to be categorical
+      for (col in colnames(combinedCond)) {
+        if (is.numeric(combinedCond[[col]]) && all(combinedCond[[col]] == as.integer(combinedCond[[col]]))) {
+          combinedCond[[col]] <- factor(combinedCond[[col]])
+        } else if (is.character(combinedCond[[col]])) {
+          combinedCond[[col]] <- factor(combinedCond[[col]])
+        }
+      }
+      
       design = ~ sample + exon + condition:exon
       dxd <- DEXSeqDataSet(dcounts, combinedCond, design, exons, 
                            genesrle, exoninfo[matching], transcripts[matching])
@@ -374,12 +376,6 @@ fitDOT <- function(countTable, conditionTable,
       
       # Get sampleAnnotation and set effect1 and batch to none for RNA-seq samples
       anno <- sampleAnnotation(dxd)
-      anno$modality <- as.factor(anno$modality)
-      anno$effect1 <- ifelse(anno$modality == "RIBO", as.character(anno$condition), "none")
-      anno$effect1 <- factor(anno$effect1)
-      
-      anno$batch <- ifelse(anno$modality == "RIBO", as.character(anno$condition), "none")
-      anno$batch <- factor(anno$batch)
       
       sumExp <- SummarizedExperiment::SummarizedExperiment(assays = list(counts=featureCounts(dxd)), 
                                                            colData = anno, 
@@ -394,7 +390,39 @@ fitDOT <- function(countTable, conditionTable,
                                BPPARAM = BiocParallel::bpparam(RNGseed = seed),
                                verbose = TRUE)
       
-      L <- contrastMatrix(sumExp, fmla)
+      # L <- contrastMatrix(sumExp, fmla)
+      
+      if (verbose) {
+        cat(" - Start differential translation analysis\n")
+      }
+      
+      # Remove '0 +' if it exists, as DESeq2 automatically handles the intercept
+      deseq_formula_str <- as.character(formula)
+      if (grepl("0\\s*\\+", deseq_formula_str[2])) {
+        deseq_formula_str[2] <- gsub("0\\s*\\+", "", deseq_formula_str[2])
+      }
+      deseq_formula <- as.formula(paste(deseq_formula_str[1], deseq_formula_str[2]))
+      
+      if (verbose) {
+        cat(" - Design formula:", deparse(deseq_formula), "\n")
+      }
+      
+      # Create the DESeq2 object for the combined counts
+      dds <- DESeq2::DESeqDataSetFromMatrix(countData = dcounts,
+                                            colData = anno,
+                                            design = deseq_formula)
+      
+      # Run the DESeq2 analysis
+      dds <- DESeq2::DESeq(dds, parallel = parallel)
+      
+      # # The interaction term directly tests for differential TE
+      # results_name <- resultsNames(dds)[grep("condition.*strategy", resultsNames(dds))]
+      # 
+      # if (length(results_name) > 0) {
+      #   te_results <- DESeq2::results(dds, name = results_name)
+      # } else {
+      #   stop("Could not find interaction term in DESeq2 results. Check your design formula.")
+      # }
       
     } else {
       mismatches <- which(cnt_meta$key != gff_meta$key)
@@ -408,11 +436,11 @@ fitDOT <- function(countTable, conditionTable,
     rawCnts = dcounts,
     normCnts = normCnts,
     orfs = orfDf,
-    absoluteTE = te$absoluteTE,
+    te = te$absoluteTE,
     occupancyShift = te$occupancyShift,
+    dds = dds,
     sumExp = sumExp,
     dxd = dxd,
-    formula = fmla,
-    contrastMat = L
+    formula = fmla
   ))
 }
