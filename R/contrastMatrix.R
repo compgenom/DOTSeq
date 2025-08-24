@@ -33,6 +33,10 @@ contrastMatrix <- function(sumExp, fmla, baseline = NULL, verbose = FALSE) {
   for (contrastFactor in contrastFactors) {
     if (verbose) cat("\nProcessing:", contrastFactor, "\n")
     
+    if (!is.factor(anno[[contrastFactor]])) {
+      anno[[contrastFactor]] <- factor(anno[[contrastFactor]])
+    }
+    
     conditions <- levels(anno[[contrastFactor]])
     conditions <- grep("none", conditions, value = TRUE, invert = TRUE)
     nconditions <- length(conditions)

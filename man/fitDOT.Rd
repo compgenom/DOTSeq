@@ -11,12 +11,14 @@ fitDOT(
   bed,
   rnaSuffix = ".rna",
   riboSuffix = ".ribo",
+  formula = NULL,
   sampleDelim = NULL,
   batchCol = NULL,
   pseudoCnt = 1e-06,
   minCount = 1,
   stringent = NULL,
   parallel = FALSE,
+  seed = NULL,
   verbose = FALSE
 )
 }
@@ -36,10 +38,11 @@ Must include columns: run, strategy, condition, replicate.}
 
 \item{riboSuffix}{Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).}
 
-\item{sampleDelim}{Delimiter used in sample name (default: NULL).}
+\item{sampleDelim}{Delimiter used in sample name. Use "." if sample IDs are unique,
+e.g. SRR, DRR, or ERR run accessions (default: NULL).}
 
-\item{batchCol}{String; name of the column in \code{conditionTable} that specifies batch assignments, e.g., "batch".
-If NULL, batch effects are not modeled (default: NULL).}
+\item{batchCol}{String; name of the column in \code{conditionTable} that specifies batch assignments,
+e.g., "batch". If NULL, batch effects are not modeled (default: NULL).}
 
 \item{pseudoCnt}{Numeric pseudo-count to avoid division by zero when computing TE (default: 1e-6).}
 
@@ -57,10 +60,10 @@ computation. If \code{TRUE}, the function will distribute tasks across
 multiple cores as configured by the \code{BiocParallel} package. If \code{FALSE},
 the function will run sequentially on a single core (default: FALSE).}
 
-\item{verbose}{Logical; if TRUE, prints progress messages (default: FALSE).}
-
 \item{seed}{An optional integer. Use to set the seed for the random number
 generator to ensure reproducible results (default: NULL).}
+
+\item{verbose}{Logical; if TRUE, prints progress messages (default: FALSE).}
 }
 \value{
 A named list with the following elements:

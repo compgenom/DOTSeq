@@ -9,10 +9,11 @@ simDOT(
   rna,
   te_genes = 10,
   bgenes = 10,
-  num_samples = 4,
+  num_samples = 3,
   conditions = 2,
   bcoeff = 0.9,
   num_batches = 1,
+  batchScenario = "balanced",
   seed = NULL
 )
 }
@@ -33,27 +34,16 @@ simDOT(
 
 \item{num_batches}{Integer. Number of batches (default: 1).}
 
-\item{seed}{An optional integer. Use to set the seed for the random number
-generator to ensure reproducible results (default: NULL).}
+\item{batchScenario}{Character. One of "balanced", "confounded", "random", "unbalanced", "nested", "modalitySpecific".}
+
+\item{seed}{An optional integer. Use to set the seed for reproducible results (default: NULL).}
 }
 \value{
-A list with two elements:
-\itemize{
-\item \code{simData} - A combined count matrix (genes x samples),
-including both Ribo-seq and RNA-seq simulations.
-\item \code{colData} - A data frame of sample-level metadata, including
-replicate, strategy ("ribo" or "rna"), and batch assignment.
-\item \code{labels} - A numeric vector indicating true positives and true negatives.
-}
+A list with:
+\item{simData}{Combined count matrix (genes x samples)}
+\item{colData}{Sample-level metadata}
+\item{labels}{Vector indicating true positives (1) and negatives (0)}
 }
 \description{
 This function simulates ribosome profiling and matched RNA-seq count matrices.
-}
-\examples{
-# Simulate DOT with default settings
-simRes <- simDOT(ribo_counts, rna_counts)
-str(simRes$simData)
-head(simRes$colData)
-
-
 }

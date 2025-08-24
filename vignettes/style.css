@@ -1,0 +1,6 @@
+# Reduce subtitle font size and prevent wrapping
+h2.subtitle {
+    font-size: 18px;
+    white-space: nowrap;}
+
+h1.title {font-size: 28px;}
