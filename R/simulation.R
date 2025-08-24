@@ -6,7 +6,7 @@
 #' @param rna A matrix or data frame of RNA-seq counts (genes x samples).
 #' @param te_genes Numeric (percentage). Proportion of genes to be assigned as differential translation efficiency (default: 10).
 #' @param bgenes Numeric (percentage). Proportion of genes to carry a batch effect (default: 10).
-#' @param num_samples Integer. Number of biological replicates per condition (default: 4).
+#' @param num_samples Integer. Number of biological replicates per condition (default: 3).
 #' @param conditions Integer. Number of experimental conditions (default: 2).
 #' @param bcoeff Numeric. Magnitude of batch effect coefficient (default: 0.9).
 #' @param num_batches Integer. Number of batches (default: 1).
@@ -17,6 +17,7 @@
 #' \item{simData}{Combined count matrix (genes x samples)}
 #' \item{colData}{Sample-level metadata}
 #' \item{labels}{Vector indicating true positives (1) and negatives (0)}
+#' \item{log2FC}{Vector for log2 fold-change}
 #'
 simDOT <- function(
     ribo,
@@ -183,7 +184,7 @@ simDOT <- function(
   # Batch assignment for colData
   if (batchScenario == "modalitySpecific") {
     # RNA samples: no batch effect (can be NA or a constant)
-    batch_rna <- rep(NA, total_samples)
+    batch_rna <- rep("none", total_samples)
     
     # Ribo samples: batch effect applied
     batch_ribo <- rep(seq_len(num_batches), each = num_samples * conditions)
@@ -203,10 +204,10 @@ simDOT <- function(
   
   coldata <- data.frame(
     run = colnames(merged),
-    condition = rep(group, 2),
-    replicate = rep(replicate, 2),
-    strategy = rep(c("ribo", "rna"), each = total_samples),
-    batch = batch_full
+    condition = factor(rep(group, 2)),
+    replicate = factor(rep(replicate, 2)),
+    strategy = factor(rep(c("ribo", "rna"), each = total_samples)),
+    batch = factor(batch_full)
   )
   
   labels <- rep(0, length(original_genes))

@@ -26,7 +26,7 @@ simDOT(
 
 \item{bgenes}{Numeric (percentage). Proportion of genes to carry a batch effect (default: 10).}
 
-\item{num_samples}{Integer. Number of biological replicates per condition (default: 4).}
+\item{num_samples}{Integer. Number of biological replicates per condition (default: 3).}
 
 \item{conditions}{Integer. Number of experimental conditions (default: 2).}
 
@@ -43,6 +43,7 @@ A list with:
 \item{simData}{Combined count matrix (genes x samples)}
 \item{colData}{Sample-level metadata}
 \item{labels}{Vector indicating true positives (1) and negatives (0)}
+\item{log2FC}{Vector for log2 fold-change}
 }
 \description{
 This function simulates ribosome profiling and matched RNA-seq count matrices.

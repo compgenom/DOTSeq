@@ -11,6 +11,7 @@ fitDOT(
   bed,
   rnaSuffix = ".rna",
   riboSuffix = ".ribo",
+  baseline = NULL,
   formula = NULL,
   sampleDelim = NULL,
   batchCol = NULL,
@@ -37,6 +38,11 @@ Must include columns: run, strategy, condition, replicate.}
 \item{rnaSuffix}{Character suffix to identify RNA-seq columns (default: \code{".rna"}).}
 
 \item{riboSuffix}{Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).}
+
+\item{baseline}{Optional character specifying the baseline condition for contrasts.
+If NULL, the function attempts to infer it automatically (default: NULL).}
+
+\item{formula}{A formula object specifying the design, e.g., ~ 0 + replicate + condition * strategy.}
 
 \item{sampleDelim}{Delimiter used in sample name. Use "." if sample IDs are unique,
 e.g. SRR, DRR, or ERR run accessions (default: NULL).}

@@ -4,16 +4,16 @@
 \alias{contrastMatrix}
 \title{Generate Contrast Matrix for Differential Testing}
 \usage{
-contrastMatrix(sumExp, fmla, baseline = NULL, verbose = FALSE)
+contrastMatrix(sumExp, formula, baseline = NULL, verbose = FALSE)
 }
 \arguments{
 \item{sumExp}{A \code{SummarizedExperiment} object containing count data and
 sample annotation.}
 
-\item{fmla}{A formula object specifying the design, e.g., ~ 0 + condition:effect.}
+\item{formula}{A formula object specifying the design, e.g., ~ 0 + replicate + condition * strategy.}
 
 \item{baseline}{Optional character specifying the baseline condition for contrasts.
-If NULL, the function attempts to infer it automatically.}
+If NULL, the function attempts to infer it automatically (default: NULL).}
 
 \item{verbose}{Logical; if TRUE, prints progress messages. Default is FALSE.}
 }
@@ -28,6 +28,6 @@ contrasts between experimental conditions.
 }
 \examples{
 # Construct contrast matrix from a SummarizedExperiment object
-L <- contrastMatrix(sumExp, ~ 0 + effect1 + effect2, baseline = "control", verbose = TRUE)
+L <- contrastMatrix(sumExp, ~ 0 + replicate + condition * strategy, baseline = "control", verbose = TRUE)
 
 }
