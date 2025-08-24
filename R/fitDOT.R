@@ -15,6 +15,9 @@
 #' @param bed Path to a BED file with ORF annotations.
 #' @param rnaSuffix Character suffix to identify RNA-seq columns (default: \code{".rna"}).
 #' @param riboSuffix Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).
+#' @param formula A formula object specifying the design, e.g., ~ 0 + replicate + condition * strategy.
+#' @param baseline Optional character specifying the baseline condition for contrasts.
+#'   If NULL, the function attempts to infer it automatically (default: NULL).
 #' @param sampleDelim Delimiter used in sample name. Use "." if sample IDs are unique, 
 #'    e.g. SRR, DRR, or ERR run accessions (default: NULL).
 #' @param batchCol String; name of the column in `conditionTable` that specifies batch assignments, 
@@ -70,6 +73,7 @@ fitDOT <- function(countTable, conditionTable,
                    flattenedFile, bed, 
                    rnaSuffix = ".rna", 
                    riboSuffix = ".ribo", 
+                   baseline = NULL,
                    formula = NULL,
                    sampleDelim = NULL,
                    batchCol = NULL,
@@ -205,6 +209,7 @@ fitDOT <- function(countTable, conditionTable,
   fmla <- as.formula(formula)
   
   if (verbose) {
+    cat(" - Start differential ORF translation analysis\n")
     cat(" - Design formula:", deparse(fmla), "\n")
   }
   cnt <- cnt[order(cnt$Geneid, cnt$Start, cnt$End), ]
@@ -390,16 +395,16 @@ fitDOT <- function(countTable, conditionTable,
                                BPPARAM = BiocParallel::bpparam(RNGseed = seed),
                                verbose = TRUE)
       
-      # L <- contrastMatrix(sumExp, fmla)
+      L <- contrastMatrix(sumExp, fmla, baseline = baseline)
       
       if (verbose) {
-        cat(" - Start differential translation analysis\n")
+        cat(" - Start differential gene translation analysis\n")
       }
       
-      # Remove '0 +' if it exists, as DESeq2 automatically handles the intercept
+      # Convert formula to string and remove '0 +' or '-1 +' if present
       deseq_formula_str <- as.character(formula)
-      if (grepl("0\\s*\\+", deseq_formula_str[2])) {
-        deseq_formula_str[2] <- gsub("0\\s*\\+", "", deseq_formula_str[2])
+      if (grepl("(-1|0)\\s*\\+", deseq_formula_str[2])) {
+        deseq_formula_str[2] <- gsub("(-1|0)\\s*\\+\\s*", "", deseq_formula_str[2])
       }
       deseq_formula <- as.formula(paste(deseq_formula_str[1], deseq_formula_str[2]))
       
@@ -407,10 +412,27 @@ fitDOT <- function(countTable, conditionTable,
         cat(" - Design formula:", deparse(deseq_formula), "\n")
       }
       
-      # Create the DESeq2 object for the combined counts
-      dds <- DESeq2::DESeqDataSetFromMatrix(countData = dcounts,
-                                            colData = anno,
-                                            design = deseq_formula)
+      # Try creating DESeqDataSet with full formula
+      dds <- tryCatch({
+        DESeq2::DESeqDataSetFromMatrix(countData = dcounts,
+                                       colData = anno,
+                                       design = deseq_formula)
+      }, error = function(e) {
+        message(" - Failed with full formula: ", e$message)
+        
+        # Remove 'batch' from formula and retry
+        reduced_formula_str <- gsub("(?<=\\+|\\~|^)\\s*batch\\s*\\+?|\\+?\\s*batch(?=\\+|$)", "", deseq_formula_str[2], perl = TRUE)
+        reduced_formula_str <- gsub("^\\s*\\+\\s*|\\s*\\+\\s*$", "", reduced_formula_str)  # clean up leading/trailing '+'
+        reduced_formula <- as.formula(paste(deseq_formula_str[1], reduced_formula_str))
+        
+        if (verbose) {
+          cat(" - Retrying with reduced formula:", deparse(reduced_formula), "\n")
+        }
+        
+        DESeq2::DESeqDataSetFromMatrix(countData = dcounts,
+                                       colData = anno,
+                                       design = reduced_formula)
+      })
       
       # Run the DESeq2 analysis
       dds <- DESeq2::DESeq(dds, parallel = parallel)
@@ -441,6 +463,7 @@ fitDOT <- function(countTable, conditionTable,
     dds = dds,
     sumExp = sumExp,
     dxd = dxd,
-    formula = fmla
+    formula = fmla, 
+    contrastMat = L
   ))
 }

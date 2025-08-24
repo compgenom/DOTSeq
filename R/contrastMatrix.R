@@ -7,25 +7,24 @@
 #'
 #' @param sumExp A `SummarizedExperiment` object containing count data and
 #'   sample annotation.
-#' @param fmla A formula object specifying the design, e.g., ~ 0 + condition:effect.
+#' @param formula A formula object specifying the design, e.g., ~ 0 + replicate + condition * strategy.
 #' @param baseline Optional character specifying the baseline condition for contrasts.
-#'   If NULL, the function attempts to infer it automatically.
+#'   If NULL, the function attempts to infer it automatically (default: NULL).
 #' @param verbose Logical; if TRUE, prints progress messages. Default is FALSE.
 #'
 #' @return A numeric contrast matrix for differential testing in `testDOT`.
 #'
 #' @examples
 #' # Construct contrast matrix from a SummarizedExperiment object
-#' L <- contrastMatrix(sumExp, ~ 0 + effect1 + effect2, baseline = "control", verbose = TRUE)
+#' L <- contrastMatrix(sumExp, ~ 0 + replicate + condition * strategy, baseline = "control", verbose = TRUE)
 #'
 #' @export
-contrastMatrix <- function(sumExp, fmla, baseline = NULL, verbose = FALSE) {
+contrastMatrix <- function(sumExp, formula, baseline = NULL, verbose = FALSE) {
   # Build design matrix
   anno <- colData(sumExp)
-  design <- model.matrix(fmla, data = anno)
+  design <- model.matrix(formula, data = anno)
   
-  contrastFactors <- grep("effect", colnames(anno), value = TRUE)
-  contrastFactors <- grep("effect2", contrastFactors, value = TRUE, invert = TRUE)
+  contrastFactors <- grep(":strategy1", colnames(design), value = TRUE)
   
   L_all <- NULL
   valid_rows <- colnames(design)
@@ -33,23 +32,27 @@ contrastMatrix <- function(sumExp, fmla, baseline = NULL, verbose = FALSE) {
   for (contrastFactor in contrastFactors) {
     if (verbose) cat("\nProcessing:", contrastFactor, "\n")
     
-    if (!is.factor(anno[[contrastFactor]])) {
-      anno[[contrastFactor]] <- factor(anno[[contrastFactor]])
+    if (!is.factor(design[, contrastFactor])) {
+      design[, contrastFactor] <- factor(design[, contrastFactor])
     }
     
-    conditions <- levels(anno[[contrastFactor]])
-    conditions <- grep("none", conditions, value = TRUE, invert = TRUE)
+    conditions <- unique(sapply(strsplit(names(design[, contrastFactor]), "\\."), `[`, 2))
     nconditions <- length(conditions)
     
     if (verbose) {
-      cat(" - Number of valid conditions (excluding 'none'):", nconditions, "\n")
+      cat(" - Number of valid conditions:", nconditions, "\n")
       cat(" - Valid conditions:", paste(conditions, collapse = ", "), "\n")
     }
     
     # Infer baseline if not provided
     if (is.null(baseline)) {
-      valid_levels <- paste0(contrastFactor, conditions)
-      missing_levels <- setdiff(valid_levels, colnames(design))
+      # valid_levels <- paste0(contrastFactor, conditions)
+      # missing_levels <- setdiff(valid_levels, colnames(design))
+      
+      valid_levels <- sapply(strsplit(contrastFactors, ":"), `[`, 1)
+      valid_levels <- sub("^condition", "", valid_levels)
+      missing_levels <- setdiff(conditions, valid_levels)
+      
       if (length(missing_levels) == 1) {
         inferred_baseline <- sub(contrastFactor, "", missing_levels)
         local_baseline <- inferred_baseline
@@ -76,22 +79,27 @@ contrastMatrix <- function(sumExp, fmla, baseline = NULL, verbose = FALSE) {
         cond1 <- as.character(combo[[1]])
         cond2 <- as.character(combo[[2]])
         
-        row1 <- paste0(contrastFactor, cond1)
-        row2 <- paste0(contrastFactor, cond2)
+        # row1 <- paste0(contrastFactor, cond1)
+        # row2 <- paste0(contrastFactor, cond2)
+        row1 <- grep(paste0(cond1, ".*:strategy1$"), colnames(design), value = TRUE)
+        row2 <- grep(paste0(cond2, ".*:strategy1$"), colnames(design), value = TRUE)
         
         if (!is.null(local_baseline) && local_baseline %in% combo) {
           non_baseline <- ifelse(cond1 == local_baseline, cond2, cond1)
-          row <- paste0(contrastFactor, non_baseline)
           contrast_name <- paste0(non_baseline, "_vs_", local_baseline)
           
-          if (row %in% valid_rows) {
+          # Find the correct row for the non-baseline condition
+          row <- grep(paste0(non_baseline, ".*:strategy1$"), colnames(design), value = TRUE)
+          
+          if (length(row) == 1 && row %in% valid_rows) {
             L[row, counter] <- 1
             if (verbose) cat(" - Assigned 1 to", row, "for", contrast_name, "\n")
           } else if (verbose) {
-            cat(" - Row not found in design:", row, "\n")
+            cat(" - Row not found or ambiguous for non-baseline condition:", non_baseline, "\n")
           }
           
           colnames(L)[counter] <- contrast_name
+        
         } else {
           # fallback to pairwise contrast
           contrast_name <- paste0(cond1, "_vs_", cond2)
@@ -119,40 +127,7 @@ contrastMatrix <- function(sumExp, fmla, baseline = NULL, verbose = FALSE) {
       cat("Contrast matrix L:\n")
       print(L)
     }
-    
-    if (!is.null(L)) {
-      if (is.null(L_all)) {
-        L_all <- L
-      } else {
-        all_rows <- union(rownames(L_all), rownames(L))
-        all_rows <- intersect(all_rows, valid_rows)
-        
-        L_all_expanded <- matrix(0, nrow = length(all_rows), ncol = ncol(L_all),
-                                 dimnames = list(all_rows, colnames(L_all)))
-        L_expanded <- matrix(0, nrow = length(all_rows), ncol = ncol(L),
-                             dimnames = list(all_rows, colnames(L)))
-        
-        common_rows_L_all <- intersect(rownames(L_all_expanded), rownames(L_all))
-        common_cols_L_all <- intersect(colnames(L_all_expanded), colnames(L_all))
-        if (length(common_rows_L_all) > 0 && length(common_cols_L_all) > 0) {
-          L_all_expanded[common_rows_L_all, common_cols_L_all] <- L_all[common_rows_L_all, common_cols_L_all]
-        }
-        
-        common_rows_L <- intersect(rownames(L_expanded), rownames(L))
-        common_cols_L <- intersect(colnames(L_expanded), colnames(L))
-        if (length(common_rows_L) > 0 && length(common_cols_L) > 0) {
-          L_expanded[common_rows_L, common_cols_L] <- L[common_rows_L, common_cols_L]
-        }
-        
-        L_all <- cbind(L_all_expanded, L_expanded)
-      }
-    }
   }
   
-  if (verbose) {
-    cat("\nFinal contrast matrix:\n")
-    print(L_all)
-  }
-  
-  return(contrastMatrix = L_all)
+  return(contrastMatrix = L)
 }
