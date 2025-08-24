@@ -1,18 +1,23 @@
 ---
-title: "DOTSeq:"
-subtitle: "Differential ORF Translation"
-author:
-  - name: "Chun Shen Lim"
-    affiliation: "Department of Biochemistry, School of Biomedical Sciences, University of Otago, Dunedin, New Zealand; Genetics Otago, University of Otago, Dunedin, New Zealand; Maurice Wilkins Centre for Molecular Biodiscovery, Centres of Research Excellence, New Zealand"
+title: "DOTSeq: Differential ORF Translation"
+author: 
+  - name: "Chun Shen Lim*"
+    affiliation: |
+      1 Department of Biochemistry, School of Biomedical Sciences, University of Otago, Dunedin, New Zealand.  
+      2 Genetics Otago, University of Otago, Dunedin, New Zealand.  
+      3 Maurice Wilkins Centre for Molecular Biodiscovery, Centres of Research Excellence, New Zealand.  
     email: "chunshen.lim@otago.ac.nz"
   - name: "Gabrielle S.W. Chieng"
-    affiliation: "Department of Biochemistry, School of Biomedical Sciences, University of Otago, Dunedin, New Zealand; Genetics Otago, University of Otago, Dunedin, New Zealand"
+    affiliation: |
+      1 Department of Biochemistry, School of Biomedical Sciences, University of Otago, Dunedin, New Zealand.  
+      2 Genetics Otago, University of Otago, Dunedin, New Zealand.
 date: "2025"
-output:
-  BiocStyle::html_document:
+output: 
+  html_document:
     toc: true
     toc_float: true
-    css: "style.css"
+    theme: united
+    highlight: tango
 package: DOTSeq
 bibliography: DOTSeq.bib
 abstract: 
@@ -110,18 +115,22 @@ We will have to merge these detected ORFs information with the final results dat
 ```{r merge-df}
 results <- merge(m$orfs, results, by = "row.names")
 ```
+From this object, we can also obtain the dataframe of differentially translated ORFs that are significant with a false discovery rate of 5%:
+```{r sigRes}
+sigRes <- results[results$empirical.fdr<0.05,]
+```
 
 # Visualisation
 Users can specify which ORF they want to compare on the heatmap and it will be saved as a .pdf format. 
 For example, this heatmap is showing the differential translation between uORF and mORF:
 ```{r uORF_heatmap}
-pairedDOTHeatmap(results, "uORF", "hsapiens_gene_ensembl", "hgnc_symbol", "uORF.dot.pdf")
+pairedDOTHeatmap(sigRes, "uORF", "hsapiens_gene_ensembl", "hgnc_symbol", "uORF.dot.pdf")
 ```
 ![uORF_Heatmap](DOTSeq_files/figures-html/uORF.dot.png)
 
 and this heatmap is showing the differential translation between dORF and mORF:
 ```{r dORF_heatmap}
-pairedDOTHeatmap(results, "dORF", "hsapiens_gene_ensembl", "hgnc_symbol", "dORF.dot.pdf")
+pairedDOTHeatmap(sigRes, "dORF", "hsapiens_gene_ensembl", "hgnc_symbol", "dORF.dot.pdf")
 ```
 ![dORF_Heatmap](DOTSeq_files/figures-html/dORF.dot.png)
 
