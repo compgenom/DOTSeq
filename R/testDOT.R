@@ -8,6 +8,7 @@
 #'
 #' @param sumExp A \code{SummarizedExperiment} object returned by \code{satuRn::fitDTU}.
 #'   Must contain fitted models in \code{rowData(sumExp)[["fitDTUModels"]]}.
+#' @param dds DESeq2 object usd for modelling differential gene translation analysis.
 #' @param contrast Numeric vector specifying the contrast of coefficients to test.
 #' @param df Numeric degrees of freedom for empirical null fitting (default: 7).
 #' @param bre Numeric number of histogram breaks for empirical null estimation (default: 120).
@@ -15,26 +16,41 @@
 #' @param diagplot2 Logical; if TRUE, produces the second diagnostic plot of empirical z-scores (default: FALSE).
 #' @param main Character string to set the title for diagnostic plots (default: NULL).
 #'
-#' @return A \code{data.frame} containing the following columns:
+#' @return A named \code{list} containing two \code{data.frame} objects:
 #' \describe{
-#'   \item{estimates}{Log-odds estimates for the specified contrast.}
-#'   \item{se}{Standard errors of the estimates.}
-#'   \item{posterior}{Posterior degrees of freedom for each estimate.}
-#'   \item{t.statistic}{t-statistic for each estimate.}
-#'   \item{pval}{Two-sided p-value based on the t-statistic.}
-#'   \item{empirical.pval}{P-values corrected using empirical null estimation.}
-#'   \item{empirical.fdr}{FDR-adjusted p-values using Benjamini-Hochberg correction.}
+#'   \item{summary}{A \code{data.frame} containing the following columns:
+#'     \describe{
+#'       \item{estimates}{Log-odds estimates for the specified contrast.}
+#'       \item{se}{Standard errors of the estimates.}
+#'       \item{posterior}{Posterior degrees of freedom for each estimate.}
+#'       \item{t.statistic}{t-statistic for each estimate.}
+#'       \item{pval}{Two-sided p-value based on the t-statistic.}
+#'       \item{empirical.pval}{P-values corrected using empirical null estimation.}
+#'       \item{empirical.fdr}{FDR-adjusted p-values using Benjamini-Hochberg correction.}
+#'     }
+#'   }
+#'   \item{dds_results}{A \code{data.frame} containing DESeq2 contrast results with columns such as:
+#'     \describe{
+#'       \item{baseMean}{Average expression across all samples.}
+#'       \item{log2FoldChange}{Log2 fold change between conditions.}
+#'       \item{lfcSE}{Standard error of the log2 fold change.}
+#'       \item{stat}{Wald statistic.}
+#'       \item{pvalue}{Raw p-value.}
+#'       \item{padj}{Adjusted p-value (FDR).}
+#'     }
+#'   }
 #' }
 #'
 #' @examples
 #' \dontrun{
-#' results <- testDOT(sumExp = mySummarizedExp, contrast = c(0,1,0), 
+#' results <- testDOT(sumExp = mySummarizedExp, dds = myDds, contrast = c(0,1,0), 
 #'                    df = 7, bre = 120, diagplot1 = TRUE, diagplot2 = TRUE, main = "Sample ORFs", seed = 42)
 #' head(results)
 #' }
 #'
 #' @export
 testDOT <- function(sumExp, 
+                    dds, 
                     contrast, 
                     df = 7, 
                     bre = 120, 
@@ -185,11 +201,29 @@ testDOT <- function(sumExp,
   abline(h = -log10(fdrThresh), col = "black", lty = 2)
   abline(v = c(-effectThresh, effectThresh), col = "black", lty = 2)
   
-  
-  results <- data.frame(estimates = estimates, se = se, posterior = posterior,
+  res <- data.frame(estimates = estimates, se = se, posterior = posterior,
                         t.statistic = tstat, pval = pval, 
                         empirical.pval = pval_empirical, empirical.fdr = FDR)
-  results <- na.omit(results)
+  res <- na.omit(res)
   
-  return(results)
+  # Extract non-zero contrast names in dds and convert ":" to "."
+  contrastTerms <- names(sort(contrast[contrast!=0], decreasing=TRUE))
+  contrastTerms <- gsub(":", ".", contrastTerms)
+  
+  # Dynamically choose between 'name' and 'contrast'
+  if (length(contrastTerms) == 1) {
+    ddsRes <- results(dds, name = contrastTerms[1])
+  } else if (length(contrastTerms) == 2) {
+    # cat("contrastTerms 1:", contrastTerms[1], "vs", "contrastTerms 2:", contrastTerms[2], "\n")
+    ddsRes <- results(dds, contrast = list(contrastTerms[1], contrastTerms[2]))
+  } else {
+    stop("Unexpected number of contrast terms. Expected 1 or 2.")
+  }
+  
+  ddsRes <- as.data.frame(ddsRes)
+  
+  # results <- merge(res, ddsRes, by = "row.names", all = TRUE)
+  
+  return(list(dotRes = res, dteRes = ddsRes))
 }
+

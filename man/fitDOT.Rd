@@ -72,15 +72,16 @@ generator to ensure reproducible results (default: NULL).}
 \item{verbose}{Logical; if TRUE, prints progress messages (default: FALSE).}
 }
 \value{
-A named list with the following elements:
+A named \code{list} with the following elements:
 \describe{
 \item{rawCnts}{Raw counts matrix for all samples.}
 \item{normCnts}{Normalized counts matrix for all samples.}
 \item{orfs}{Data frame of ORFs derived from the BED file matched to the DOTSeq object.}
 \item{absoluteTE}{Matrix of translational efficiency values per ORF and sample.}
 \item{occupancyShift}{Matrix of log2-transformed ribo/rna proportions within genes.}
+\item{dds}{DESeq2 object usd for modelling differential gene translation analysis.}
 \item{sumExp}{SummarizedExperiment object containing normalized counts and sample metadata.}
-\item{dxd}{DOTSeq object used for modeling exon/ORF-level counts.}
+\item{dxd}{DOTSeq object used for modelling exon/ORF-level counts.}
 \item{formula}{Design formula used in \code{satuRn::fitDTU}.}
 \item{contrastMat}{Contrast matrix used for differential ORF translation testing.}
 }

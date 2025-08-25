@@ -4,7 +4,15 @@
 \alias{pairedDOTHeatmap}
 \title{Run DOT heatmap wrapper}
 \usage{
-pairedDOTHeatmap(results, orf_type, species_dataset, symbol_col, output_file)
+pairedDOTHeatmap(
+  results,
+  orf_type,
+  species_dataset,
+  symbol_col,
+  output_file,
+  width = NULL,
+  height = NULL
+)
 }
 \arguments{
 \item{results}{A data frame containing estimates, labels, and groupID}

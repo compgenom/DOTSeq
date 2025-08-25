@@ -1,6 +1,6 @@
 Package: DOTSeq
 Title: Differential ORF Translation
-Version: 0.14
+Version: 0.15
 Authors: Chun Shen Lim <chunshen.lim@otago.ac.nz> and Gabrielle Chieng <gabrielle.chieng@postgrad.otago.ac.nz>
 Description: DOTSeq is an R package for identifying differentially translated open reading frames (ORFs) from ribosome profiling and matched RNA-seq datasets. Unlike most existing tools that operate at gene level, DOTSeq performs analysis at the ORF level, enabling the detection of differential translation efficiency between conditions, and occupancy shifts of ribosomes on ORFs within a single gene. DOTSeq integrates both ribosome profiling and RNA-seq read counts into quasi-binomial generalised linear model (GLM) using a modified design matrix and model fitting formula inspired by Riborex and satuRn. At present, DOTSeq accepts count data generated with featureCounts. Development is underway to extend support for additional quantification tools, including mmquant and HTseq. The package also provides functions for visualisation and exploration of results.
 License: MIT + file LICENSE
@@ -9,7 +9,7 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr
 Remotes: alyssafrazee/polyester
-Imports: polyester
+Imports: polyester, eulerr
 Depends:
     R (>= 4.5.0),
     biomaRt (>= 2.65.0),
