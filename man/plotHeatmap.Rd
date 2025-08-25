@@ -12,8 +12,8 @@ plotHeatmap(
   color_palette,
   color_breaks,
   abs_max,
-  width = 4,
-  height = 4.5,
+  width = NULL,
+  height = NULL,
   output_file = "dot.pdf"
 )
 }

@@ -6,6 +6,7 @@
 \usage{
 testDOT(
   sumExp,
+  dds,
   contrast,
   df = 7,
   bre = 120,
@@ -18,6 +19,8 @@ testDOT(
 \arguments{
 \item{sumExp}{A \code{SummarizedExperiment} object returned by \code{satuRn::fitDTU}.
 Must contain fitted models in \code{rowData(sumExp)[["fitDTUModels"]]}.}
+
+\item{dds}{DESeq2 object usd for modelling differential gene translation analysis.}
 
 \item{contrast}{Numeric vector specifying the contrast of coefficients to test.}
 
@@ -32,7 +35,9 @@ Must contain fitted models in \code{rowData(sumExp)[["fitDTUModels"]]}.}
 \item{main}{Character string to set the title for diagnostic plots (default: NULL).}
 }
 \value{
-A \code{data.frame} containing the following columns:
+A named \code{list} containing two \code{data.frame} objects:
+\describe{
+\item{summary}{A \code{data.frame} containing the following columns:
 \describe{
 \item{estimates}{Log-odds estimates for the specified contrast.}
 \item{se}{Standard errors of the estimates.}
@@ -41,6 +46,18 @@ A \code{data.frame} containing the following columns:
 \item{pval}{Two-sided p-value based on the t-statistic.}
 \item{empirical.pval}{P-values corrected using empirical null estimation.}
 \item{empirical.fdr}{FDR-adjusted p-values using Benjamini-Hochberg correction.}
+}
+}
+\item{dds_results}{A \code{data.frame} containing DESeq2 contrast results with columns such as:
+\describe{
+\item{baseMean}{Average expression across all samples.}
+\item{log2FoldChange}{Log2 fold change between conditions.}
+\item{lfcSE}{Standard error of the log2 fold change.}
+\item{stat}{Wald statistic.}
+\item{pvalue}{Raw p-value.}
+\item{padj}{Adjusted p-value (FDR).}
+}
+}
 }
 }
 \description{
@@ -52,7 +69,7 @@ and empirical null fitting.
 }
 \examples{
 \dontrun{
-results <- testDOT(sumExp = mySummarizedExp, contrast = c(0,1,0), 
+results <- testDOT(sumExp = mySummarizedExp, dds = myDds, contrast = c(0,1,0), 
                    df = 7, bre = 120, diagplot1 = TRUE, diagplot2 = TRUE, main = "Sample ORFs", seed = 42)
 head(results)
 }

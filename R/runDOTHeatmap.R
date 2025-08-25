@@ -20,9 +20,12 @@ pairedData <- function(results, orf_type, species_dataset, symbol_col, threshold
   mORFRes <- results[results$labels=="mORF", ][, c("groupID", "estimates")]
   sigMat <- merge(orfSig, mORFRes, by = "groupID")
   names(sigMat) <- c("groupID", orf_type, "mORF")
+  sigMat$delta <- abs(sigMat$mORF - sigMat[[orf_type]])
+  sigMat <- sigMat[ave(sigMat$delta, sigMat$groupID, FUN = function(x) x == max(x)) == 1, ]
   
   rownames(sigMat) <- sigMat$groupID
-  sigMat$groupID <- NULL
+  sigMat <- sigMat[ , !(names(sigMat) %in% c("groupID", "delta"))]
+  
   sigMat[] <- lapply(sigMat, as.numeric)
   sigMat <- as.matrix(sigMat)
   sigMatClean <- sigMat[complete.cases(sigMat), ]
@@ -92,7 +95,7 @@ plotHeatmap <- function(orderedMatrix,
                         color_palette,
                         color_breaks,
                         abs_max,
-                        width = 4, height = 4.5,
+                        width = NULL, height = NULL,
                         output_file = "dot.pdf") {
 
   n_rows <- nrow(orderedMatrix)
@@ -104,9 +107,9 @@ plotHeatmap <- function(orderedMatrix,
   right_margin <- max(9.5, min(12, n_rows / 5))
   layout_widths <- c(2, max(6, n_cols / 10))
   key_bottom <- ifelse(n_rows > 50, 0.05, 0.13)
-  key_top <- key_bottom + 0.12
+  key_top <- key_bottom + 0.08
   
-  pdf(output_file, width = width, height = height)
+  # pdf(output_file, width = width, height = height)
   layout(matrix(c(1, 2), nrow = 1), widths = layout_widths)
   
   ## Panel 1: Dendrogram
@@ -149,7 +152,7 @@ plotHeatmap <- function(orderedMatrix,
   axis(1, at = tick_pos, labels = tick_vals, las = 1, cex.axis = 0.7)
   mtext("log-odds", side = 1, line = 2, cex = 0.8)
   
-  dev.off()
+  # dev.off()
   par(mfrow = c(1, 1))
 }
 
@@ -162,7 +165,7 @@ plotHeatmap <- function(orderedMatrix,
 #' @param output_file PDF file name
 #'
 #' @export
-pairedDOTHeatmap <- function(results, orf_type, species_dataset, symbol_col, output_file) {
+pairedDOTHeatmap <- function(results, orf_type, species_dataset, symbol_col, output_file, width = NULL, height = NULL) {
   prep_out <- pairedData(
     results = results,
     orf_type = orf_type,
@@ -178,6 +181,8 @@ pairedDOTHeatmap <- function(results, orf_type, species_dataset, symbol_col, out
     color_palette = prep_out$color_palette,
     color_breaks = prep_out$color_breaks,
     abs_max = prep_out$abs_max,
-    output_file = output_file
+    output_file = output_file,
+    width = width,
+    height = height
   )
 }
