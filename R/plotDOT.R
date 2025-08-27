@@ -32,13 +32,13 @@ plotDOT <- function(dot) {
   plot(res$log2FoldChange, res$estimates,
        col = "grey", pch = ".",
        xlab = "log2 fold-change in ORF TE", ylab = "log-odds change in ORF usage",
-       main = "Differential translation")
+       main = "Differential ORF Translation")
   
   points(res$log2FoldChange[padj_only], res$estimates[padj_only], col = col_dte, pch = ".")
   points(res$log2FoldChange[both_sig], res$estimates[both_sig], col = col_both, pch = ".")
   points(res$log2FoldChange[fdr_only], res$estimates[fdr_only], col = col_dou, pch = ".")
   
-  legend("bottomright", inset = 0.06, legend = c("DTE", "DOU", "Both"),
+  legend("bottomright", inset = 0.05, legend = c("DTE", "DOU", "Both"),
          col = c("#0072B2", "#E69F00", "#CC79A7"), pch = 16, bty = "n")
   
   # Venn diagram
@@ -48,14 +48,14 @@ plotDOT <- function(dot) {
   fit <- eulerr::euler(c(
     "DTE" = length(setdiff(padj_set, fdr_set)),
     "DOU" = length(setdiff(fdr_set, padj_set)),
-    "Both" = length(intersect(padj_set, fdr_set))
+    "DTE&DOU" = length(intersect(padj_set, fdr_set))
   ))
   
-  venn_colors <- c("DTE" = "#0072B2", "DOU" = "#E69F00", "Both" = "#CC79A7")
+  venn_colors <- c("DTE" = "#0072B2", "DOU" = "#E69F00", "DTE&DOU" = "#CC79A7")
   
   plot(fit,
        fills = list(fill = venn_colors, alpha = 0.6),
        labels = list(font = 2),
        quantities = TRUE,
-       main = "Significant differentially translated ORFs")
+       main = "Differentially Translated ORFs")
 }

@@ -4,11 +4,14 @@
 \alias{meanDispersion}
 \title{Plot and Extract Dispersion Estimates from DOU Models}
 \usage{
-meanDispersion(sumExp)
+meanDispersion(m)
 }
 \arguments{
-\item{sumExp}{A \code{SummarizedExperiment} object containing DTU model fits in the \code{rowData} under the satuRn \code{"fitDTUModels"} column,
-and a \code{"counts"} assay representing ORF-level count data.}
+\item{m}{A list-like object returned by \code{DOTSeq::fitDOT}, containing:
+\itemize{
+\item \code{sumExp}: A \code{SummarizedExperiment} object with satuRn DTU model fits in the \code{rowData} under \code{"fitDTUModels"}, and a \code{"counts"} assay.
+\item \code{dds}: A \code{DESeqDataSet} object from DESeq2 used for DTE analysis.
+}}
 }
 \value{
 A list containing:
@@ -20,9 +23,10 @@ A list containing:
 }
 \description{
 This function extracts and compares original and posterior dispersion estimates
-from DOU (Differential ORF Usage) models stored in a \code{SummarizedExperiment} object.
-It also computes mean proportions of ORF-level counts relative to their parent gene,
-and visualizes the relationship between mean proportion and dispersion.
+from DOU (Differential ORF Usage) models fitted using \code{DOTSeq::fitDOT}. It also computes
+mean proportions of ORF-level counts relative to their parent gene, and visualizes
+the relationship between mean proportion and dispersion. Additionally, it plots
+dispersion estimates from the DESeq2 model used in the DTE (Differential Translation Efficiency) analysis.
 }
 \details{
 The function assumes that row names of the count matrix follow the format \code{"geneID:orfID"}.
@@ -30,4 +34,5 @@ It calculates the proportion of each ORF's counts relative to the total counts o
 and plots both original and posterior dispersion estimates against these mean proportions.
 
 The posterior dispersions are generally more stable and recommended for downstream hypothesis testing.
+The function also calls \code{plotDispEsts()} to visualize dispersion estimates from the DESeq2 model.
 }

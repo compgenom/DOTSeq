@@ -193,7 +193,7 @@ testDOT <- function(sumExp,
   
   # Plot all points in gray
   plot(estimates, logFDR, pch = 20, col = "gray80",
-       main = paste("DOU Volcano Plot:", main),
+       main = paste("Volcano Plot for DOU:", main),
        xlab = "log-odds change", ylab = "-log10(FDR)")
   points(estimates[sig & posEffect], logFDR[sig & posEffect], pch = 20, col = "red")
   points(estimates[sig & negEffect], logFDR[sig & negEffect], pch = 20, col = "blue")

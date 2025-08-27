@@ -34,7 +34,6 @@
 #'   computation. If `TRUE`, the function will distribute tasks across
 #'   multiple cores as configured by the `BiocParallel` package. If `FALSE`,
 #'   the function will run sequentially on a single core (default: FALSE).
-#' @param plotMeanDispersion Logical; if TRUE, plots the mean-dispersion plots (default: FALSE).
 #' @param verbose Logical; if TRUE, prints progress messages (default: FALSE).
 #'
 #' @return A named \code{list} with the following elements:
@@ -84,7 +83,6 @@ fitDOT <- function(countTable, conditionTable,
                    stringent = NULL, 
                    parallel = FALSE,
                    seed = NULL,
-                   plotMeanDispersion = FALSE,
                    verbose = FALSE) {
   
   cntCols <- c("Geneid", "Chr", "Start",  "End", "Strand", "Length")
@@ -440,13 +438,6 @@ fitDOT <- function(countTable, conditionTable,
       # Run the DESeq2 analysis
       dds <- DESeq2::DESeq(dds, parallel = parallel)
       
-      if (isTRUE(plotMeanDispersion)) {
-        meanDispersion(sumExp)
-        dds <- estimateSizeFactors(dds)
-        dds <- estimateDispersions(dds)
-        plotDispEsts(dds)
-      }
-
       # # The interaction term directly tests for differential TE
       # results_name <- resultsNames(dds)[grep("condition.*strategy", resultsNames(dds))]
       # 
@@ -483,12 +474,16 @@ fitDOT <- function(countTable, conditionTable,
 #' Plot and Extract Dispersion Estimates from DOU Models
 #'
 #' This function extracts and compares original and posterior dispersion estimates
-#' from DOU (Differential ORF Usage) models stored in a `SummarizedExperiment` object.
-#' It also computes mean proportions of ORF-level counts relative to their parent gene,
-#' and visualizes the relationship between mean proportion and dispersion.
+#' from DOU (Differential ORF Usage) models fitted using `DOTSeq::fitDOT`. It also computes
+#' mean proportions of ORF-level counts relative to their parent gene, and visualizes
+#' the relationship between mean proportion and dispersion. Additionally, it plots
+#' dispersion estimates from the DESeq2 model used in the DTE (Differential Translation Efficiency) analysis.
 #'
-#' @param sumExp A `SummarizedExperiment` object containing DTU model fits in the `rowData` under the satuRn `"fitDTUModels"` column,
-#' and a `"counts"` assay representing ORF-level count data.
+#' @param m A list-like object returned by `DOTSeq::fitDOT`, containing:
+#'   \itemize{
+#'     \item \code{sumExp}: A `SummarizedExperiment` object with satuRn DTU model fits in the `rowData` under `"fitDTUModels"`, and a `"counts"` assay.
+#'     \item \code{dds}: A `DESeqDataSet` object from DESeq2 used for DTE analysis.
+#'   }
 #'
 #' @return A list containing:
 #' \describe{
@@ -503,14 +498,16 @@ fitDOT <- function(countTable, conditionTable,
 #' and plots both original and posterior dispersion estimates against these mean proportions.
 #'
 #' The posterior dispersions are generally more stable and recommended for downstream hypothesis testing.
+#' The function also calls `plotDispEsts()` to visualize dispersion estimates from the DESeq2 model.
 #'
 #' @importFrom SummarizedExperiment assay
 #' @importFrom stats lowess
 #' @importFrom graphics plot points lines legend
-#' 
-meanDispersion <- function(sumExp) {
+#' @importFrom DESeq2 plotDispEsts
+#'
+meanDispersion <- function(m) {
   # Access the list-column of StatModel objects
-  models <- rowData(sumExp)[["fitDTUModels"]]
+  models <- rowData(m$sumExp)[["fitDTUModels"]]
   # Extract the dispersion estimates from the original GLM fit (before empirical Bayes squeezing)
   original_dispersions <- vapply(models, function(x) x@params$dispersion, FUN.VALUE = numeric(1))
   # Extract the posterior dispersion estimates (after empirical Bayes squeezing)
@@ -519,7 +516,7 @@ meanDispersion <- function(sumExp) {
   # which is generally more stable and recommended for downstream analysis and hypothesis testing.
   # The original dispersion is the raw value estimated from the GLM for each ORF.
   
-  counts <- SummarizedExperiment::assay(sumExp, "counts")
+  counts <- SummarizedExperiment::assay(m$sumExp, "counts")
   counts <- as.data.frame(counts)
   counts$groupID <- sapply(strsplit(rownames(counts), ":"), `[`, 1)
   groupTotal <- rowsum(counts[, -ncol(counts)], group = counts$groupID)
@@ -537,7 +534,9 @@ meanDispersion <- function(sumExp) {
   
   # pdf("mean_dispersion-dou.pdf", 4, 4.5)
   plot(x = mean_props, y = original_dispersions, col = "black",  
-       pch = 16, cex = 0.3, log = "xy", xlab = "Mean proportion", ylab = "Dispersion")
+       pch = 16, cex = 0.3, log = "xy", 
+       xlab = "Mean proportion", ylab = "Dispersion", 
+       main = "Mean-Dispersion Plot for DOU")
   points(x = mean_props, y = posterior_dispersions, col = "#6495ED",  
          pch = 16, cex = 0.3) # , xlab = "Mean proportion", ylab = "Posterior dispersion")
   lines(lowess(mean_props, original_dispersions), col = "red", lwd = 2)
@@ -552,6 +551,9 @@ meanDispersion <- function(sumExp) {
     bty = "n"
   )
   # dev.off()
+  
+  # Plot mean-dispersion plot using the DESeq2 object
+  DESeq2::plotDispEsts(m$dds)
   
   return(list(meanProportions = mean_props, 
               originalDispersions = original_dispersions, 
