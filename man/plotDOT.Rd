@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotDOT.R
 \name{plotDOT}
 \alias{plotDOT}
-\title{Plot DTE vs DOT Comparison and Venn Diagram}
+\title{Plot DTE vs DOU Comparison and Venn Diagram}
 \usage{
 plotDOT(dot)
 }
@@ -12,11 +12,11 @@ each with rownames as ORF IDs and columns including \code{padj}, \code{log2FoldC
 \code{empirical.fdr}, and \code{estimates}.}
 }
 \value{
-Generates two plots: a scatter plot of DTE vs DOT estimates, and a Venn diagram
+Generates two plots: a scatter plot of DTE vs DOU estimates, and a Venn diagram
 showing the overlap of significant ORFs.
 }
 \description{
 This function visualizes the relationship between differential translation efficiency (DTE)
-and differential ORF translation (DOT) using a scatter plot and a Venn diagram.
+and differential ORF usage (DOU) using a scatter plot and a Venn diagram.
 It highlights ORFs that are significant in either or both tests and uses a color-blind friendly palette.
 }

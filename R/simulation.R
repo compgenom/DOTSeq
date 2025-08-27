@@ -1,4 +1,4 @@
-#' Simulate Differential ORF Translation
+#' Simulate Differential Translation Efficiency
 #'
 #' This function simulates ribosome profiling and matched RNA-seq count matrices.
 #'
@@ -19,7 +19,7 @@
 #' \item{labels}{Vector indicating true positives (1) and negatives (0)}
 #' \item{log2FC}{Vector for log2 fold-change}
 #'
-simDOT <- function(
+simDTE <- function(
     ribo,
     rna,
     te_genes = 10,
