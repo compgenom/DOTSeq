@@ -1,10 +1,10 @@
-#' Fit DOTSeq Differential Translation Model
+#' Fit DOTSeq Differential Translation Models
 #'
 #' This function performs the complete DOTSeq analysis pipeline:
 #' loading count data, aligning with sample metadata, filtering ORFs,
 #' normalising counts, calculating translational efficiency (TE), and
-#' fitting quasi-binomial generalised linear models for differential ORF
-#' translation using \code{satuRn::fitDTU}.
+#' fitting quasi-binomial and negative binomial generalised linear models for 
+#' differential ORF translation using \code{satuRn::fitDTU} and \codeP{DESeq2::DESeq}.
 #'
 #' @param countTable Either a path to a count table file or a data frame.
 #'   The file/data frame must have columns: Geneid, Chr, Start, End, Strand, Length,
