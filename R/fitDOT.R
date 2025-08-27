@@ -4,7 +4,7 @@
 #' loading count data, aligning with sample metadata, filtering ORFs,
 #' normalising counts, calculating translational efficiency (TE), and
 #' fitting quasi-binomial and negative binomial generalised linear models for 
-#' differential ORF translation using \code{satuRn::fitDTU} and \codeP{DESeq2::DESeq}.
+#' differential ORF translation using \code{satuRn::fitDTU} and \code{DESeq2::DESeq}.
 #'
 #' @param countTable Either a path to a count table file or a data frame.
 #'   The file/data frame must have columns: Geneid, Chr, Start, End, Strand, Length,
