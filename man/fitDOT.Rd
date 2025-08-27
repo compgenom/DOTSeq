@@ -94,7 +94,7 @@ This function performs the complete DOTSeq analysis pipeline:
 loading count data, aligning with sample metadata, filtering ORFs,
 normalising counts, calculating translational efficiency (TE), and
 fitting quasi-binomial and negative binomial generalised linear models for
-differential ORF translation using \code{satuRn::fitDTU} and \codeP{DESeq2::DESeq}.
+differential ORF translation using \code{satuRn::fitDTU} and \code{DESeq2::DESeq}.
 }
 \examples{
 \dontrun{
