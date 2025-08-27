@@ -1,6 +1,6 @@
-#' Prepare Data and Plot DOT Heatmap
+#' Prepare Data and Plot Heatmap for DOU
 #'
-#' This function generates a DOT (Differential ORF Translation) heatmap using 
+#' This function generates a heatmap for DOU (Differential ORF Usage) using 
 #' estimates from a results data frame, comparing mORFs with either uORFs or dORFs.
 #'
 #' @param results An output data frame from testDOT containing estimates, gene labels, and groupID.
@@ -78,7 +78,7 @@ pairedData <- function(results, orf_type, species_dataset, symbol_col, threshold
     abs_max = absMax
   ))
 }
-#' Plot DOT heatmap
+#' Plot DOU heatmap
 #'
 #' @param orderedMatrix matrix of values to plot
 #' @param rowDendClean dendrogram for row ordering
@@ -96,17 +96,20 @@ plotHeatmap <- function(orderedMatrix,
                         color_breaks,
                         abs_max,
                         width = NULL, height = NULL,
-                        output_file = "dot.pdf") {
-
+                        output_file = "dou.pdf") {
+  
+  old_par <- par(no.readonly = TRUE)
+  on.exit(par(old_par), add = TRUE)
+  
   n_rows <- nrow(orderedMatrix)
   n_cols <- ncol(orderedMatrix)
   
   # Dynamic scaling
   cex_row <- ifelse(n_rows > 50, 0.5, 0.8)
   cex_col <- ifelse(n_cols > 50, 0.5, 0.8)
-  right_margin <- max(9.5, min(12, n_rows / 5))
+  right_margin <- max(5, min(5, n_rows / 5))
   layout_widths <- c(2, max(6, n_cols / 10))
-  key_bottom <- ifelse(n_rows > 50, 0.05, 0.13)
+  key_bottom <- ifelse(n_rows > 50, 0.13, 0.13)
   key_top <- key_bottom + 0.08
   
   # pdf(output_file, width = width, height = height)
@@ -140,10 +143,10 @@ plotHeatmap <- function(orderedMatrix,
   axis(1, at = 1:ncol(orderedMatrix), labels = colnames(orderedMatrix), las = 2, cex.axis = cex_col)
   axis(4, at = 1:nrow(orderedMatrix), labels = gene_labels, las = 2, cex.axis = cex_row)
   
-  mtext("Differential ORF translation", side = 3, line = 1.5, cex = 1.2, adj = 0.5, font = 2)
+  mtext("Differential ORF usage", side = 3, line = 1.5, cex = 1.2, adj = 0.5, font = 2)
   
   ## Color key
-  par(fig = c(0.55, 1, key_bottom, key_top), new = TRUE, mar = c(0, 0, 2, 4))
+  par(fig = c(0.75, 0.9, key_bottom, key_top), new = TRUE, mar = c(0, 0, 2, 0))
   image(z = t(matrix(seq(-abs_max, abs_max, length.out = 100), nrow = 1)),
         col = color_palette, axes = FALSE)
   
@@ -153,10 +156,10 @@ plotHeatmap <- function(orderedMatrix,
   mtext("log-odds", side = 1, line = 2, cex = 0.8)
   
   # dev.off()
-  par(mfrow = c(1, 1))
+  par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
 }
 
-#' Run DOT heatmap wrapper
+#' Run DOU heatmap wrapper
 #'
 #' @param results A data frame containing estimates, labels, and groupID
 #' @param species_dataset A string specifying the Ensembl dataset, e.g., "hsapiens_gene_ensembl".
@@ -165,7 +168,7 @@ plotHeatmap <- function(orderedMatrix,
 #' @param output_file PDF file name
 #'
 #' @export
-pairedDOTHeatmap <- function(results, orf_type, species_dataset, symbol_col, output_file, width = NULL, height = NULL) {
+douHeatmap <- function(results, orf_type, species_dataset, symbol_col, output_file, width = NULL, height = NULL) {
   prep_out <- pairedData(
     results = results,
     orf_type = orf_type,

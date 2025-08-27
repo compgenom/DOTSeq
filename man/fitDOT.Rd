@@ -20,6 +20,7 @@ fitDOT(
   stringent = NULL,
   parallel = FALSE,
   seed = NULL,
+  plotMeanDispersion = FALSE,
   verbose = FALSE
 )
 }
@@ -68,6 +69,8 @@ the function will run sequentially on a single core (default: FALSE).}
 
 \item{seed}{An optional integer. Use to set the seed for the random number
 generator to ensure reproducible results (default: NULL).}
+
+\item{plotMeanDispersion}{Logical; if TRUE, plots the mean-dispersion plots (default: FALSE).}
 
 \item{verbose}{Logical; if TRUE, prints progress messages (default: FALSE).}
 }
