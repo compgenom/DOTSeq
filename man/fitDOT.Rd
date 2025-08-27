@@ -2,7 +2,7 @@
 % Please edit documentation in R/fitDOT.R
 \name{fitDOT}
 \alias{fitDOT}
-\title{Fit DOTSeq Differential Translation Model}
+\title{Fit DOTSeq Differential Translation Models}
 \usage{
 fitDOT(
   countTable,
@@ -93,8 +93,8 @@ A named \code{list} with the following elements:
 This function performs the complete DOTSeq analysis pipeline:
 loading count data, aligning with sample metadata, filtering ORFs,
 normalising counts, calculating translational efficiency (TE), and
-fitting quasi-binomial generalised linear models for differential ORF
-translation using \code{satuRn::fitDTU}.
+fitting quasi-binomial and negative binomial generalised linear models for
+differential ORF translation using \code{satuRn::fitDTU} and \codeP{DESeq2::DESeq}.
 }
 \examples{
 \dontrun{
