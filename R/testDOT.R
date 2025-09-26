@@ -1,229 +1,297 @@
-#' Test Differential ORF Translation
+#' Test for Differential ORF Usage (DOU) Using Estimated Marginal Means
 #'
-#' This function computes differential translation statistics for ORFs
-#' using a fitted DOTSeq model (from \code{satuRn::fitDTU}) and contrasts.
-#' It calculates log-odds estimates, standard errors, t-statistics, empirical p-values,
-#' and adjusted FDR values. Optional diagnostic plots can visualize the z-score distribution
-#' and empirical null fitting.
+#' @description
+#' Performs differential ORF usage (DOU) analysis using estimated marginal means (EMMs)
+#' from a fitted model object. Computes contrast-specific effect sizes and applies
+#' empirical Bayes shrinkage using the `ashr` package. Supports both interaction-specific
+#' and strategy-specific contrasts.
 #'
-#' @param sumExp A \code{SummarizedExperiment} object returned by \code{satuRn::fitDTU}.
-#'   Must contain fitted models in \code{rowData(sumExp)[["fitDTUModels"]]}.
-#' @param dds DESeq2 object usd for modelling differential gene translation analysis.
-#' @param contrast Numeric vector specifying the contrast of coefficients to test.
-#' @param df Numeric degrees of freedom for empirical null fitting (default: 7).
-#' @param bre Numeric number of histogram breaks for empirical null estimation (default: 120).
-#' @param diagplot1 Logical; if TRUE, produces the first diagnostic plot of z-scores (default: FALSE).
-#' @param diagplot2 Logical; if TRUE, produces the second diagnostic plot of empirical z-scores (default: FALSE).
-#' @param main Character string to set the title for diagnostic plots (default: NULL).
+#' @param m A named list of fitted model objects (e.g., from `glmmTMB`), one per ORF.
+#' @param emm_specs A formula specifying the EMM structure (default: \code{~condition * strategy}).
+#' @param contrasts_method Character. Method for computing contrasts (default: \code{"pairwise"}).
+#' @param workers Integer. Number of parallel workers to use (default: \code{1}).
+#' @param BPPARAM A BiocParallel parameter object for parallel execution (default: \code{BiocParallel::bpparam()}).
+#' @param verbose Logical. If \code{TRUE}, print progress messages (default: \code{FALSE}).
 #'
-#' @return A named \code{list} containing two \code{data.frame} objects:
+#' @return A named list with two components:
 #' \describe{
-#'   \item{summary}{A \code{data.frame} containing the following columns:
-#'     \describe{
-#'       \item{estimates}{Log-odds estimates for the specified contrast.}
-#'       \item{se}{Standard errors of the estimates.}
-#'       \item{posterior}{Posterior degrees of freedom for each estimate.}
-#'       \item{t.statistic}{t-statistic for each estimate.}
-#'       \item{pval}{Two-sided p-value based on the t-statistic.}
-#'       \item{empirical.pval}{P-values corrected using empirical null estimation.}
-#'       \item{empirical.fdr}{FDR-adjusted p-values using Benjamini-Hochberg correction.}
-#'     }
-#'   }
-#'   \item{dds_results}{A \code{data.frame} containing DESeq2 contrast results with columns such as:
-#'     \describe{
-#'       \item{baseMean}{Average expression across all samples.}
-#'       \item{log2FoldChange}{Log2 fold change between conditions.}
-#'       \item{lfcSE}{Standard error of the log2 fold change.}
-#'       \item{stat}{Wald statistic.}
-#'       \item{pvalue}{Raw p-value.}
-#'       \item{padj}{Adjusted p-value (FDR).}
-#'     }
-#'   }
+#'   \item{interaction_specific}{A list of contrast-specific data frames containing effect sizes, standard errors, shrunk estimates, local false sign rates (lfsr), and q-values.}
+#'   \item{strategy_specific}{A nested list of contrast-strategy combinations with the same structure as above.}
 #' }
 #'
-#' @examples
-#' \dontrun{
-#' results <- testDOT(sumExp = mySummarizedExp, dds = myDds, contrast = c(0,1,0), 
-#'                    df = 7, bre = 120, diagplot1 = TRUE, diagplot2 = TRUE, main = "Sample ORFs", seed = 42)
-#' head(results)
-#' }
+#' @details
+#' The function first filters out invalid or NULL EMM objects. For each valid contrast,
+#' it computes the difference in effect sizes between ribosome profiling and RNA-seq
+#' (i.e., DOU), estimates the standard error, and applies shrinkage using `ashr::ash`.
 #'
+#' Strategy-specific contrasts are also computed separately for each modality.
+#'
+#' @import emmeans
+#' @import ashr
+#' @importFrom BiocParallel register
+#' @importFrom BiocParallel bplapply
+#' @importFrom pbapply pblapply
 #' @export
-testDOT <- function(sumExp, 
-                    dds, 
-                    contrast, 
-                    df = 7, 
-                    bre = 120, 
-                    diagplot1 = FALSE, 
-                    diagplot2 = FALSE, 
-                    main = NULL, 
-                    seed = NULL) {
+testDOU <- function(m, emm_specs = ~condition * strategy, 
+                    contrasts_method = "pairwise", 
+                    workers = 1,
+                    BPPARAM = BiocParallel::bpparam(), 
+                    verbose = FALSE) {
   
-  # Input validation checks
-  if (!is(sumExp, "SummarizedExperiment")) {
-    stop("Input `sumExp_filtered` must be a SummarizedExperiment object.")
-  }
-  if (is.null(rowData(sumExp)[["fitDTUModels"]])) {
-    stop("The 'fitDTUModels' slot is empty. Did you run fitDTU first?")
-  }
-  if (!is.numeric(contrast) || !is.vector(contrast)) {
-    stop("Input `contrast` must be a numeric vector.")
-  }
-  if (!is.numeric(df) || length(df) != 1 || df < 1) {
-    stop("Input `df` must be a single positive numeric value.")
-  }
-  if (!is.numeric(bre) || length(bre) != 1 || bre < 1) {
-    stop("Input `bre` must be a single positive numeric value.")
-  }
+  fitted_models_list <- rowData(m$sumExp)[['fitDOUModels']]
   
-  # Extract the necessary data from the sumExp object
-  models <- rowData(sumExp)[["fitDTUModels"]]
-  
-  # A more robust check for contrast length
-  first_model <- models[[which.max(vapply(models, function(x) length(satuRn:::getCoef(x)), numeric(1)))]]
-  if(length(contrast) != length(satuRn:::getCoef(first_model))) {
-    stop("The length of the contrast vector does not match the number of coefficients in the models.")
-  }
-  
-  # Compute the usage estimate (log-odds)
-  estimates <- vapply(models, satuRn:::getEstimates, contrast = contrast, FUN.VALUE = numeric(1))
-  # Compute the standard error (SE) for each of the estimates
-  se <- sqrt(vapply(models, satuRn:::varContrast, contrast = contrast, FUN.VALUE = numeric(1)))
-  # Extract the posterior degrees of freedom for each model, which are necessary for the t-test
-  posterior <- unlist(vapply(models, satuRn:::getDfPosterior, FUN.VALUE = numeric(1)))
-  # Replace NULL or numeric(0) with NA
-  posterior[!(vapply(posterior, length, numeric(1)))] <- NA
-  
-  # Calculate the t-statistic and convert to z-score
-  # Compute the t-statistic for each transcript's contrast
-  tstat <- estimates / se
-  # Calculate the two-sided p-value for each t-statistic.
-  pval <- pt(-abs(tstat), posterior) * 2
-  # Convert the calculated p-values back into standard normal (z) scores.
-  zvalues <- qnorm(pval / 2) * sign(tstat)
-  
-  # This code is adapted directly from satuRn's internal functions
-  # Filter out extreme z-scores
-  zvaluesMid <- zvalues[abs(zvalues) < 10]
-  zvaluesMid <- zvaluesMid[!is.na(zvaluesMid)]
-  
-  par(mfrow = c(1, 2))
-  if(diagplot1){
-    plot <- locfdr(zz = zvaluesMid, df = df,
-                   main = paste0("diagplot 1: ", main))
-  }
-  
-  # Initial MLE estimation
-  N <- length(zvaluesMid)
-  b <- 4.3 * exp(-0.26 * log(N, 10))
-  med <- median(zvaluesMid)
-  sc <- diff(quantile(zvaluesMid)[c(2, 4)]) / (2 * qnorm(.75))
-  mlests <- satuRn:::locfdr_locmle(zvaluesMid, xlim = c(med, b * sc))
-  
-  lo <- min(zvaluesMid)
-  up <- max(zvaluesMid)
-  
-  breaks <- seq(lo, up, length = bre)
-  zzz <- pmax(pmin(zvaluesMid, up), lo)
-  zh <- hist(zzz, breaks = breaks, plot = FALSE)
-  x <- (breaks[-1] + breaks[-length(breaks)]) / 2
-  sw <- 0
-  
-  X <- cbind(1, poly(x, df = df))
-  zh <- hist(zzz, breaks = breaks, plot = FALSE)
-  y <- zh$counts
-  glmfit <- glm(y ~ poly(x, df = df), poisson)
-  f <- glmfit$fit
-  # This is a proxy for the 'f(z) misfit' check
-  # Issue a warning if the residual deviance is very high compared to the degrees of freedom
-  if((diagplot1==FALSE) && (glmfit$deviance > glmfit$df.residual * 2)) {
-    warning(paste0("GLM fit for empirical null is poor (residual deviance = ", 
-                   round(glmfit$deviance, 2), 
-                   "). Consider rerunning with a higher 'df' value."))
-  }
-  
-  Cov.in <- list(x = x, X = X, f = f, sw = sw)
-  ml.out <- satuRn:::locfdr_locmle(zvaluesMid,
-                                   xlim = c(mlests[1], b * mlests[2]),
-                                   d = mlests[1], s = mlests[2], Cov.in = Cov.in
-  )
-  mlests <- ml.out$mle
-  
-  # Use the derived mlests to correct the full z-score vector
-  zval_empirical <- (zvalues - mlests[1]) / mlests[2]
-  pval_empirical <- 2 * pnorm(-abs(zval_empirical), mean = 0, sd = 1)
-  
-  if (diagplot2) {
-    zval_empirical_mid <- zval_empirical[abs(zval_empirical) < 10]
-    zval_empirical_mid <- zval_empirical_mid[!is.na(zval_empirical_mid)]
-    lo <- min(zval_empirical_mid)
-    up <- max(zval_empirical_mid)
-    
-    lo <- min(lo, -1 * up) # to center the figure
-    up <- max(up, -1 * lo)
-    
-    bre <- 120
-    breaks <- seq(lo, up, length = bre)
-    zzz <- pmax(pmin(zval_empirical_mid, up), lo)
-    zh <- hist(zzz, breaks = breaks, plot = FALSE)
-    yall <- zh$counts
-    K <- length(yall)
-    
-    hist(zzz, breaks = breaks, xlab = "z-scores", 
-         main = paste0("diagplot 2: ", main), freq = FALSE)
-    xfit <- seq(min(zzz), max(zzz), length = 4000)
-    yfit <- dnorm(xfit / mlests[3], mean = 0, sd = 1)
-    lines(xfit, yfit, col = "darkgreen", lwd = 2)
-  }
-  par(mfrow = c(1, 1))
-  
-  FDR <- p.adjust(pval_empirical, method = "BH")
-  
-  # Define thresholds
-  fdrThresh <- 0.05
-  effectThresh <- 1
-  
-  # Calculate -log10(FDR)
-  logFDR <- -log10(FDR)
-  
-  # Create logical vectors for significance and effect size
-  sig <- FDR < fdrThresh
-  posEffect <- estimates > effectThresh
-  negEffect <- estimates < -effectThresh
-  
-  # Plot all points in gray
-  plot(estimates, logFDR, pch = 20, col = "gray80",
-       main = paste("Volcano Plot for DOU:", main),
-       xlab = "log-odds change", ylab = "-log10(FDR)")
-  points(estimates[sig & posEffect], logFDR[sig & posEffect], pch = 20, col = "red")
-  points(estimates[sig & negEffect], logFDR[sig & negEffect], pch = 20, col = "blue")
-  # Add threshold lines
-  abline(h = -log10(fdrThresh), col = "black", lty = 2)
-  abline(v = c(-effectThresh, effectThresh), col = "black", lty = 2)
-  
-  res <- data.frame(estimates = estimates, se = se, posterior = posterior,
-                        t.statistic = tstat, pval = pval, 
-                        empirical.pval = pval_empirical, empirical.fdr = FDR)
-  res <- na.omit(res)
-  
-  # Extract non-zero contrast names in dds and convert ":" to "."
-  contrastTerms <- names(sort(contrast[contrast!=0], decreasing=TRUE))
-  contrastTerms <- gsub(":", ".", contrastTerms)
-  
-  # Dynamically choose between 'name' and 'contrast'
-  if (length(contrastTerms) == 1) {
-    ddsRes <- results(dds, name = contrastTerms[1])
-  } else if (length(contrastTerms) == 2) {
-    # cat("contrastTerms 1:", contrastTerms[1], "vs", "contrastTerms 2:", contrastTerms[2], "\n")
-    ddsRes <- results(dds, contrast = list(contrastTerms[1], contrastTerms[2]))
+  if (isTRUE(verbose)) {
+    message(" - Perform contrasts")
+    if (workers > 1) {
+      BPPARAM <- BiocParallel::MulticoreParam(workers = workers, progressbar = TRUE)
+      BiocParallel::register(BPPARAM)
+      emm_list <- BiocParallel::bplapply(fitted_models_list, function(m) {
+        if (is(m, "StatModel") && m@type == "glmmTMB") {
+          tryCatch(emmeans(m@model, specs = emm_specs), error = function(e) NULL)
+        } else {
+          NULL
+        }
+      }, BPPARAM = BPPARAM)
+    } else {
+      emm_list <- pbapply::pblapply(fitted_models_list, function(m) {
+        if (is(m, "StatModel") && m@type == "glmmTMB") {
+          tryCatch(emmeans(m@model, specs = emm_specs), error = function(e) NULL)
+        } else {
+          NULL
+        }
+      })
+    }
   } else {
-    stop("Unexpected number of contrast terms. Expected 1 or 2.")
+    # No progress bar, default backend
+    emm_list <- lapply(fitted_models_list, function(m) {
+      if (is(m, "StatModel") && m@type == "glmmTMB") {
+        tryCatch(emmeans(m@model, specs = emm_specs), error = function(e) NULL)
+      } else {
+        NULL
+      }
+    })
   }
   
-  ddsRes <- as.data.frame(ddsRes)
+  valid_genes <- !sapply(emm_list, is.null)
+  emm_list <- emm_list[valid_genes]
+  gene_ids <- names(emm_list)
   
-  # results <- merge(res, ddsRes, by = "row.names", all = TRUE)
+  if (length(emm_list) == 0) {
+    warning("No valid emmeans objects could be generated.")
+    return(NULL)
+  }
   
-  return(list(douRes = res, dteRes = ddsRes))
+  all_results <- list()
+  all_results[["interaction_specific"]] <- list()
+  
+  ### Manual Interaction contrasts
+  first_emm <- emm_list[[1]]
+  contrast_df_template <- as.data.frame(summary(contrast(first_emm, method = contrasts_method, by = "strategy", adjust = "none")))
+  all_contrast_names <- unique(as.character(contrast_df_template$contrast))
+  
+  for (c_name in all_contrast_names) {
+    if (verbose) {
+      message(" - Calculate the effect size and standard error for ", c_name)
+    }
+    
+    # Use lapply to iterate through all genes and extract the betas and SEs
+    all_contrasts <- lapply(emm_list, function(emm) {
+      contrast_df <- summary(contrast(emm, method = contrasts_method, by = "strategy", adjust = "none"))
+      
+      # Use as.character() for robust subsetting
+      beta_ribo <- contrast_df$estimate[(as.character(contrast_df$strategy) == "1") & (as.character(contrast_df$contrast) == c_name)]
+      se_ribo <- contrast_df$SE[(as.character(contrast_df$strategy) == "1") & (as.character(contrast_df$contrast) == c_name)]
+      
+      beta_rna <- contrast_df$estimate[(as.character(contrast_df$strategy) == "0") & (as.character(contrast_df$contrast) == c_name)]
+      se_rna <- contrast_df$SE[(as.character(contrast_df$strategy) == "0") & (as.character(contrast_df$contrast) == c_name)]
+      
+      beta_dou <- beta_ribo - beta_rna
+      se_dou <- sqrt(se_ribo^2 + se_rna^2)
+      
+      return(list(beta = beta_dou, se = se_dou))
+    })
+    
+    # Extract the betas and SEs for the current contrast name
+    betas_for_ashr <- sapply(all_contrasts, `[[`, "beta")
+    ses_for_ashr <- sapply(all_contrasts, `[[`, "se")
+    
+    # Run ashr on the full set of data for this contrast
+    if (any(!is.na(betas_for_ashr))) {
+      if (verbose) {
+        message(" - Perform empirical Bayesian shrinkage on the effect size for ", c_name)
+      }
+      
+      ash_result <- ashr::ash(betas_for_ashr, ses_for_ashr)
+      
+      # Collect results in a data frame
+      res_df <- data.frame(
+        beta = betas_for_ashr,
+        se = ses_for_ashr,
+        shrunkBeta = ashr::get_pm(ash_result),
+        lfsr = ashr::get_lfsr(ash_result),
+        qvalue = ashr::get_qvalue(ash_result)
+      )
+      
+      all_results[["interaction_specific"]][[c_name]] <- res_df
+      
+    } else {
+      warning(paste("No valid betas for manual contrast:", c_name))
+      all_results[["interaction_specific"]][[c_name]] <- NULL
+    }
+  }
+  
+  ### Strategy-specific contrasts
+  all_results[["strategy_specific"]] <- list()
+  strategy_combos <- unique(summary(contrast_df_template)[, c("contrast", "strategy")])
+  
+  for (i in seq_len(nrow(strategy_combos))) {
+    c_name <- as.character(strategy_combos$contrast[i])
+    by_name <- as.character(strategy_combos$strategy[i])
+    
+    if (verbose) {
+      message(" - Calculate the effect size and standard error for contrast: ", c_name, ", strategy: ", by_name)
+    }
+    
+    # Check if the list for the current contrast name exists
+    if (is.null(all_results[["strategy_specific"]][[c_name]])) {
+      all_results[["strategy_specific"]][[c_name]] <- list()
+    }
+    
+    betas <- vapply(emm_list, function(emm) {
+      res <- summary(contrast(emm, method = contrasts_method, by = "strategy", adjust = "none"))
+      res$estimate[res$contrast == c_name & res$strategy == by_name]
+    }, FUN.VALUE = numeric(1))
+    
+    ses <- vapply(emm_list, function(emm) {
+      res <- summary(contrast(emm, method = contrasts_method, by = "strategy", adjust = "none"))
+      res$SE[res$contrast == c_name & res$strategy == by_name]
+    }, FUN.VALUE = numeric(1))
+    
+    if (verbose) {
+      message(" - Perform empirical Bayesian shrinkage on the effect size for ", c_name)
+    }
+    
+    if (any(!is.na(betas))) {
+      ash_result <- ashr::ash(betas, ses)
+      res_df <- data.frame(
+        beta = betas,
+        se = ses,
+        shrunkBeta = ashr::get_pm(ash_result),
+        lfsr = ashr::get_lfsr(ash_result),
+        qvalue = ashr::get_qvalue(ash_result)
+      )
+    } else {
+      res_df <- data.frame(beta = NA, se = NA, shrunkBeta = NA, lfsr = NA, qvalue = NA)
+    }
+    
+    all_results[["strategy_specific"]][[c_name]][[by_name]] <- res_df
+  }
+  return(all_results)
 }
 
+
+#' Extract Model Results into a Unified Data Frame
+#'
+#' @description
+#' Extracts scalar results from a named list of model objects (typically from `glmmTMB` fits)
+#' into a tidy data frame. Handles nested lists, missing or `NULL` models, and ensures
+#' consistent columns across all entries.
+#'
+#' @param models_list A named list of model objects, each representing an ORF.
+#'   Each object should contain a `@type` slot and optionally a `@results` slot.
+#' @param verbose Logical. If \code{TRUE}, messages will be printed for skipped or failed models.
+#'
+#' @return A data frame where each row corresponds to an ORF and its associated model results.
+#'   Columns include scalar parameters extracted from the model, \code{ORF_ID}, and \code{modelType}.
+#'
+#' @details
+#' The function uses a recursive helper (`flatten_scalars`) to extract scalar values
+#' from nested lists. It supports models of type \code{"glmmTMB"} and \code{"glmmTMB_joint"},
+#' and gracefully handles \code{NULL} or unsupported model types by returning minimal rows.
+#'
+#' Missing columns across models are filled with \code{NA} to ensure a consistent structure.
+#'
+#' @import SummarizedExperiment
+#' @export
+extract_results <- function(models_list, verbose = TRUE) {
+  
+  # Helper to recursively flatten and extract scalar values
+  flatten_scalars <- function(x, prefix = NULL) {
+    if (is.atomic(x) && length(x) == 1) {
+      name <- if (is.null(prefix)) "value" else prefix
+      return(setNames(list(x), name))
+    } else if (is.list(x)) {
+      result <- list()
+      # Use `names(x)` and `seq_along` to handle unnamed elements gracefully
+      list_names <- names(x)
+      if (is.null(list_names)) {
+        list_names <- paste0("elem", seq_along(x))
+      }
+      for (i in seq_along(x)) {
+        n <- list_names[i]
+        sub_prefix <- if (is.null(prefix)) n else paste0(prefix, ".", n)
+        result <- c(result, flatten_scalars(x[[i]], sub_prefix))
+      }
+      return(result)
+    } else {
+      return(list()) # Return an empty list for non-atomic, non-list objects
+    }
+  }
+  
+  # Process a single model
+  process_model <- function(model_obj, name) {
+    # --- ADDED: Check for NULL objects here ---
+    if (is.null(model_obj)) {
+      if (verbose) message("Skipping ORF_ID ", name, " due to NULL model object.")
+      return(data.frame(
+        ORF_ID = name,
+        modelType = "NULL", # Or "Failed", etc.
+        stringsAsFactors = FALSE
+      ))
+    }
+    
+    model_type <- model_obj@type
+    
+    if ((model_type == "glmmTMB_joint") | (model_type == "glmmTMB")) {
+      params <- model_obj@results
+      param_values <- flatten_scalars(params)
+      
+      param_values$ORF_ID <- name
+      param_values$modelType <- model_type
+      
+      # --- CORRECTED: Create data.frame from the single list to guarantee one row ---
+      df <- as.data.frame(param_values, stringsAsFactors = FALSE)
+      
+    } else {
+      # Return minimal row with NA for failed or single-ORF models
+      df <- data.frame(
+        ORF_ID = name,
+        modelType = model_type,
+        stringsAsFactors = FALSE
+      )
+    }
+    
+    return(df)
+  }
+  
+  # Apply to all models
+  results_df_list <- lapply(names(models_list), function(name) {
+    process_model(models_list[[name]], name)
+  })
+  
+  # Get all unique column names
+  all_cols <- unique(unlist(lapply(results_df_list, names)))
+  
+  # Fill missing columns with NA
+  results_df_list_filled <- lapply(results_df_list, function(df) {
+    missing <- setdiff(all_cols, names(df))
+    for (col in missing) df[[col]] <- NA
+    df[all_cols]
+  })
+  
+  # Combine all rows
+  results_df <- do.call(rbind, results_df_list_filled)
+  rownames(results_df) <- NULL
+  
+  return(results_df)
+}

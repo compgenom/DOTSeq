@@ -2,24 +2,51 @@
 % Please edit documentation in R/heatmap.R
 \name{pairedData}
 \alias{pairedData}
-\title{Prepare Data and Plot Heatmap for DOU}
+\title{Prepare Data and Metadata for DOU Heatmap}
 \usage{
-pairedData(results, orf_type, species_dataset, symbol_col, threshold = 0.05)
+pairedData(
+  results,
+  padj_col = "lfsr",
+  estimates_col = "shrunkBeta",
+  flip_sign = TRUE,
+  orf_type = "uORF",
+  species_dataset = "hsapiens_gene_ensembl",
+  symbol_col = "hgnc_symbol",
+  threshold = 0.05
+)
 }
 \arguments{
-\item{results}{An output data frame from testDOT containing estimates, gene labels, and groupID.}
+\item{results}{A data frame from \code{testDOT} containing DOU estimates, gene labels, and group IDs.}
 
-\item{orf_type}{Character string specifying the ORF type to compare with mORF.
-Accepts either "uORF" or "dORF".}
+\item{padj_col}{Column name for adjusted p-values or local FDR (default: \code{"lfsr"}).}
 
-\item{species_dataset}{A string specifying the Ensembl dataset, e.g., "hsapiens_gene_ensembl".}
+\item{estimates_col}{Column name for DOU estimates (default: \code{"shrunkBeta"}).}
 
-\item{symbol_col}{A string indicating the column name for gene symbols in Ensembl,
-e.g., "hgnc_symbol" for human or "mgi_symbol" for mouse.}
+\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU estimates (default: \code{TRUE}).}
 
-\item{threshold}{Numeric value specifying the empirical FDR threshold (default = 0.05).}
+\item{orf_type}{Character string specifying the ORF type to compare with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.}
+
+\item{species_dataset}{Ensembl dataset name, e.g., \code{"hsapiens_gene_ensembl"}.}
+
+\item{symbol_col}{Column name for gene symbols in Ensembl, e.g., \code{"hgnc_symbol"} or \code{"mgi_symbol"}.}
+
+\item{threshold}{Numeric threshold for significance filtering (default: \code{0.05}).}
+}
+\value{
+A list containing:
+\describe{
+\item{orderedMatrix}{Matrix of DOU estimates for significant ORFs.}
+\item{rowDendClean}{Dendrogram object for row clustering.}
+\item{highlight_df}{Data frame indicating significant tiles to highlight.}
+\item{genes}{Full gene annotation data from Ensembl.}
+\item{gene_labels}{Vector of gene symbols for heatmap rows.}
+\item{color_palette}{Color palette for heatmap.}
+\item{color_breaks}{Breaks used for color scaling.}
+\item{abs_max}{Maximum absolute value for color scaling.}
+}
 }
 \description{
-This function generates a heatmap for DOU (Differential ORF Usage) using
-estimates from a results data frame, comparing mORFs with either uORFs or dORFs.
+This function prepares a matrix of DOU estimates for heatmap visualization,
+comparing mORFs with either uORFs or dORFs. It filters significant ORFs,
+clusters rows, and retrieves gene annotations from Ensembl.
 }

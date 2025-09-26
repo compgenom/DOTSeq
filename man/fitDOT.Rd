@@ -11,21 +11,22 @@ fitDOT(
   bed,
   rnaSuffix = ".rna",
   riboSuffix = ".ribo",
-  baseline = NULL,
-  formula = NULL,
-  sampleDelim = NULL,
+  formula = ~condition * strategy,
+  dispersionStrategy = "strategy",
+  dispformula = NULL,
+  diagnostic = FALSE,
   batchCol = NULL,
   pseudoCnt = 1e-06,
   minCount = 1,
-  stringent = NULL,
-  parallel = FALSE,
-  seed = NULL,
+  stringent = TRUE,
+  parallel = list(n = 4L, autopar = TRUE),
+  optimizers = FALSE,
   verbose = FALSE
 )
 }
 \arguments{
 \item{countTable}{Either a path to a count table file or a data frame.
-The file/data frame must have columns: Geneid, Chr, Start, End, Strand, Length,
+Must contain columns: Geneid, Chr, Start, End, Strand, Length,
 plus one column per sample.}
 
 \item{conditionTable}{Either a path to a condition metadata file or a data frame.
@@ -39,37 +40,37 @@ Must include columns: run, strategy, condition, replicate.}
 
 \item{riboSuffix}{Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).}
 
-\item{baseline}{Optional character specifying the baseline condition for contrasts.
-If NULL, the function attempts to infer it automatically (default: NULL).}
+\item{formula}{A formula object specifying the design, e.g., \code{~ 0 + replicate + condition * strategy}.}
 
-\item{formula}{A formula object specifying the design, e.g., ~ 0 + replicate + condition * strategy.}
+\item{dispersionStrategy}{Optional string specifying the dispersion modeling strategy.
+Used to select between default, constant, or custom dispersion models.}
 
-\item{sampleDelim}{Delimiter used in sample name. Use "." if sample IDs are unique,
-e.g. SRR, DRR, or ERR run accessions (default: NULL).}
+\item{dispformula}{Optional formula object for custom dispersion modeling.}
+
+\item{diagnostic}{Logical; if \code{TRUE}, enables model diagnostics including tests for overdispersion,
+zero inflation, and residual properties (default: \code{FALSE}).}
 
 \item{batchCol}{String; name of the column in \code{conditionTable} that specifies batch assignments,
-e.g., "batch". If NULL, batch effects are not modeled (default: NULL).}
+e.g., \code{"batch"}. If \code{NULL}, batch effects are not modeled (default: \code{NULL}).}
 
-\item{pseudoCnt}{Numeric pseudo-count to avoid division by zero when computing TE (default: 1e-6).}
+\item{pseudoCnt}{Numeric pseudo-count to avoid division by zero when computing TE (default: \code{1e-6}).}
 
-\item{minCount}{Minimum count threshold for filtering ORFs (default: 1).}
+\item{minCount}{Minimum count threshold for filtering ORFs (default: \code{1}).}
 
-\item{stringent}{Logical or NULL; determines the filtering strategy:
-\itemize{
-\item TRUE: keep ORFs where all replicates in at least one condition pass \code{minCount}.
-\item FALSE: keep ORFs where all replicates in at least one condition-strategy group pass \code{minCount}.
-\item NULL: keep ORFs where total counts across replicates pass \code{minCount}.
+\item{stringent}{Logical or \code{NULL}; determines the filtering strategy:
+\describe{
+\item{\code{TRUE}}{Keep ORFs where all replicates in at least one condition pass \code{minCount}.}
+\item{\code{FALSE}}{Keep ORFs where all replicates in at least one condition-strategy group pass \code{minCount}.}
+\item{\code{NULL}}{Keep ORFs where total counts across replicates pass \code{minCount}.}
 }}
 
-\item{parallel}{A logical value indicating whether to use parallel
-computation. If \code{TRUE}, the function will distribute tasks across
-multiple cores as configured by the \code{BiocParallel} package. If \code{FALSE},
-the function will run sequentially on a single core (default: FALSE).}
+\item{parallel}{A list passed to \code{glmmTMBControl} to configure parallel optimization.
+If \code{NULL}, parallelism is disabled (default: \code{list(n = 4L, autopar = TRUE)}).}
 
-\item{seed}{An optional integer. Use to set the seed for the random number
-generator to ensure reproducible results (default: NULL).}
+\item{optimizers}{Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers
+in \code{glmmTMB}: \code{nlminb}, \code{bobyqa}, and \code{optim} (default: \code{FALSE}).}
 
-\item{verbose}{Logical; if TRUE, prints progress messages (default: FALSE).}
+\item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{FALSE}).}
 }
 \value{
 A named \code{list} with the following elements:
@@ -77,21 +78,18 @@ A named \code{list} with the following elements:
 \item{rawCnts}{Raw counts matrix for all samples.}
 \item{normCnts}{Normalized counts matrix for all samples.}
 \item{orfs}{Data frame of ORFs derived from the BED file matched to the DOTSeq object.}
-\item{absoluteTE}{Matrix of translational efficiency values per ORF and sample.}
-\item{occupancyShift}{Matrix of log2-transformed ribo/rna proportions within genes.}
-\item{dds}{DESeq2 object usd for modelling differential gene translation analysis.}
+\item{dds}{DESeq2 object used for modeling differential gene translation.}
 \item{sumExp}{SummarizedExperiment object containing normalized counts and sample metadata.}
-\item{dxd}{DOTSeq object used for modelling exon/ORF-level counts.}
-\item{formula}{Design formula used in \code{satuRn::fitDTU}.}
-\item{contrastMat}{Contrast matrix used for differential ORF translation testing.}
+\item{dxd}{DOTSeq object used for modeling exon/ORF-level counts.}
+\item{formula}{Design formula used in \code{DOTSeq::fitDOU}.}
 }
 }
 \description{
 This function performs the complete DOTSeq analysis pipeline:
 loading count data, aligning with sample metadata, filtering ORFs,
-normalising counts, calculating translational efficiency (TE), and
-fitting quasi-binomial and negative binomial generalised linear models for
-differential ORF translation using \code{satuRn::fitDTU} and \code{DESeq2::DESeq}.
+normalizing counts, calculating translational efficiency (TE), and
+fitting beta-binomial and negative binomial generalized linear models for
+differential ORF translation using \code{DOTSeq::fitDOU} and \code{DESeq2::DESeq}.
 }
 \examples{
 \dontrun{
@@ -105,11 +103,9 @@ result <- fitDOT(
   pseudoCnt = 1e-6,
   minCount = 1,
   stringent = TRUE,
-  seed = 42,
   verbose = TRUE
 )
-head(result$absoluteTE)
-head(result$occupancyShift)
+head(result$sumExp)
 }
 
 }
