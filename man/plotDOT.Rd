@@ -4,19 +4,35 @@
 \alias{plotDOT}
 \title{Plot DTE vs DOU Comparison and Venn Diagram}
 \usage{
-plotDOT(dot)
+plotDOT(
+  res,
+  estimates_col = "shrunkBeta",
+  lfc_col = "log2FoldChange",
+  flip_sign = FALSE,
+  lhist = 20
+)
 }
 \arguments{
-\item{dot}{A list containing two data frames: \code{dteRes} and \code{dotRes},
-each with rownames as ORF IDs and columns including \code{padj}, \code{log2FoldChange},
-\code{empirical.fdr}, and \code{estimates}.}
+\item{res}{A data frame containing results from DTE and DOU analyses.
+Must include columns: \code{padj}, \code{lfsr}, and numeric columns for log2 fold-change and DOU estimates.}
+
+\item{estimates_col}{Character string specifying the column name for DOU estimates (default: \code{"shrunkBeta"}).}
+
+\item{lfc_col}{Character string specifying the column name for log2 fold-change values from DTE (default: \code{"log2FoldChange"}).}
+
+\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of the DOU estimates (default: \code{FALSE}).}
+
+\item{lhist}{Integer; number of bins to use for the marginal histograms (default: \code{20}).}
 }
 \value{
-Generates two plots: a scatter plot of DTE vs DOU estimates, and a Venn diagram
-showing the overlap of significant ORFs.
+Generates two plots:
+\describe{
+\item{Scatter plot}{Shows DTE (log2 fold-change) vs DOU (log-odds change) estimates, with significance categories.}
+\item{Venn diagram}{(Optional, not currently implemented in this version) showing overlap of significant ORFs.}
+}
 }
 \description{
 This function visualizes the relationship between differential translation efficiency (DTE)
 and differential ORF usage (DOU) using a scatter plot and a Venn diagram.
-It highlights ORFs that are significant in either or both tests and uses a color-blind friendly palette.
+It highlights ORFs that are significant in either or both tests, using a color-blind friendly palette.
 }

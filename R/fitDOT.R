@@ -1,13 +1,42 @@
+#' @title Remove random effects from a formula
+#' @description This function takes an R formula object that may contain random effect terms and returns a new formula with all such terms removed.
+#' @param formula An R formula object. Random effect terms are identified by the pattern `(1 | group)`.
+#' @return A new R formula object containing only the fixed effect terms.
+#' @examples
+#' # Example formula with both fixed and random effects
+#' my_formula <- ~ condition + strategy + (1 | group)
+#' 
+#' # Remove the random effects
+#' new_formula <- remove_random_effects(my_formula)
+#' 
+#' # The result is a formula with only the fixed effects
+#' print(new_formula)
+#' # ~condition + strategy
+#'
+remove_random_effects <- function(formula) {
+  # Convert the formula to a character string and remove the '~'
+  formula_str <- as.character(formula)[2]
+  # Split the string by the '+' sign to get individual terms
+  terms <- unlist(strsplit(formula_str, "\\s*\\+\\s*"))
+  # Identify and remove any terms that contain a random effect pattern
+  clean_terms <- terms[!grepl("\\(1\\s*\\|.*?\\)", terms)]
+  # Collapse the remaining terms back into a single formula string
+  clean_formula_str <- paste(clean_terms, collapse = " + ")
+  # Convert the string back to a formula object
+  as.formula(paste("~", clean_formula_str))
+}
+
+
 #' Fit DOTSeq Differential Translation Models
 #'
 #' This function performs the complete DOTSeq analysis pipeline:
 #' loading count data, aligning with sample metadata, filtering ORFs,
-#' normalising counts, calculating translational efficiency (TE), and
-#' fitting quasi-binomial and negative binomial generalised linear models for 
-#' differential ORF translation using \code{satuRn::fitDTU} and \code{DESeq2::DESeq}.
+#' normalizing counts, calculating translational efficiency (TE), and
+#' fitting beta-binomial and negative binomial generalized linear models for 
+#' differential ORF translation using \code{DOTSeq::fitDOU} and \code{DESeq2::DESeq}.
 #'
 #' @param countTable Either a path to a count table file or a data frame.
-#'   The file/data frame must have columns: Geneid, Chr, Start, End, Strand, Length,
+#'   Must contain columns: Geneid, Chr, Start, End, Strand, Length,
 #'   plus one column per sample.
 #' @param conditionTable Either a path to a condition metadata file or a data frame.
 #'   Must include columns: run, strategy, condition, replicate.
@@ -15,39 +44,37 @@
 #' @param bed Path to a BED file with ORF annotations.
 #' @param rnaSuffix Character suffix to identify RNA-seq columns (default: \code{".rna"}).
 #' @param riboSuffix Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).
-#' @param formula A formula object specifying the design, e.g., ~ 0 + replicate + condition * strategy.
-#' @param baseline Optional character specifying the baseline condition for contrasts.
-#'   If NULL, the function attempts to infer it automatically (default: NULL).
-#' @param sampleDelim Delimiter used in sample name. Use "." if sample IDs are unique, 
-#'    e.g. SRR, DRR, or ERR run accessions (default: NULL).
-#' @param batchCol String; name of the column in `conditionTable` that specifies batch assignments, 
-#'    e.g., "batch". If NULL, batch effects are not modeled (default: NULL).
-#' @param pseudoCnt Numeric pseudo-count to avoid division by zero when computing TE (default: 1e-6).
-#' @param minCount Minimum count threshold for filtering ORFs (default: 1).
-#' @param stringent Logical or NULL; determines the filtering strategy:
-#'   - TRUE: keep ORFs where all replicates in at least one condition pass \code{minCount}.
-#'   - FALSE: keep ORFs where all replicates in at least one condition-strategy group pass \code{minCount}.
-#'   - NULL: keep ORFs where total counts across replicates pass \code{minCount}.
-#' @param seed An optional integer. Use to set the seed for the random number
-#'   generator to ensure reproducible results (default: NULL).
-#' @param parallel A logical value indicating whether to use parallel
-#'   computation. If `TRUE`, the function will distribute tasks across
-#'   multiple cores as configured by the `BiocParallel` package. If `FALSE`,
-#'   the function will run sequentially on a single core (default: FALSE).
-#' @param verbose Logical; if TRUE, prints progress messages (default: FALSE).
+#' @param formula A formula object specifying the design, e.g., \code{~ 0 + replicate + condition * strategy}.
+#' @param batchCol String; name of the column in \code{conditionTable} that specifies batch assignments, 
+#'   e.g., \code{"batch"}. If \code{NULL}, batch effects are not modeled (default: \code{NULL}).
+#' @param pseudoCnt Numeric pseudo-count to avoid division by zero when computing TE (default: \code{1e-6}).
+#' @param minCount Minimum count threshold for filtering ORFs (default: \code{1}).
+#' @param stringent Logical or \code{NULL}; determines the filtering strategy:
+#'   \describe{
+#'     \item{\code{TRUE}}{Keep ORFs where all replicates in at least one condition pass \code{minCount}.}
+#'     \item{\code{FALSE}}{Keep ORFs where all replicates in at least one condition-strategy group pass \code{minCount}.}
+#'     \item{\code{NULL}}{Keep ORFs where total counts across replicates pass \code{minCount}.}
+#'   }
+#' @param parallel A list passed to \code{glmmTMBControl} to configure parallel optimization.
+#'   If \code{NULL}, parallelism is disabled (default: \code{list(n = 4L, autopar = TRUE)}).
+#' @param optimizers Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers
+#'   in \code{glmmTMB}: \code{nlminb}, \code{bobyqa}, and \code{optim} (default: \code{FALSE}).
+#' @param dispersionStrategy Optional string specifying the dispersion modeling strategy.
+#'   Used to select between default, constant, or custom dispersion models.
+#' @param dispformula Optional formula object for custom dispersion modeling.
+#' @param diagnostic Logical; if \code{TRUE}, enables model diagnostics including tests for overdispersion,
+#'   zero inflation, and residual properties (default: \code{FALSE}).
+#' @param verbose Logical; if \code{TRUE}, prints progress messages (default: \code{FALSE}).
 #'
 #' @return A named \code{list} with the following elements:
 #' \describe{
 #'   \item{rawCnts}{Raw counts matrix for all samples.}
 #'   \item{normCnts}{Normalized counts matrix for all samples.}
 #'   \item{orfs}{Data frame of ORFs derived from the BED file matched to the DOTSeq object.}
-#'   \item{absoluteTE}{Matrix of translational efficiency values per ORF and sample.}
-#'   \item{occupancyShift}{Matrix of log2-transformed ribo/rna proportions within genes.}
-#'   \item{dds}{DESeq2 object usd for modelling differential gene translation analysis.}
+#'   \item{dds}{DESeq2 object used for modeling differential gene translation.}
 #'   \item{sumExp}{SummarizedExperiment object containing normalized counts and sample metadata.}
-#'   \item{dxd}{DOTSeq object used for modelling exon/ORF-level counts.}
-#'   \item{formula}{Design formula used in \code{satuRn::fitDTU}.}
-#'   \item{contrastMat}{Contrast matrix used for differential ORF translation testing.}
+#'   \item{dxd}{DOTSeq object used for modeling exon/ORF-level counts.}
+#'   \item{formula}{Design formula used in \code{DOTSeq::fitDOU}.}
 #' }
 #'
 #' @examples
@@ -62,11 +89,9 @@
 #'   pseudoCnt = 1e-6,
 #'   minCount = 1,
 #'   stringent = TRUE,
-#'   seed = 42,
 #'   verbose = TRUE
 #' )
-#' head(result$absoluteTE)
-#' head(result$occupancyShift)
+#' head(result$sumExp)
 #' }
 #'
 #' @export
@@ -74,16 +99,25 @@ fitDOT <- function(countTable, conditionTable,
                    flattenedFile, bed, 
                    rnaSuffix = ".rna", 
                    riboSuffix = ".ribo", 
-                   baseline = NULL,
-                   formula = NULL,
-                   sampleDelim = NULL,
+                   # baseline = NULL,
+                   formula = ~ condition * strategy,
+                   dispersionStrategy = "strategy",
+                   dispformula = NULL,
+                   diagnostic = FALSE,
+                   # sampleDelim = NULL,
                    batchCol = NULL,
                    pseudoCnt = 1e-6, 
                    minCount = 1, 
-                   stringent = NULL, 
-                   parallel = FALSE,
-                   seed = NULL,
+                   stringent = TRUE, 
+                   parallel = list(n=4L, autopar=TRUE),
+                   optimizers = FALSE,
+                   # seed = NULL,
                    verbose = FALSE) {
+  
+  if (verbose) {
+    start_parsing <- Sys.time()
+    message(" - Use ", parallel$n, " threads")
+  }
   
   cntCols <- c("Geneid", "Chr", "Start",  "End", "Strand", "Length")
   
@@ -185,14 +219,14 @@ fitDOT <- function(countTable, conditionTable,
     possibleBatchCols <- grep("^batch$", names(combinedCond), ignore.case = TRUE, value = TRUE)
     if (length(possibleBatchCols) > 0) {
       batchCol <- possibleBatchCols[1]
-      if (verbose) cat(" - Auto-detected batch column:", batchCol, "\n")
+      if (verbose) message(" - Auto-detected batch column: ", batchCol)
     }
   } else if (batchCol==FALSE) {
     possibleBatchCols <- grep("^batch$", names(combinedCond), ignore.case = TRUE, value = TRUE)
     if (length(possibleBatchCols) > 0) {
       batchCol <- possibleBatchCols[1]
       combinedCond[[batchCol]] <- NULL
-      if (verbose) cat(" - Auto-removed batch column:", batchCol, "\n")
+      if (verbose) message(" - Auto-removed batch column: ", batchCol)
     }
   }
   
@@ -210,8 +244,8 @@ fitDOT <- function(countTable, conditionTable,
   fmla <- as.formula(formula)
   
   if (verbose) {
-    cat(" - Start differential ORF translation analysis\n")
-    cat(" - Design formula:", deparse(fmla), "\n")
+    message(" - Start differential ORF translation analysis")
+    message(" - Design formula: ", deparse(fmla))
   }
   cnt <- cnt[order(cnt$Geneid, cnt$Start, cnt$End), ]
   dcounts <- cnt[c(1, 7:ncol(cnt))]
@@ -233,7 +267,7 @@ fitDOT <- function(countTable, conditionTable,
   
   if (!is.null(flattenedFile)) {
     if (verbose) {
-      cat(" - Parse the flattened GFF file\n")
+      message(" - Parse the flattened GFF file")
     }
     aggregates <- read.delim(flattenedFile, stringsAsFactors = FALSE, 
                              header = FALSE)
@@ -261,10 +295,14 @@ fitDOT <- function(countTable, conditionTable,
     transcripts <- strsplit(transcripts, "\\+")
     exonids <- gsub(".*exon_number\\s(\\S+).*", "\\1", # exonic_part_number
                     aggregates$attr)
-    exoninfo <- GRanges(as.character(aggregates$chr), IRanges(start = aggregates$start, 
-                                                              end = aggregates$end), strand = aggregates$strand)
-    names(exoninfo) <- paste(aggregates$gene_id, exonids, 
-                             sep = ":O")
+    
+    exoninfo <- GRanges(
+      seqnames = as.character(aggregates$chr),
+      ranges = IRanges(start = aggregates$start, end = aggregates$end),
+      strand = aggregates$strand
+    )
+    
+    names(exoninfo) <- paste(aggregates$gene_id, exonids, sep = ":O")
     
     names(transcripts) <- names(exoninfo) 
     if (!all(rownames(dcounts) %in% names(exoninfo))) {
@@ -300,7 +338,7 @@ fitDOT <- function(countTable, conditionTable,
     
     if (all(cnt_meta$key == gff_meta$key)) {
       if (verbose) {
-        cat(" - Create a DEXSeq object\n")
+        message(" - Create a DEXSeq object")
       }
       
       # Convert integer-like and character columns to factors if they are meant to be categorical
@@ -316,6 +354,11 @@ fitDOT <- function(countTable, conditionTable,
       dxd <- DEXSeqDataSet(dcounts, combinedCond, design, exons, 
                            genesrle, exoninfo[matching], transcripts[matching])
       
+      # Get ORF annotation
+      orfDf <- parseBed(bed, dxd)
+      names(orfDf)[names(orfDf) == "exonBaseMean"] <- "orfBaseMean"
+      names(orfDf)[names(orfDf) == "exonBaseVar"] <- "orfBaseVar"
+      
       counts <- counts(dxd)
       
       if (stringent == TRUE) {
@@ -325,7 +368,7 @@ fitDOT <- function(countTable, conditionTable,
         })
         
         if (verbose) {
-          cat(" - Keep ORFs where all replicates in at least one condition have counts >=", minCount, "\n")
+          message(" - Keep ORFs where all replicates in at least one condition have counts >= ", minCount)
         }
         
         keep <- Reduce("|", keep_list)
@@ -338,7 +381,7 @@ fitDOT <- function(countTable, conditionTable,
         })
         
         if (verbose) {
-          cat(" - Keep ORFs where all replicates in at least one condition-strategy group have counts >=", minCount, "\n")
+          message(" - Keep ORFs where all replicates in at least one condition-strategy group have counts >= ", minCount)
         }
         
         keep <- Reduce("|", keep_list)
@@ -346,7 +389,7 @@ fitDOT <- function(countTable, conditionTable,
         
       } else if (is.null(stringent)) {
         if (verbose) {
-          cat(" - Keep ORFs where the total counts across replicates are >=", minCount, "\n")
+          message(" - Keep ORFs where the total counts across replicates are >= ", minCount)
         }
         dxd <- dxd[rowSums(featureCounts(dxd)) >= minCount,]
       }
@@ -354,13 +397,13 @@ fitDOT <- function(countTable, conditionTable,
       # Find the gene IDs that have only one ORF "(exon)"
       singlets <- names(which(table(rowData(dxd)$groupID) == 1))
       if (verbose) {
-        cat(" - Filter out", length(singlets), "single ORF genes\n")
+        message(" - Filter out ", length(singlets), " single ORF genes")
       }
       # `! ... %in% ...` means "not in this list"
       keep_exons <- !rowData(dxd)$groupID %in% singlets
       dxd <- dxd[keep_exons, ]
       if (verbose) {
-        cat(" - Number of ORFs passing filter:", nrow(featureCounts(dxd)), "\n")
+        message(" - Number of ORFs passing filter: ", nrow(featureCounts(dxd)))
       }
       
       # Get normalised counts
@@ -369,48 +412,54 @@ fitDOT <- function(countTable, conditionTable,
       colnames(normCnts) <- colData(dxd)$sample
       normCnts <- normCnts[, seq_len(ncol(normCnts)/2)]
       
-      orfDf <- parseBed(bed, dxd)
-      names(orfDf)[names(orfDf) == "exonBaseMean"] <- "orfBaseMean"
-      names(orfDf)[names(orfDf) == "exonBaseVar"] <- "orfBaseVar"
+      # te <- calculateTE(normCnts, sampleDelim = sampleDelim, rnaSuffix = rnaSuffix, riboSuffix = riboSuffix, pseudoCnt = pseudoCnt)
       
-      te <- calculateTE(normCnts, sampleDelim = sampleDelim, rnaSuffix = rnaSuffix, riboSuffix = riboSuffix, pseudoCnt = pseudoCnt)
-      
-      # Run satuRn::fitDTU
+      # Run DOTSeq::fitDOU
       exonInfo <- rowData(dxd)
       colnames(exonInfo)[1:2] <- c("isoform_id", "gene_id")
       exonInfo$isoform_id <- rownames(exonInfo)
       
       # Get sampleAnnotation and set effect1 and batch to none for RNA-seq samples
       anno <- sampleAnnotation(dxd)
+      anno$sizeFactor <- NULL
       
       sumExp <- SummarizedExperiment::SummarizedExperiment(assays = list(counts=featureCounts(dxd)), 
                                                            colData = anno, 
                                                            rowData = exonInfo)
       
+      
       if (verbose) {
-        cat(" - Fit quasi-binomial generalised linear models\n")
+        end_parsing <- Sys.time()
+        elapsed_parsing <- as.numeric(difftime(end_parsing, start_parsing, units = "mins"))
+        message(" - Data parsing runtime: ", elapsed_parsing)
+        
+        message(" - Fit beta-binomial generalised linear models")
+        start_dou <- Sys.time()
       }
-      sumExp <- satuRn::fitDTU(object = sumExp,
+      sumExp <- DOTSeq::fitDOU(object = sumExp,
                                formula = fmla,
+                               dispersionStrategy= dispersionStrategy,
+                               dispformula = dispformula,
+                               diagnostic = diagnostic,
                                parallel = parallel,
-                               BPPARAM = BiocParallel::bpparam(RNGseed = seed),
-                               verbose = TRUE)
+                               optimizers = optimizers,
+                               verbose = verbose)
       
-      L <- contrastMatrix(sumExp, fmla, baseline = baseline)
-      
-      if (verbose) {
-        cat(" - Start differential gene translation analysis\n")
-      }
-      
-      # Convert formula to string and remove '0 +' or '-1 +' if present
-      deseq_formula_str <- as.character(formula)
-      if (grepl("(-1|0)\\s*\\+", deseq_formula_str[2])) {
-        deseq_formula_str[2] <- gsub("(-1|0)\\s*\\+\\s*", "", deseq_formula_str[2])
-      }
-      deseq_formula <- as.formula(paste(deseq_formula_str[1], deseq_formula_str[2]))
+      # L <- contrastMatrix(sumExp, fmla, baseline = baseline)
       
       if (verbose) {
-        cat(" - Design formula:", deparse(deseq_formula), "\n")
+        end_dou <- Sys.time()
+        elapsed_dou <- as.numeric(difftime(end_dou, start_dou, units = "mins"))
+        message(" - DOU runtime: ", elapsed_dou)
+        
+        message(" - Start differential gene translation analysis")
+        start_dot <- Sys.time()
+      }
+      
+      deseq_formula <- remove_random_effects(formula)
+      
+      if (verbose) {
+        message(" - Design formula: ", deparse(deseq_formula))
       }
       
       # Try creating DESeqDataSet with full formula
@@ -427,7 +476,7 @@ fitDOT <- function(countTable, conditionTable,
         reduced_formula <- as.formula(paste(deseq_formula_str[1], reduced_formula_str))
         
         if (verbose) {
-          cat(" - Retrying with reduced formula:", deparse(reduced_formula), "\n")
+          message(" - Retrying with reduced formula: ", deparse(reduced_formula))
         }
         
         DESeq2::DESeqDataSetFromMatrix(countData = dcounts,
@@ -436,16 +485,22 @@ fitDOT <- function(countTable, conditionTable,
       })
       
       # Run the DESeq2 analysis
-      dds <- DESeq2::DESeq(dds, parallel = parallel)
+      dds <- DESeq2::DESeq(dds)
       
       # # The interaction term directly tests for differential TE
       # results_name <- resultsNames(dds)[grep("condition.*strategy", resultsNames(dds))]
       # 
       # if (length(results_name) > 0) {
-      #   te_results <- DESeq2::results(dds, name = results_name)
+      #   dte_results <- DESeq2::results(dds, name = results_name)
       # } else {
       #   stop("Could not find interaction term in DESeq2 results. Check your design formula.")
       # }
+      
+      if (verbose) {
+        end_dot <- Sys.time()
+        elapsed_dot <- as.numeric(difftime(end_dot, start_dot, units = "mins"))
+        message(" - DOT runtime: ", elapsed_dot)
+      }
       
     } else {
       mismatches <- which(cnt_meta$key != gff_meta$key)
@@ -459,103 +514,16 @@ fitDOT <- function(countTable, conditionTable,
     rawCnts = dcounts,
     normCnts = normCnts,
     orfs = orfDf,
-    te = te$absoluteTE,
-    occupancyShift = te$occupancyShift,
+    # te = te$absoluteTE,
+    # occupancyShift = te$occupancyShift,
     dds = dds,
     sumExp = sumExp,
     dxd = dxd,
-    formula = fmla, 
-    contrastMat = L
+    formula = fmla
+    # contrastMat = L
   ))
 }
 
 
 
-#' Plot and Extract Dispersion Estimates from DOU Models
-#'
-#' This function extracts and compares original and posterior dispersion estimates
-#' from DOU (Differential ORF Usage) models fitted using `DOTSeq::fitDOT`. It also computes
-#' mean proportions of ORF-level counts relative to their parent gene, and visualizes
-#' the relationship between mean proportion and dispersion. Additionally, it plots
-#' dispersion estimates from the DESeq2 model used in the DTE (Differential Translation Efficiency) analysis.
-#'
-#' @param m A list-like object returned by `DOTSeq::fitDOT`, containing:
-#'   \itemize{
-#'     \item \code{sumExp}: A `SummarizedExperiment` object with satuRn DTU model fits in the `rowData` under `"fitDTUModels"`, and a `"counts"` assay.
-#'     \item \code{dds}: A `DESeqDataSet` object from DESeq2 used for DTE analysis.
-#'   }
-#'
-#' @return A list containing:
-#' \describe{
-#'   \item{meanProportions}{A numeric vector of mean proportions of ORF counts relative to their parent gene.}
-#'   \item{originalDispersions}{A numeric vector of dispersion estimates from the original GLM fit.}
-#'   \item{posteriorDispersions}{A numeric vector of posterior (empirical Bayes regularized) dispersion estimates.}
-#' }
-#'
-#' @details
-#' The function assumes that row names of the count matrix follow the format `"geneID:orfID"`.
-#' It calculates the proportion of each ORF's counts relative to the total counts of its parent gene,
-#' and plots both original and posterior dispersion estimates against these mean proportions.
-#'
-#' The posterior dispersions are generally more stable and recommended for downstream hypothesis testing.
-#' The function also calls `plotDispEsts()` to visualize dispersion estimates from the DESeq2 model.
-#'
-#' @importFrom SummarizedExperiment assay
-#' @importFrom stats lowess
-#' @importFrom graphics plot points lines legend
-#' @importFrom DESeq2 plotDispEsts
-#'
-meanDispersion <- function(m) {
-  # Access the list-column of StatModel objects
-  models <- rowData(m$sumExp)[["fitDTUModels"]]
-  # Extract the dispersion estimates from the original GLM fit (before empirical Bayes squeezing)
-  original_dispersions <- vapply(models, function(x) x@params$dispersion, FUN.VALUE = numeric(1))
-  # Extract the posterior dispersion estimates (after empirical Bayes squeezing)
-  posterior_dispersions <- vapply(models, function(x) x@varPosterior, FUN.VALUE = numeric(1))
-  # The posterior dispersion is the regularized, or "squeezed," dispersion value,
-  # which is generally more stable and recommended for downstream analysis and hypothesis testing.
-  # The original dispersion is the raw value estimated from the GLM for each ORF.
-  
-  counts <- SummarizedExperiment::assay(m$sumExp, "counts")
-  counts <- as.data.frame(counts)
-  counts$groupID <- sapply(strsplit(rownames(counts), ":"), `[`, 1)
-  groupTotal <- rowsum(counts[, -ncol(counts)], group = counts$groupID)
-  groupTotal$groupID <- rownames(groupTotal)
-  
-  # Match groupID and divide row-wise
-  # Get indices of matching groupIDs
-  idx <- match(counts$groupID, groupTotal$groupID)
-  # Calculate proportions for numeric columns only
-  numeric_cols <- setdiff(names(counts), "groupID")
-  props <- counts[numeric_cols] / groupTotal[idx, numeric_cols]
-  # # Combine with groupID if needed
-  # result <- cbind(groupID = counts$groupID, proportions)
-  mean_props <- rowMeans(props, na.rm = TRUE)
-  
-  # pdf("mean_dispersion-dou.pdf", 4, 4.5)
-  plot(x = mean_props, y = original_dispersions, col = "black",  
-       pch = 16, cex = 0.3, log = "xy", 
-       xlab = "Mean proportion", ylab = "Dispersion", 
-       main = "Mean-Dispersion Plot for DOU")
-  points(x = mean_props, y = posterior_dispersions, col = "#6495ED",  
-         pch = 16, cex = 0.3) # , xlab = "Mean proportion", ylab = "Posterior dispersion")
-  lines(lowess(mean_props, original_dispersions), col = "red", lwd = 2)
-  legend(
-    "bottomleft",
-    legend = c("Original dispersions", "Posterior dispersions", "LOWESS fit (original)"),
-    col = c("black", "#6495ED", "red"),
-    pch = c(16, 16, NA),
-    lty = c(NA, NA, 1),
-    lwd = c(NA, NA, 2),
-    pt.cex = 0.5,
-    bty = "n"
-  )
-  # dev.off()
-  
-  # Plot mean-dispersion plot using the DESeq2 object
-  DESeq2::plotDispEsts(m$dds)
-  
-  return(list(meanProportions = mean_props, 
-              originalDispersions = original_dispersions, 
-              posteriorDispersions = posterior_dispersions))
-}
+

@@ -123,10 +123,24 @@ contrastMatrix <- function(sumExp, formula, baseline = NULL, verbose = FALSE) {
       next
     }
     
-    if (verbose) {
-      cat("Contrast matrix L:\n")
-      print(L)
-    }
+  }
+  
+  # # Check if the contrast matrix has a row named "(Intercept)"
+  # if ("(Intercept)" %in% rownames(L)) {
+  #   disp_intercept <- rep(0, ncol(L))
+  #   L <- rbind(L, disp_intercept)
+  #   rownames(L)[nrow(L)] <- "disp~(Intercept)"
+  # }
+  # 
+  # if (modelType == "betabinomial") {
+  #   disp_coefs <- rep(0, ncol(L))
+  #   L <- rbind(L, disp_coefs)
+  #   rownames(L)[nrow(L)] <- "disp~strategy1"
+  # }
+  
+  if (verbose) {
+    cat("Contrast matrix L:\n")
+    print(L)
   }
   
   return(contrastMatrix = L)

@@ -1,29 +1,46 @@
-#' Prepare Data and Plot Heatmap for DOU
+#' Prepare Data and Metadata for DOU Heatmap
 #'
-#' This function generates a heatmap for DOU (Differential ORF Usage) using 
-#' estimates from a results data frame, comparing mORFs with either uORFs or dORFs.
+#' This function prepares a matrix of DOU estimates for heatmap visualization,
+#' comparing mORFs with either uORFs or dORFs. It filters significant ORFs,
+#' clusters rows, and retrieves gene annotations from Ensembl.
 #'
-#' @param results An output data frame from testDOT containing estimates, gene labels, and groupID.
-#' @param orf_type Character string specifying the ORF type to compare with mORF. 
-#'        Accepts either "uORF" or "dORF".
-#' @param species_dataset A string specifying the Ensembl dataset, e.g., "hsapiens_gene_ensembl".
-#' @param symbol_col A string indicating the column name for gene symbols in Ensembl, 
-#'        e.g., "hgnc_symbol" for human or "mgi_symbol" for mouse.
-#' @param threshold Numeric value specifying the empirical FDR threshold (default = 0.05).
+#' @param results A data frame from \code{testDOT} containing DOU estimates, gene labels, and group IDs.
+#' @param padj_col Column name for adjusted p-values or local FDR (default: \code{"lfsr"}).
+#' @param estimates_col Column name for DOU estimates (default: \code{"shrunkBeta"}).
+#' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates (default: \code{TRUE}).
+#' @param orf_type Character string specifying the ORF type to compare with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.
+#' @param species_dataset Ensembl dataset name, e.g., \code{"hsapiens_gene_ensembl"}.
+#' @param symbol_col Column name for gene symbols in Ensembl, e.g., \code{"hgnc_symbol"} or \code{"mgi_symbol"}.
+#' @param threshold Numeric threshold for significance filtering (default: \code{0.05}).
+#'
+#' @return A list containing:
+#' \describe{
+#'   \item{orderedMatrix}{Matrix of DOU estimates for significant ORFs.}
+#'   \item{rowDendClean}{Dendrogram object for row clustering.}
+#'   \item{highlight_df}{Data frame indicating significant tiles to highlight.}
+#'   \item{genes}{Full gene annotation data from Ensembl.}
+#'   \item{gene_labels}{Vector of gene symbols for heatmap rows.}
+#'   \item{color_palette}{Color palette for heatmap.}
+#'   \item{color_breaks}{Breaks used for color scaling.}
+#'   \item{abs_max}{Maximum absolute value for color scaling.}
+#' }
 #'
 #' @importFrom biomaRt useEnsembl getBM
-#'
-pairedData <- function(results, orf_type, species_dataset, symbol_col, threshold = 0.05) {
-  sigRes <- results[results$empirical.fdr<threshold,]
+pairedData <- function(results, padj_col = "lfsr", estimates_col = "shrunkBeta", flip_sign = TRUE, orf_type = "uORF", 
+                       species_dataset = "hsapiens_gene_ensembl", symbol_col = "hgnc_symbol", threshold = 0.05) {
+  sigRes <- results[results[[padj_col]]<threshold,]
   
-  orfSig <- sigRes[sigRes$labels==orf_type, ][, c("groupID", "estimates")]
-  mORFRes <- results[results$labels=="mORF", ][, c("groupID", "estimates")]
+  orfSig <- sigRes[sigRes$labels==orf_type, ][, c("groupID", estimates_col)]
+  mORFRes <- results[results$labels=="mORF", ][, c("groupID", estimates_col)]
   sigMat <- merge(orfSig, mORFRes, by = "groupID")
   names(sigMat) <- c("groupID", orf_type, "mORF")
   sigMat$delta <- abs(sigMat$mORF - sigMat[[orf_type]])
-  sigMat <- sigMat[ave(sigMat$delta, sigMat$groupID, FUN = function(x) x == max(x)) == 1, ]
+  sigMat <- sigMat[order(sigMat$groupID, -sigMat$delta), ]
+  sigMat <- sigMat[!duplicated(sigMat$groupID), ]
   
+  sigMat <- sigMat[!is.na(sigMat$groupID), ]
   rownames(sigMat) <- sigMat$groupID
+  
   sigMat <- sigMat[ , !(names(sigMat) %in% c("groupID", "delta"))]
   
   sigMat[] <- lapply(sigMat, as.numeric)
@@ -32,11 +49,11 @@ pairedData <- function(results, orf_type, species_dataset, symbol_col, threshold
 
   rowClusterClean <- hclust(dist(sigMatClean))
   rowDendClean <- as.dendrogram(rowClusterClean)
-
+  
   minVal <- min(sigMatClean, na.rm = TRUE)
   maxVal <- max(sigMatClean, na.rm = TRUE)
   absMax <- max(abs(minVal), abs(maxVal))
-
+  
   colorBreaks <- seq(-absMax, absMax, length.out = 101)
   colorPalette <- colorRampPalette(c("blue", "white", "red"))(100)
   
@@ -44,8 +61,8 @@ pairedData <- function(results, orf_type, species_dataset, symbol_col, threshold
   orderedMatrix <- sigMatClean[row_order, ]
   sigResFiltered <- sigRes[
     sigRes$labels %in% colnames(orderedMatrix) &
-    sigRes$groupID %in% rownames(orderedMatrix),
-    ]
+      sigRes$groupID %in% rownames(orderedMatrix),
+  ]
   group_to_row <- setNames(seq_len(nrow(orderedMatrix)), rownames(orderedMatrix))
   label_to_col <- setNames(seq_len(ncol(orderedMatrix)), colnames(orderedMatrix))
   highlight_df <- data.frame(
@@ -54,7 +71,7 @@ pairedData <- function(results, orf_type, species_dataset, symbol_col, threshold
     color = "black"
   )
   highlight_df <- highlight_df[complete.cases(highlight_df), ]
-
+  
   ensembIds <- sub("\\..*", "", rownames(orderedMatrix))
   ensembl <- useEnsembl(biomart = "genes", dataset = species_dataset)
   genes <- getBM(
@@ -62,11 +79,15 @@ pairedData <- function(results, orf_type, species_dataset, symbol_col, threshold
     filters = "ensembl_gene_id",
     values = ensembIds,
     mart = ensembl
-    )
-
+  )
+  
   genesUnique <- genes[!duplicated(genes[c("ensembl_gene_id", symbol_col)]), ]
   genesUniqueSorted <- genesUnique[match(ensembIds, genesUnique$ensembl_gene_id), ]
-
+  
+  if (isTRUE(flip_sign)) {
+    orderedMatrix <- orderedMatrix * -1
+  }
+  
   return(list(
     orderedMatrix = orderedMatrix,
     rowDendClean = rowDendClean,
@@ -78,25 +99,25 @@ pairedData <- function(results, orf_type, species_dataset, symbol_col, threshold
     abs_max = absMax
   ))
 }
-#' Plot DOU heatmap
+#' An Internal Function for Plotting DOU Heatmap with Dendrogram and Highlights
 #'
-#' @param orderedMatrix matrix of values to plot
-#' @param rowDendClean dendrogram for row ordering
-#' @param highlight_df dataframe for highlighting tiles
-#' @param gene_labels vector of gene labels
-#' @param color_palette vector of colors
-#' @param color_breaks breaks for colors
-#' @param abs_max maximum absolute value
-#' @param output_file filename for PDF output
-plotHeatmap <- function(orderedMatrix,
+#' This function plots a heatmap of differential ORF usage (DOU) estimates,
+#' with hierarchical clustering and optional tile highlighting for significant ORFs.
+#'
+#' @param orderedMatrix Matrix of DOU estimates to plot.
+#' @param rowDendClean Dendrogram object for row ordering.
+#' @param highlight_df Data frame specifying tiles to highlight (with \code{row}, \code{col}, and \code{color}).
+#' @param gene_labels Vector of gene symbols for row labels.
+#' @param color_palette Vector of colors for heatmap.
+#' @param color_breaks Numeric vector of breaks for color scaling.
+#' @param abs_max Maximum absolute value for color scale.
+.plotHeatmap_internal <- function(orderedMatrix,
                         rowDendClean,
                         highlight_df,
                         gene_labels,
                         color_palette,
                         color_breaks,
-                        abs_max,
-                        width = NULL, height = NULL,
-                        output_file = "dou.pdf") {
+                        abs_max) { # width = NULL, height = NULL, output_file = "dou.pdf"
   
   old_par <- par(no.readonly = TRUE)
   on.exit(par(old_par), add = TRUE)
@@ -159,33 +180,41 @@ plotHeatmap <- function(orderedMatrix,
   par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
 }
 
-#' Run DOU heatmap wrapper
+#' Generate DOU Heatmap from Results
 #'
-#' @param results A data frame containing estimates, labels, and groupID
-#' @param species_dataset A string specifying the Ensembl dataset, e.g., "hsapiens_gene_ensembl".
-#' @param symbol_col A string indicating the column name for gene symbols in Ensembl, 
-#'        e.g., "hgnc_symbol" for human or "mgi_symbol" for mouse.
-#' @param output_file PDF file name
+#' This wrapper function prepares data and plots a heatmap of differential ORF usage (DOU),
+#' comparing mORFs with either uORFs or dORFs. It retrieves gene annotations from Ensembl
+#' and highlights significant ORFs.
+#'
+#' @param results A data frame containing DOU estimates, labels, and group IDs.
+#' @param padj_col Column name for adjusted p-values or local FDR (default: \code{"lfsr"}).
+#' @param estimates_col Column name for DOU estimates (default: \code{"shrunkBeta"}).
+#' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates (default: \code{TRUE}).
+#' @param orf_type Character string specifying the ORF type to compare with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.
+#' @param species_dataset Ensembl dataset name, e.g., \code{"hsapiens_gene_ensembl"}.
+#' @param symbol_col Column name for gene symbols in Ensembl, e.g., \code{"hgnc_symbol"} or \code{"mgi_symbol"}.
+#' @param output_file Optional filename for PDF output (currently unused).
 #'
 #' @export
-douHeatmap <- function(results, orf_type, species_dataset, symbol_col, output_file, width = NULL, height = NULL) {
+plotHeatmap <- function(results = df, padj_col = "lfsr", estimates_col = "shrunkBeta", flip_sign = TRUE, orf_type = "uORF", 
+                       species_dataset = "hsapiens_gene_ensembl", symbol_col = "hgnc_symbol", output_file) {
   prep_out <- pairedData(
     results = results,
+    estimates_col = estimates_col,
+    flip_sign = flip_sign,
+    padj_col = padj_col,
     orf_type = orf_type,
     species_dataset = species_dataset,
     symbol_col = symbol_col
   )
   
-  plotHeatmap(
+  .plotHeatmap_internal(
     orderedMatrix = prep_out$orderedMatrix,
     rowDendClean = prep_out$rowDendClean,
     highlight_df = prep_out$highlight_df,
     gene_labels = prep_out$gene_labels,
     color_palette = prep_out$color_palette,
     color_breaks = prep_out$color_breaks,
-    abs_max = prep_out$abs_max,
-    output_file = output_file,
-    width = width,
-    height = height
+    abs_max = prep_out$abs_max
   )
 }

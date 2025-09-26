@@ -2,38 +2,38 @@
 % Please edit documentation in R/heatmap.R
 \name{plotHeatmap}
 \alias{plotHeatmap}
-\title{Plot DOU heatmap}
+\title{Generate DOU Heatmap from Results}
 \usage{
 plotHeatmap(
-  orderedMatrix,
-  rowDendClean,
-  highlight_df,
-  gene_labels,
-  color_palette,
-  color_breaks,
-  abs_max,
-  width = NULL,
-  height = NULL,
-  output_file = "dou.pdf"
+  results = df,
+  padj_col = "lfsr",
+  estimates_col = "shrunkBeta",
+  flip_sign = TRUE,
+  orf_type = "uORF",
+  species_dataset = "hsapiens_gene_ensembl",
+  symbol_col = "hgnc_symbol",
+  output_file
 )
 }
 \arguments{
-\item{orderedMatrix}{matrix of values to plot}
+\item{results}{A data frame containing DOU estimates, labels, and group IDs.}
 
-\item{rowDendClean}{dendrogram for row ordering}
+\item{padj_col}{Column name for adjusted p-values or local FDR (default: \code{"lfsr"}).}
 
-\item{highlight_df}{dataframe for highlighting tiles}
+\item{estimates_col}{Column name for DOU estimates (default: \code{"shrunkBeta"}).}
 
-\item{gene_labels}{vector of gene labels}
+\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU estimates (default: \code{TRUE}).}
 
-\item{color_palette}{vector of colors}
+\item{orf_type}{Character string specifying the ORF type to compare with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.}
 
-\item{color_breaks}{breaks for colors}
+\item{species_dataset}{Ensembl dataset name, e.g., \code{"hsapiens_gene_ensembl"}.}
 
-\item{abs_max}{maximum absolute value}
+\item{symbol_col}{Column name for gene symbols in Ensembl, e.g., \code{"hgnc_symbol"} or \code{"mgi_symbol"}.}
 
-\item{output_file}{filename for PDF output}
+\item{output_file}{Optional filename for PDF output (currently unused).}
 }
 \description{
-Plot DOU heatmap
+This wrapper function prepares data and plots a heatmap of differential ORF usage (DOU),
+comparing mORFs with either uORFs or dORFs. It retrieves gene annotations from Ensembl
+and highlights significant ORFs.
 }
