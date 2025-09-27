@@ -9,6 +9,7 @@
   rna_mat,
   anno,
   formula = ~condition * strategy,
+  target = NULL,
   dispersionStrategy = c("auto", "strategy", "shared", "custom"),
   dispformula = NULL,
   diagnostic = FALSE,
@@ -26,6 +27,9 @@
 \item{anno}{A data frame containing sample annotations. Must include columns such as \code{condition}, \code{strategy}, and \code{replicate}.}
 
 \item{formula}{A formula object specifying the model design, e.g., \code{~ condition * strategy}.}
+
+\item{target}{Character string specifying the non-reference condition level to extract the corresponding interaction term from the model.
+This is contrasted against the baseline condition (default: \code{NULL}).}
 
 \item{dispersionStrategy}{Character string specifying the dispersion modeling strategy.
 Options are:

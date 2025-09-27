@@ -6,8 +6,8 @@
 \usage{
 plotHeatmap(
   results = df,
-  padj_col = "lfsr",
-  estimates_col = "shrunkBeta",
+  dou_estimates_col = "PosteriorMean",
+  dou_padj_col = "tests.padj",
   flip_sign = TRUE,
   orf_type = "uORF",
   species_dataset = "hsapiens_gene_ensembl",
@@ -18,9 +18,11 @@ plotHeatmap(
 \arguments{
 \item{results}{A data frame containing DOU estimates, labels, and group IDs.}
 
-\item{padj_col}{Column name for adjusted p-values or local FDR (default: \code{"lfsr"}).}
+\item{dou_estimates_col}{Character string specifying the column name for DOU estimates.
+Default is \code{"PosteriorMean"}.}
 
-\item{estimates_col}{Column name for DOU estimates (default: \code{"shrunkBeta"}).}
+\item{dou_padj_col}{Character string specifying the column name for DOU adjusted p-values.
+Default is \code{"tests.padj"}.}
 
 \item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU estimates (default: \code{TRUE}).}
 

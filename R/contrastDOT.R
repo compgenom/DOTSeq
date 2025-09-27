@@ -1,30 +1,37 @@
-#' Test for Differential ORF Usage (DOU) Using Estimated Marginal Means
+#' Compute Differential ORF Usage (DOU) Contrasts Using Estimated Marginal Means
 #'
 #' @description
-#' Performs differential ORF usage (DOU) analysis using estimated marginal means (EMMs)
-#' from a fitted model object. Computes contrast-specific effect sizes and applies
-#' empirical Bayes shrinkage using the `ashr` package. Supports both interaction-specific
-#' and strategy-specific contrasts.
+#' This function performs Differential ORF Usage (DOU) analysis by computing contrasts
+#' between ribosome profiling and RNA-seq modalities using estimated marginal means (EMMs)
+#' from fitted GLMM models. It supports both interaction-specific and strategy-specific contrasts,
+#' and applies empirical Bayes shrinkage via the `ashr` package to stabilize effect size estimates.
 #'
-#' @param m A named list of fitted model objects (e.g., from `glmmTMB`), one per ORF.
-#' @param emm_specs A formula specifying the EMM structure (default: \code{~condition * strategy}).
-#' @param contrasts_method Character. Method for computing contrasts (default: \code{"pairwise"}).
-#' @param workers Integer. Number of parallel workers to use (default: \code{1}).
-#' @param BPPARAM A BiocParallel parameter object for parallel execution (default: \code{BiocParallel::bpparam()}).
-#' @param verbose Logical. If \code{TRUE}, print progress messages (default: \code{FALSE}).
+#' @param m A named list or SummarizedExperiment-like object containing fitted model objects
+#'   (e.g., from `glmmTMB`) stored in `rowData(m$sumExp)[['fitDOUModels']]`.
+#' @param emm_specs A formula specifying the structure of the estimated marginal means.
+#'   Default is \code{~condition * strategy}.
+#' @param contrasts_method Character string specifying the method for computing contrasts.
+#'   Default is \code{"pairwise"}.
+#' @param workers Integer. Number of parallel workers to use. Default is \code{1}.
+#' @param BPPARAM A BiocParallel parameter object for parallel execution.
+#'   Default is \code{BiocParallel::bpparam()}.
+#' @param verbose Logical. If \code{TRUE}, prints progress messages. Default is \code{FALSE}.
 #'
 #' @return A named list with two components:
 #' \describe{
-#'   \item{interaction_specific}{A list of contrast-specific data frames containing effect sizes, standard errors, shrunk estimates, local false sign rates (lfsr), and q-values.}
-#'   \item{strategy_specific}{A nested list of contrast-strategy combinations with the same structure as above.}
+#'   \item{interaction_specific}{A list of contrast-specific data frames containing:
+#'     \code{beta}, \code{se}, \code{PosteriorMean}, \code{lfsr}, and \code{qvalue}.}
+#'   \item{strategy_specific}{A nested list of contrast-strategy combinations with the same structure.}
 #' }
 #'
 #' @details
-#' The function first filters out invalid or NULL EMM objects. For each valid contrast,
-#' it computes the difference in effect sizes between ribosome profiling and RNA-seq
-#' (i.e., DOU), estimates the standard error, and applies shrinkage using `ashr::ash`.
+#' The function first extracts valid EMM objects from the fitted models. For each contrast,
+#' it computes the difference in effect sizes between ribosome profiling and RNA-seq (DOU),
+#' estimates the standard error, and applies shrinkage using \code{ashr::ash}.
 #'
-#' Strategy-specific contrasts are also computed separately for each modality.
+#' Strategy-specific contrasts are computed separately for each modality (strategy).
+#' This function is designed to support benchmarking and downstream statistical analysis
+#' of differential translation at the ORF level.
 #'
 #' @import emmeans
 #' @import ashr
@@ -32,7 +39,7 @@
 #' @importFrom BiocParallel bplapply
 #' @importFrom pbapply pblapply
 #' @export
-testDOU <- function(m, emm_specs = ~condition * strategy, 
+contrastDOU <- function(m, emm_specs = ~condition * strategy, 
                     contrasts_method = "pairwise", 
                     workers = 1,
                     BPPARAM = BiocParallel::bpparam(), 
@@ -127,7 +134,7 @@ testDOU <- function(m, emm_specs = ~condition * strategy,
       res_df <- data.frame(
         beta = betas_for_ashr,
         se = ses_for_ashr,
-        shrunkBeta = ashr::get_pm(ash_result),
+        PosteriorMean = ashr::get_pm(ash_result),
         lfsr = ashr::get_lfsr(ash_result),
         qvalue = ashr::get_qvalue(ash_result)
       )
@@ -176,12 +183,12 @@ testDOU <- function(m, emm_specs = ~condition * strategy,
       res_df <- data.frame(
         beta = betas,
         se = ses,
-        shrunkBeta = ashr::get_pm(ash_result),
+        PosteriorMean = ashr::get_pm(ash_result),
         lfsr = ashr::get_lfsr(ash_result),
         qvalue = ashr::get_qvalue(ash_result)
       )
     } else {
-      res_df <- data.frame(beta = NA, se = NA, shrunkBeta = NA, lfsr = NA, qvalue = NA)
+      res_df <- data.frame(beta = NA, se = NA, PosteriorMean = NA, lfsr = NA, qvalue = NA)
     }
     
     all_results[["strategy_specific"]][[c_name]][[by_name]] <- res_df

@@ -11,6 +11,8 @@ fitDOT(
   bed,
   rnaSuffix = ".rna",
   riboSuffix = ".ribo",
+  target = NULL,
+  baseline = NULL,
   formula = ~condition * strategy,
   dispersionStrategy = "strategy",
   dispformula = NULL,
@@ -39,6 +41,11 @@ Must include columns: run, strategy, condition, replicate.}
 \item{rnaSuffix}{Character suffix to identify RNA-seq columns (default: \code{".rna"}).}
 
 \item{riboSuffix}{Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).}
+
+\item{target}{Character string specifying the non-reference condition level to extract the corresponding interaction term from the model.
+This is contrasted against the baseline condition (default: \code{NULL}).}
+
+\item{baseline}{Character string specifying the desired reference level.}
 
 \item{formula}{A formula object specifying the design, e.g., \code{~ 0 + replicate + condition * strategy}.}
 

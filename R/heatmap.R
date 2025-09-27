@@ -5,8 +5,10 @@
 #' clusters rows, and retrieves gene annotations from Ensembl.
 #'
 #' @param results A data frame from \code{testDOT} containing DOU estimates, gene labels, and group IDs.
-#' @param padj_col Column name for adjusted p-values or local FDR (default: \code{"lfsr"}).
-#' @param estimates_col Column name for DOU estimates (default: \code{"shrunkBeta"}).
+#' @param dou_estimates_col Character string specifying the column name for DOU estimates.
+#'   Default is \code{"PosteriorMean"}.
+#' @param dou_padj_col Character string specifying the column name for DOU adjusted p-values.
+#'   Default is \code{"tests.padj"}.
 #' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates (default: \code{TRUE}).
 #' @param orf_type Character string specifying the ORF type to compare with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.
 #' @param species_dataset Ensembl dataset name, e.g., \code{"hsapiens_gene_ensembl"}.
@@ -26,12 +28,12 @@
 #' }
 #'
 #' @importFrom biomaRt useEnsembl getBM
-pairedData <- function(results, padj_col = "lfsr", estimates_col = "shrunkBeta", flip_sign = TRUE, orf_type = "uORF", 
+pairedData <- function(results, dou_estimates_col = "PosteriorMean", dou_padj_col = "tests.padj", flip_sign = TRUE, orf_type = "uORF", 
                        species_dataset = "hsapiens_gene_ensembl", symbol_col = "hgnc_symbol", threshold = 0.05) {
-  sigRes <- results[results[[padj_col]]<threshold,]
+  sigRes <- results[results[[dou_padj_col]]<threshold,]
   
-  orfSig <- sigRes[sigRes$labels==orf_type, ][, c("groupID", estimates_col)]
-  mORFRes <- results[results$labels=="mORF", ][, c("groupID", estimates_col)]
+  orfSig <- sigRes[sigRes$labels==orf_type, ][, c("groupID", dou_estimates_col)]
+  mORFRes <- results[results$labels=="mORF", ][, c("groupID", dou_estimates_col)]
   sigMat <- merge(orfSig, mORFRes, by = "groupID")
   names(sigMat) <- c("groupID", orf_type, "mORF")
   sigMat$delta <- abs(sigMat$mORF - sigMat[[orf_type]])
@@ -46,7 +48,7 @@ pairedData <- function(results, padj_col = "lfsr", estimates_col = "shrunkBeta",
   sigMat[] <- lapply(sigMat, as.numeric)
   sigMat <- as.matrix(sigMat)
   sigMatClean <- sigMat[complete.cases(sigMat), ]
-
+  
   rowClusterClean <- hclust(dist(sigMatClean))
   rowDendClean <- as.dendrogram(rowClusterClean)
   
@@ -114,12 +116,12 @@ pairedData <- function(results, padj_col = "lfsr", estimates_col = "shrunkBeta",
 #' @param color_breaks Numeric vector of breaks for color scaling.
 #' @param abs_max Maximum absolute value for color scale.
 .plotHeatmap_internal <- function(orderedMatrix,
-                        rowDendClean,
-                        highlight_df,
-                        gene_labels,
-                        color_palette,
-                        color_breaks,
-                        abs_max) { # width = NULL, height = NULL, output_file = "dou.pdf"
+                                  rowDendClean,
+                                  highlight_df,
+                                  gene_labels,
+                                  color_palette,
+                                  color_breaks,
+                                  abs_max) { # width = NULL, height = NULL, output_file = "dou.pdf"
   
   old_par <- par(no.readonly = TRUE)
   on.exit(par(old_par), add = TRUE)
@@ -190,8 +192,10 @@ pairedData <- function(results, padj_col = "lfsr", estimates_col = "shrunkBeta",
 #' and highlights significant ORFs.
 #'
 #' @param results A data frame containing DOU estimates, labels, and group IDs.
-#' @param padj_col Column name for adjusted p-values or local FDR (default: \code{"lfsr"}).
-#' @param estimates_col Column name for DOU estimates (default: \code{"shrunkBeta"}).
+#' @param dou_estimates_col Character string specifying the column name for DOU estimates.
+#'   Default is \code{"PosteriorMean"}.
+#' @param dou_padj_col Character string specifying the column name for DOU adjusted p-values.
+#'   Default is \code{"tests.padj"}.
 #' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates (default: \code{TRUE}).
 #' @param orf_type Character string specifying the ORF type to compare with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.
 #' @param species_dataset Ensembl dataset name, e.g., \code{"hsapiens_gene_ensembl"}.
@@ -199,13 +203,13 @@ pairedData <- function(results, padj_col = "lfsr", estimates_col = "shrunkBeta",
 #' @param output_file Optional filename for PDF output (currently unused).
 #'
 #' @export
-plotHeatmap <- function(results = df, padj_col = "lfsr", estimates_col = "shrunkBeta", flip_sign = TRUE, orf_type = "uORF", 
-                       species_dataset = "hsapiens_gene_ensembl", symbol_col = "hgnc_symbol", output_file) {
+plotHeatmap <- function(results = df, dou_estimates_col = "PosteriorMean", dou_padj_col = "tests.padj", flip_sign = TRUE, orf_type = "uORF", 
+                        species_dataset = "hsapiens_gene_ensembl", symbol_col = "hgnc_symbol", output_file) {
   prep_out <- pairedData(
     results = results,
-    estimates_col = estimates_col,
+    dou_estimates_col = dou_estimates_col,
+    dou_padj_col = dou_padj_col,
     flip_sign = flip_sign,
-    padj_col = padj_col,
     orf_type = orf_type,
     species_dataset = species_dataset,
     symbol_col = symbol_col

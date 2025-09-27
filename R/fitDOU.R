@@ -128,6 +128,8 @@ StatModel <- function(type = "fitError",
 #' @param rna_mat A numeric matrix of RNA-seq counts for the same gene (same dimensions as \code{ribo_mat}).
 #' @param anno A data frame containing sample annotations. Must include columns such as \code{condition}, \code{strategy}, and \code{replicate}.
 #' @param formula A formula object specifying the model design, e.g., \code{~ condition * strategy}.
+#' @param target Character string specifying the non-reference condition level to extract the corresponding interaction term from the model. 
+#' This is contrasted against the baseline condition (default: \code{NULL}).
 #' @param dispersionStrategy Character string specifying the dispersion modeling strategy.
 #'   Options are:
 #'   \describe{
@@ -146,6 +148,7 @@ StatModel <- function(type = "fitError",
 #'
 #' @return A named \code{list} of \code{StatModel} objects, one for each ORF in the gene.
 .fitBetaBinomial <- function(ribo_mat, rna_mat, anno, formula = ~ condition * strategy, 
+                             target = NULL,
                              dispersionStrategy = c("auto", "strategy", "shared", "custom"), 
                              dispformula = NULL, 
                              diagnostic = FALSE, seed = NULL, 
@@ -423,16 +426,31 @@ StatModel <- function(type = "fitError",
       # Extract and calculate dispersion-related metrics for the chosen model
       coeffs <- summary(model_to_return)$coefficients$cond
       interaction_term <- grep("condition.*?:strategy.*?", rownames(coeffs), value = TRUE)
-      if (length(interaction_term)==1) {
-        results$shrinkage$estimate <- coeffs[interaction_term, "Estimate"]
-        results$shrinkage$se <- coeffs[interaction_term, "Std. Error"]
+      
+      selected_term <- NULL
+      
+      if (length(interaction_term) == 1) {
+        selected_term <- interaction_term[1]
+        
+      } else if (length(interaction_term) > 1 && !is.null(target)) {
+        target_match <- grep(paste0("condition", target, ":strategy"), interaction_term, value = TRUE)
+        if (length(target_match) == 1) {
+          selected_term <- target_match
+        } else {
+          warning("Target condition not found. Using first available interaction term.")
+          selected_term <- interaction_term[1]
+        }
+        
       } else {
         if (isTRUE(verbose)) {
-          message("Detected interaction terms: ", paste(interaction_term, collapse = ", "), ". Extract the estimate for ", interaction_term[1])
+          message("Detected interaction terms: ", paste(interaction_term, collapse = ", "), ". Using first available term.")
         }
-        results$shrinkage$estimate <- coeffs[interaction_term[1], "Estimate"]
-        results$shrinkage$se <- coeffs[interaction_term[1], "Std. Error"]
+        selected_term <- interaction_term[1]
       }
+      
+      # Final assignment
+      results$shrinkage$estimate <- coeffs[selected_term, "Estimate"]
+      results$shrinkage$se <- coeffs[selected_term, "Std. Error"]
       
       raw_rho_rna <- .calculate_mean_dispersion(model_data_this_orf[model_data_this_orf$strategy == 0, ]$counts, model_data_this_orf[model_data_this_orf$strategy == 0, ]$success + model_data_this_orf[model_data_this_orf$strategy == 0, ]$failure)
       raw_rho_ribo <- .calculate_mean_dispersion(model_data_this_orf[model_data_this_orf$strategy == 1, ]$counts, model_data_this_orf[model_data_this_orf$strategy == 1, ]$success + model_data_this_orf[model_data_this_orf$strategy == 1, ]$failure)
@@ -491,6 +509,8 @@ StatModel <- function(type = "fitError",
 #' @param orf2gene A data frame mapping ORF IDs to gene IDs. Must contain columns \code{orf_id} and \code{gene_id}.
 #' @param anno A data frame containing sample annotations. Must include columns such as \code{condition}, \code{strategy}, and \code{replicate}.
 #' @param formula A formula object specifying the model design, e.g., \code{~ condition * strategy}.
+#' @param target Character string specifying the non-reference condition level to extract the corresponding interaction term from the model. 
+#' This is contrasted against the baseline condition (default: \code{NULL}).
 #' @param dispformula Optional formula object specifying a custom dispersion model (used when \code{dispersionStrategy = "custom"}).
 #' @param dispersionStrategy Character string specifying the dispersion modeling strategy.
 #'   Options are:
@@ -514,6 +534,7 @@ StatModel <- function(type = "fitError",
                              orf2gene,
                              anno,
                              formula,
+                             target,
                              dispformula,
                              dispersionStrategy,
                              diagnostic, 
@@ -543,7 +564,8 @@ StatModel <- function(type = "fitError",
     rna_mat <- countData_rna[idx, , drop = FALSE]
     
     tryCatch({
-      models_gene <- .fitBetaBinomial(ribo_mat = ribo_mat, rna_mat = rna_mat, anno = anno, formula = formula, 
+      models_gene <- .fitBetaBinomial(ribo_mat = ribo_mat, rna_mat = rna_mat, anno = anno, 
+                                      formula = formula, target = target,
                                       dispersionStrategy = dispersionStrategy, dispformula = dispformula, 
                                       diagnostic = diagnostic, seed = seed, 
                                       parallel = parallel, optimizers = optimizers,
@@ -609,6 +631,8 @@ StatModel <- function(type = "fitError",
 #'   and \code{gene_id}, and \code{colData} must contain sample annotations. The model formula should be
 #'   specified in the metadata or passed directly.
 #' @param formula A formula object specifying the model design, e.g., \code{~ 0 + group}.
+#' @param target Character string specifying the non-reference condition level to extract the corresponding interaction term from the model. 
+#' This is contrasted against the baseline condition (default: \code{NULL}).
 #' @param dispersionStrategy Character string specifying the dispersion modeling strategy.
 #'   Options: \code{"auto"}, \code{"strategy"}, \code{"shared"}, or \code{"custom"}.
 #' @param dispformula Optional formula object for custom dispersion modeling.
@@ -650,6 +674,7 @@ setMethod(
   signature = "SummarizedExperiment",
   function(object,
            formula,
+           target,
            dispersionStrategy,
            dispformula,
            diagnostic = FALSE,
@@ -674,6 +699,7 @@ setMethod(
       orf2gene = rowData(object)[, c("isoform_id", "gene_id")],
       anno = colData(object), # Changed from design
       formula = formula,
+      target = target,
       dispersionStrategy = dispersionStrategy, 
       dispformula = dispformula,
       diagnostic = diagnostic,

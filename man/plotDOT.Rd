@@ -2,37 +2,58 @@
 % Please edit documentation in R/plotDOT.R
 \name{plotDOT}
 \alias{plotDOT}
-\title{Plot DTE vs DOU Comparison and Venn Diagram}
+\title{Plot DTE vs DOU Comparison with Marginal Histograms}
 \usage{
 plotDOT(
   res,
-  estimates_col = "shrunkBeta",
-  lfc_col = "log2FoldChange",
+  dou_estimates_col = "PosteriorMean",
+  dou_padj_col = "tests.padj",
+  dte_estimates_col = "log2FoldChange",
+  dte_padj_col = "padj",
   flip_sign = FALSE,
   lhist = 20
 )
 }
 \arguments{
 \item{res}{A data frame containing results from DTE and DOU analyses.
-Must include columns: \code{padj}, \code{lfsr}, and numeric columns for log2 fold-change and DOU estimates.}
+Must include columns for DTE log2 fold-change, DOU estimates, and adjusted p-values
+(e.g., \code{padj} for DTE and \code{tests.padj} for DOU).}
 
-\item{estimates_col}{Character string specifying the column name for DOU estimates (default: \code{"shrunkBeta"}).}
+\item{dou_estimates_col}{Character string specifying the column name for DOU estimates.
+Default is \code{"PosteriorMean"}.}
 
-\item{lfc_col}{Character string specifying the column name for log2 fold-change values from DTE (default: \code{"log2FoldChange"}).}
+\item{dou_padj_col}{Character string specifying the column name for DOU adjusted p-values.
+Default is \code{"tests.padj"}.}
 
-\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of the DOU estimates (default: \code{FALSE}).}
+\item{dte_estimates_col}{Character string specifying the column name for DTE log2 fold-change.
+Default is \code{"log2FoldChange"}.}
 
-\item{lhist}{Integer; number of bins to use for the marginal histograms (default: \code{20}).}
+\item{dte_padj_col}{Character string specifying the column name for DTE adjusted p-values.
+Default is \code{"padj"}.}
+
+\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of the DOU estimates.
+Useful for aligning directionality with DTE. Default is \code{FALSE}.}
+
+\item{lhist}{Integer; number of bins to use for the marginal histograms.
+Default is \code{20}.}
 }
 \value{
-Generates two plots:
+Generates a composite plot with:
 \describe{
-\item{Scatter plot}{Shows DTE (log2 fold-change) vs DOU (log-odds change) estimates, with significance categories.}
-\item{Venn diagram}{(Optional, not currently implemented in this version) showing overlap of significant ORFs.}
+\item{Scatter plot}{Displays DTE (log2 fold-change) vs DOU (log-odds change) estimates,
+with points colored by significance category: DTE-only, DOU-only, both, or neither.}
+\item{Marginal histograms}{Show the distribution of DTE and DOU estimates along the top and right margins.}
 }
 }
 \description{
-This function visualizes the relationship between differential translation efficiency (DTE)
-and differential ORF usage (DOU) using a scatter plot and a Venn diagram.
-It highlights ORFs that are significant in either or both tests, using a color-blind friendly palette.
+Visualizes the relationship between differential translation efficiency (DTE)
+and differential ORF usage (DOU) using a scatter plot with marginal histograms.
+ORFs are colored based on significance in DTE, DOU, or both tests, using a
+color-blind friendly palette. This plot helps assess the overlap and divergence
+between DTE and DOU signals.
+}
+\details{
+The function uses base R graphics and a custom layout to combine scatter and histogram plots.
+Significant ORFs are determined using a threshold of 0.05 on adjusted p-values.
+The color scheme is designed to be accessible to color-blind viewers.
 }

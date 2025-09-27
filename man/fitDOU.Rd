@@ -15,6 +15,9 @@ specified in the metadata or passed directly.}
 
 \item{formula}{A formula object specifying the model design, e.g., \code{~ 0 + group}.}
 
+\item{target}{Character string specifying the non-reference condition level to extract the corresponding interaction term from the model.
+This is contrasted against the baseline condition (default: \code{NULL}).}
+
 \item{dispersionStrategy}{Character string specifying the dispersion modeling strategy.
 Options: \code{"auto"}, \code{"strategy"}, \code{"shared"}, or \code{"custom"}.}
 

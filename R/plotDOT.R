@@ -1,38 +1,54 @@
-#' Plot DTE vs DOU Comparison and Venn Diagram
+#' Plot DTE vs DOU Comparison with Marginal Histograms
 #'
-#' This function visualizes the relationship between differential translation efficiency (DTE)
-#' and differential ORF usage (DOU) using a scatter plot and a Venn diagram.
-#' It highlights ORFs that are significant in either or both tests, using a color-blind friendly palette.
+#' @description
+#' Visualizes the relationship between differential translation efficiency (DTE)
+#' and differential ORF usage (DOU) using a scatter plot with marginal histograms.
+#' ORFs are colored based on significance in DTE, DOU, or both tests, using a
+#' color-blind friendly palette. This plot helps assess the overlap and divergence
+#' between DTE and DOU signals.
 #'
 #' @param res A data frame containing results from DTE and DOU analyses.
-#'   Must include columns: \code{padj}, \code{lfsr}, and numeric columns for log2 fold-change and DOU estimates.
-#' @param estimates_col Character string specifying the column name for DOU estimates (default: \code{"shrunkBeta"}).
-#' @param lfc_col Character string specifying the column name for log2 fold-change values from DTE (default: \code{"log2FoldChange"}).
-#' @param flip_sign Logical; if \code{TRUE}, flips the sign of the DOU estimates (default: \code{FALSE}).
-#' @param lhist Integer; number of bins to use for the marginal histograms (default: \code{20}).
+#'   Must include columns for DTE log2 fold-change, DOU estimates, and adjusted p-values
+#'   (e.g., \code{padj} for DTE and \code{tests.padj} for DOU).
+#' @param dou_estimates_col Character string specifying the column name for DOU estimates.
+#'   Default is \code{"PosteriorMean"}.
+#' @param dou_padj_col Character string specifying the column name for DOU adjusted p-values.
+#'   Default is \code{"tests.padj"}.
+#' @param dte_estimates_col Character string specifying the column name for DTE log2 fold-change.
+#'   Default is \code{"log2FoldChange"}.
+#' @param dte_padj_col Character string specifying the column name for DTE adjusted p-values.
+#'   Default is \code{"padj"}.
+#' @param flip_sign Logical; if \code{TRUE}, flips the sign of the DOU estimates.
+#'   Useful for aligning directionality with DTE. Default is \code{FALSE}.
+#' @param lhist Integer; number of bins to use for the marginal histograms.
+#'   Default is \code{20}.
 #'
-#' @return Generates two plots:
+#' @return Generates a composite plot with:
 #' \describe{
-#'   \item{Scatter plot}{Shows DTE (log2 fold-change) vs DOU (log-odds change) estimates, with significance categories.}
-#'   \item{Venn diagram}{(Optional, not currently implemented in this version) showing overlap of significant ORFs.}
+#'   \item{Scatter plot}{Displays DTE (log2 fold-change) vs DOU (log-odds change) estimates,
+#'     with points colored by significance category: DTE-only, DOU-only, both, or neither.}
+#'   \item{Marginal histograms}{Show the distribution of DTE and DOU estimates along the top and right margins.}
 #' }
+#'
+#' @details
+#' The function uses base R graphics and a custom layout to combine scatter and histogram plots.
+#' Significant ORFs are determined using a threshold of 0.05 on adjusted p-values.
+#' The color scheme is designed to be accessible to color-blind viewers.
 #'
 #' @importFrom graphics plot points legend par layout barplot plot.new hist
 #' @importFrom grDevices adjustcolor
 #' @importFrom stats density
-#'
-#' @export
-plotDOT <- function(res, estimates_col = "shrunkBeta", lfc_col = "log2FoldChange", flip_sign = FALSE, lhist=20) {
+plotDOT <- function(res, dou_estimates_col = "PosteriorMean", dou_padj_col = "tests.padj", dte_estimates_col = "log2FoldChange", dte_padj_col = "padj", flip_sign = FALSE, lhist=20) {
   if (isTRUE(flip_sign)) {
-    res[[estimates_col]] <- -res[[estimates_col]]
+    res[[dou_estimates_col]] <- -res[[dou_estimates_col]]
   }
   
-  padj_sig <- !is.na(res$padj) & res$padj < 0.05
-  fdr_sig <- !is.na(res$lfsr) & res$lfsr < 0.05
+  padj_sig <- !is.na(res[[dte_padj_col]]) & res[[dte_padj_col]] < 0.05
+  fdr_sig <- !is.na(res[[dou_padj_col]]) & res[[dou_padj_col]] < 0.05
   both_sig <- padj_sig & fdr_sig
   padj_only <- padj_sig & !fdr_sig
   fdr_only <- fdr_sig & !padj_sig
-
+  
   col_dte <- adjustcolor("#0072B2", alpha.f = 0.6)
   col_dou <- adjustcolor("#E69F00", alpha.f = 0.6)
   col_both <- adjustcolor("#CC79A7", alpha.f = 0.6)
@@ -57,7 +73,7 @@ plotDOT <- function(res, estimates_col = "shrunkBeta", lfc_col = "log2FoldChange
     xhist <- hist(res[[lfc_col]], breaks=seq(xlim[1], xlim[2], length.out=lhist), plot=FALSE)
     par(mar=c(0, pext, 0, 0))
     barplot(xhist$density, axes = FALSE, ylim=c(0, max(xhist$density)), space=0,
-         col = "gray", border = "black")
+            col = "gray", border = "black")
     
     # Right histogram (y-axis)
     yhist <- hist(res[[estimates_col]], breaks=seq(ylim[1], ylim[2], length.out=lhist), plot=FALSE)

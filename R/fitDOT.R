@@ -44,6 +44,9 @@ remove_random_effects <- function(formula) {
 #' @param bed Path to a BED file with ORF annotations.
 #' @param rnaSuffix Character suffix to identify RNA-seq columns (default: \code{".rna"}).
 #' @param riboSuffix Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).
+#' @param target Character string specifying the non-reference condition level to extract the corresponding interaction term from the model. 
+#' This is contrasted against the baseline condition (default: \code{NULL}).
+#' @param baseline Character string specifying the desired reference level.
 #' @param formula A formula object specifying the design, e.g., \code{~ 0 + replicate + condition * strategy}.
 #' @param batchCol String; name of the column in \code{conditionTable} that specifies batch assignments, 
 #'   e.g., \code{"batch"}. If \code{NULL}, batch effects are not modeled (default: \code{NULL}).
@@ -99,7 +102,8 @@ fitDOT <- function(countTable, conditionTable,
                    flattenedFile, bed, 
                    rnaSuffix = ".rna", 
                    riboSuffix = ".ribo", 
-                   # baseline = NULL,
+                   target = NULL,
+                   baseline = NULL,
                    formula = ~ condition * strategy,
                    dispersionStrategy = "strategy",
                    dispformula = NULL,
@@ -111,7 +115,6 @@ fitDOT <- function(countTable, conditionTable,
                    stringent = TRUE, 
                    parallel = list(n=4L, autopar=TRUE),
                    optimizers = FALSE,
-                   # seed = NULL,
                    verbose = FALSE) {
   
   if (verbose) {
@@ -236,6 +239,9 @@ fitDOT <- function(countTable, conditionTable,
       combinedCond[[col]] <- factor(combinedCond[[col]])
     }
   }
+  
+  # Set baseline
+  combinedCond$condition <- relevel(combinedCond$condition, ref = baseline)
   
   # Remove columns with fewer than 2 levels
   validCols <- sapply(combinedCond, function(x) !(is.factor(x) && length(unique(x)) < 2))
@@ -438,6 +444,7 @@ fitDOT <- function(countTable, conditionTable,
       }
       sumExp <- DOTSeq::fitDOU(object = sumExp,
                                formula = fmla,
+                               target = target,
                                dispersionStrategy= dispersionStrategy,
                                dispformula = dispformula,
                                diagnostic = diagnostic,
