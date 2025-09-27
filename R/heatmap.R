@@ -99,6 +99,8 @@ pairedData <- function(results, padj_col = "lfsr", estimates_col = "shrunkBeta",
     abs_max = absMax
   ))
 }
+
+
 #' An Internal Function for Plotting DOU Heatmap with Dendrogram and Highlights
 #'
 #' This function plots a heatmap of differential ORF usage (DOU) estimates,
@@ -180,6 +182,7 @@ pairedData <- function(results, padj_col = "lfsr", estimates_col = "shrunkBeta",
   par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
 }
 
+
 #' Generate DOU Heatmap from Results
 #'
 #' This wrapper function prepares data and plots a heatmap of differential ORF usage (DOU),
@@ -208,13 +211,17 @@ plotHeatmap <- function(results = df, padj_col = "lfsr", estimates_col = "shrunk
     symbol_col = symbol_col
   )
   
-  .plotHeatmap_internal(
-    orderedMatrix = prep_out$orderedMatrix,
-    rowDendClean = prep_out$rowDendClean,
-    highlight_df = prep_out$highlight_df,
-    gene_labels = prep_out$gene_labels,
-    color_palette = prep_out$color_palette,
-    color_breaks = prep_out$color_breaks,
-    abs_max = prep_out$abs_max
-  )
+  tryCatch({
+    .plotHeatmap_internal(
+      orderedMatrix = prep_out$orderedMatrix,
+      rowDendClean = prep_out$rowDendClean,
+      highlight_df = prep_out$highlight_df,
+      gene_labels = prep_out$gene_labels,
+      color_palette = prep_out$color_palette,
+      color_breaks = prep_out$color_breaks,
+      abs_max = prep_out$abs_max
+    )
+  }, error = function(e) {
+    message("Try enlarging the plot area: ", e$message)
+  })
 }
