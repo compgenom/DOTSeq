@@ -1,6 +1,6 @@
 # DOTSeq
 
-**DOTSeq** is an R package for identifying **differentially translated open reading frames (ORFs)** from ribosome profiling (Ribo-seq) and matched RNA-seq datasets. Unlike traditional gene-level approaches, DOTSeq performs analysis at the **ORF level**, enabling detection of:
+`DOTSeq` is an R package for identifying **differentially translated open reading frames (ORFs)** from ribosome profiling (Ribo-seq) and matched RNA-seq datasets. Unlike traditional gene-level approaches, DOTSeq performs analysis at the **ORF level**, enabling detection of:
 
 - **Differential ORF Usage (DOU)** — changes in ORF usage within the same gene.
 - **Differential Translation Efficiency (DTE)** — changes in ribosome loading relative to RNA abundance across conditions.
