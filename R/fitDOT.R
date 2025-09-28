@@ -47,7 +47,7 @@ remove_random_effects <- function(formula) {
 #' @param target Character string specifying the non-reference condition level to extract the corresponding interaction term from the model. 
 #' This is contrasted against the baseline condition (default: \code{NULL}).
 #' @param baseline Character string specifying the desired reference level.
-#' @param formula A formula object specifying the design, e.g., \code{~ 0 + replicate + condition * strategy}.
+#' @param formula A formula object specifying the design, e.g., \code{~ condition * strategy}.
 #' @param batchCol String; name of the column in \code{conditionTable} that specifies batch assignments, 
 #'   e.g., \code{"batch"}. If \code{NULL}, batch effects are not modeled (default: \code{NULL}).
 #' @param pseudoCnt Numeric pseudo-count to avoid division by zero when computing TE (default: \code{1e-6}).
@@ -241,7 +241,9 @@ fitDOT <- function(countTable, conditionTable,
   }
   
   # Set baseline
-  combinedCond$condition <- relevel(combinedCond$condition, ref = baseline)
+  if (!is.null(baseline)) {
+    combinedCond$condition <- relevel(combinedCond$condition, ref = baseline)
+  }
   
   # Remove columns with fewer than 2 levels
   validCols <- sapply(combinedCond, function(x) !(is.factor(x) && length(unique(x)) < 2))

@@ -66,37 +66,37 @@ plotDOT <- function(res, dou_estimates_col = "PosteriorMean", dou_padj_col = "te
     bspc <- 1                                                    # space between scatter plot and bar plots
     par. <- par(mar=c(pext, pext, bspc, bspc), oma=rep(ospc, 4)) # plot parameters
     
-    xlim <- range(res[[lfc_col]])
-    ylim <- range(res[[estimates_col]])
+    xlim <- range(res[[dte_estimates_col]])
+    ylim <- range(res[[dou_estimates_col]])
     
     # Top histogram
-    xhist <- hist(res[[lfc_col]], breaks=seq(xlim[1], xlim[2], length.out=lhist), plot=FALSE)
+    xhist <- hist(res[[dte_estimates_col]], breaks=seq(xlim[1], xlim[2], length.out=lhist), plot=FALSE)
     par(mar=c(0, pext, 0, 0))
     barplot(xhist$density, axes = FALSE, ylim=c(0, max(xhist$density)), space=0,
             col = "gray", border = "black")
     
     # Right histogram (y-axis)
-    yhist <- hist(res[[estimates_col]], breaks=seq(ylim[1], ylim[2], length.out=lhist), plot=FALSE)
+    yhist <- hist(res[[dou_estimates_col]], breaks=seq(ylim[1], ylim[2], length.out=lhist), plot=FALSE)
     par(mar=c(pext, 0, 0, 0))
     barplot(yhist$density, axes = FALSE, xlim=c(0, max(yhist$density)), space=0,
             col = "gray", border = "black", horiz = TRUE)
     
     # placeholder
-    dx <- density(res[[lfc_col]])
-    dy <- density(res[[estimates_col]])
+    dx <- density(res[[dte_estimates_col]])
+    dy <- density(res[[dou_estimates_col]])
     par(mar=c(0, 0, 0, 0))
     plot.new()
     
     # Main scatter plot
     par(mar=c(pext, pext, 0, 0))
-    plot(res[[lfc_col]], res[[estimates_col]],
+    plot(res[[dte_estimates_col]], res[[dou_estimates_col]],
          col = col_none, pch = 16,
          xlab = "log2 fold-change in ORF TE",
          ylab = "log-odds change in ORF usage")
     
-    points(res[[lfc_col]][padj_only], res[[estimates_col]][padj_only], col = col_dte)
-    points(res[[lfc_col]][fdr_only], res[[estimates_col]][fdr_only], col = col_dou)
-    points(res[[lfc_col]][both_sig], res[[estimates_col]][both_sig], col = col_both)
+    points(res[[dte_estimates_col]][padj_only], res[[dou_estimates_col]][padj_only], col = col_dte)
+    points(res[[dte_estimates_col]][fdr_only], res[[dou_estimates_col]][fdr_only], col = col_dou)
+    points(res[[dte_estimates_col]][both_sig], res[[dou_estimates_col]][both_sig], col = col_both)
     
     legend("bottomright", legend = c("DTE", "DOU", "Both"), col = c(col_dte, col_dou, col_both), pch = 1, bty = "n", inset = 0.05)
     
