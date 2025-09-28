@@ -47,7 +47,7 @@ This is contrasted against the baseline condition (default: \code{NULL}).}
 
 \item{baseline}{Character string specifying the desired reference level.}
 
-\item{formula}{A formula object specifying the design, e.g., \code{~ 0 + replicate + condition * strategy}.}
+\item{formula}{A formula object specifying the design, e.g., \code{~ condition * strategy}.}
 
 \item{dispersionStrategy}{Optional string specifying the dispersion modeling strategy.
 Used to select between default, constant, or custom dispersion models.}

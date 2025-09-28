@@ -9,13 +9,14 @@ contrastDOU(
   emm_specs = ~condition * strategy,
   contrasts_method = "pairwise",
   workers = 1,
+  nullweight = 500,
   BPPARAM = BiocParallel::bpparam(),
   verbose = FALSE
 )
 }
 \arguments{
-\item{m}{A named list or SummarizedExperiment-like object containing fitted model objects
-(e.g., from \code{glmmTMB}) stored in \code{rowData(m$sumExp)[['fitDOUModels']]}.}
+\item{m}{A named list or SummarizedExperiment-like object containing fitted model objects,
+typically stored in \code{rowData(m$sumExp)[['fitDOUModels']]}.}
 
 \item{emm_specs}{A formula specifying the structure of the estimated marginal means.
 Default is \code{~condition * strategy}.}
@@ -24,6 +25,9 @@ Default is \code{~condition * strategy}.}
 Default is \code{"pairwise"}.}
 
 \item{workers}{Integer. Number of parallel workers to use. Default is \code{1}.}
+
+\item{nullweight}{Numeric. Prior weight on the null hypothesis for empirical Bayes shrinkage.
+Higher values yield more conservative lfsr estimates. Default is \code{500}.}
 
 \item{BPPARAM}{A BiocParallel parameter object for parallel execution.
 Default is \code{BiocParallel::bpparam()}.}
@@ -39,17 +43,15 @@ A named list with two components:
 }
 }
 \description{
-This function performs Differential ORF Usage (DOU) analysis by computing contrasts
-between ribosome profiling and RNA-seq modalities using estimated marginal means (EMMs)
-from fitted GLMM models. It supports both interaction-specific and strategy-specific contrasts,
-and applies empirical Bayes shrinkage via the \code{ashr} package to stabilize effect size estimates.
+Performs Differential ORF Usage (DOU) analysis by computing contrasts between ribosome profiling
+and RNA-seq modalities using estimated marginal means (EMMs) from fitted GLMM models.
+Supports both interaction-specific and strategy-specific contrasts, and applies empirical Bayes
+shrinkage via the \code{ashr} package to stabilize effect size estimates.
 }
 \details{
-The function first extracts valid EMM objects from the fitted models. For each contrast,
-it computes the difference in effect sizes between ribosome profiling and RNA-seq (DOU),
-estimates the standard error, and applies shrinkage using \code{ashr::ash}.
-
-Strategy-specific contrasts are computed separately for each modality (strategy).
-This function is designed to support benchmarking and downstream statistical analysis
-of differential translation at the ORF level.
+The function extracts valid EMM objects from fitted GLMMs. For each contrast, it computes the
+difference in effect sizes between ribosome profiling and RNA-seq (DOU), estimates the standard error,
+and applies shrinkage using \code{ashr::ash}. Strategy-specific contrasts are computed separately
+for each modality. This function is designed to support benchmarking and downstream statistical
+analysis of differential translation at the ORF level.
 }

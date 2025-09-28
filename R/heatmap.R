@@ -1,34 +1,46 @@
 #' Prepare Data and Metadata for DOU Heatmap
 #'
-#' This function prepares a matrix of DOU estimates for heatmap visualization,
-#' comparing mORFs with either uORFs or dORFs. It filters significant ORFs,
-#' clusters rows, and retrieves gene annotations from Ensembl.
+#' @description
+#' Prepares a matrix of differential ORF usage (DOU) estimates for heatmap visualization,
+#' comparing mORFs with either uORFs or dORFs. Filters significant ORFs based on local false sign rate (lfsr),
+#' clusters rows, and retrieves gene annotations from Ensembl for labeling.
 #'
 #' @param results A data frame from \code{testDOT} containing DOU estimates, gene labels, and group IDs.
-#' @param dou_estimates_col Character string specifying the column name for DOU estimates.
+#'   Must include columns for DOU effect sizes and lfsr values.
+#' @param dou_estimates_col Character string specifying the column name for DOU effect size estimates.
 #'   Default is \code{"PosteriorMean"}.
-#' @param dou_padj_col Character string specifying the column name for DOU adjusted p-values.
-#'   Default is \code{"tests.padj"}.
-#' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates (default: \code{TRUE}).
-#' @param orf_type Character string specifying the ORF type to compare with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.
+#' @param dou_padj_col Character string specifying the column name for DOU significance values.
+#'   Should correspond to local false sign rate (lfsr). Default is \code{"lfsr"}.
+#' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates to align directionality
+#'   with translation efficiency. Default is \code{TRUE}.
+#' @param orf_type Character string specifying the ORF type to compare with mORFs.
+#'   Accepts \code{"uORF"} or \code{"dORF"}.
 #' @param species_dataset Ensembl dataset name, e.g., \code{"hsapiens_gene_ensembl"}.
 #' @param symbol_col Column name for gene symbols in Ensembl, e.g., \code{"hgnc_symbol"} or \code{"mgi_symbol"}.
-#' @param threshold Numeric threshold for significance filtering (default: \code{0.05}).
+#' @param threshold Numeric threshold for lfsr-based significance filtering. Default is \code{0.05}.
 #'
 #' @return A list containing:
 #' \describe{
 #'   \item{orderedMatrix}{Matrix of DOU estimates for significant ORFs.}
 #'   \item{rowDendClean}{Dendrogram object for row clustering.}
 #'   \item{highlight_df}{Data frame indicating significant tiles to highlight.}
-#'   \item{genes}{Full gene annotation data from Ensembl.}
+#'   \item{genes}{Full gene annotation data retrieved from Ensembl.}
 #'   \item{gene_labels}{Vector of gene symbols for heatmap rows.}
-#'   \item{color_palette}{Color palette for heatmap.}
+#'   \item{color_palette}{Color palette for heatmap visualization.}
 #'   \item{color_breaks}{Breaks used for color scaling.}
-#'   \item{abs_max}{Maximum absolute value for color scaling.}
+#'   \item{abs_max}{Maximum absolute value used for color scaling.}
 #' }
 #'
+#' @details
+#' This function is designed to support visualization of differential ribosome loading across ORFs
+#' within genes. It uses empirical Bayes shrinkage via the \code{ashr} package to compute lfsr,
+#' and filters ORFs with lfsr below the specified threshold. Gene annotations are retrieved from
+#' Ensembl using the \code{biomaRt} package.
+#'
 #' @importFrom biomaRt useEnsembl getBM
-pairedData <- function(results, dou_estimates_col = "PosteriorMean", dou_padj_col = "tests.padj", flip_sign = TRUE, orf_type = "uORF", 
+#' @importFrom stats setNames dist hclust
+#' @importFrom grDevices colorRampPalette
+pairedData <- function(results, dou_estimates_col = "PosteriorMean", dou_padj_col = "lfsr", flip_sign = TRUE, orf_type = "uORF", 
                        species_dataset = "hsapiens_gene_ensembl", symbol_col = "hgnc_symbol", threshold = 0.05) {
   sigRes <- results[results[[dou_padj_col]]<threshold,]
   
@@ -187,24 +199,39 @@ pairedData <- function(results, dou_estimates_col = "PosteriorMean", dou_padj_co
 
 #' Generate DOU Heatmap from Results
 #'
+#' @description
 #' This wrapper function prepares data and plots a heatmap of differential ORF usage (DOU),
-#' comparing mORFs with either uORFs or dORFs. It retrieves gene annotations from Ensembl
-#' and highlights significant ORFs.
+#' comparing mORFs with either uORFs or dORFs. It highlights significant ORFs based on
+#' local false sign rate (lfsr) from empirical Bayes shrinkage (via the `ashr` package),
+#' and retrieves gene annotations from Ensembl for labeling.
 #'
-#' @param results A data frame containing DOU estimates, labels, and group IDs.
-#' @param dou_estimates_col Character string specifying the column name for DOU estimates.
+#' @param results A data frame containing DOU estimates, ORF labels, and group IDs.
+#'   Must include columns for DOU effect sizes and lfsr values.
+#' @param dou_estimates_col Character string specifying the column name for DOU effect size estimates.
 #'   Default is \code{"PosteriorMean"}.
-#' @param dou_padj_col Character string specifying the column name for DOU adjusted p-values.
-#'   Default is \code{"tests.padj"}.
-#' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates (default: \code{TRUE}).
-#' @param orf_type Character string specifying the ORF type to compare with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.
+#' @param dou_padj_col Character string specifying the column name for DOU significance values.
+#'   Should correspond to local false sign rate (lfsr). Default is \code{"lfsr"}.
+#' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates to align directionality
+#'   with translation efficiency. Default is \code{TRUE}.
+#' @param orf_type Character string specifying the ORF type to compare with mORFs.
+#'   Accepts \code{"uORF"} or \code{"dORF"}.
 #' @param species_dataset Ensembl dataset name, e.g., \code{"hsapiens_gene_ensembl"}.
 #' @param symbol_col Column name for gene symbols in Ensembl, e.g., \code{"hgnc_symbol"} or \code{"mgi_symbol"}.
-#' @param output_file Optional filename for PDF output (currently unused).
 #'
+#' @return A data frame containing full gene annotation data retrieved from Ensembl.
+#'
+#' @details
+#' The function filters and reshapes DOU results for heatmap visualization, highlighting ORFs
+#' with lfsr < 0.05 as significant. It uses Ensembl BioMart to annotate genes and supports
+#' comparison of mORFs with upstream (uORFs) or downstream (dORFs) ORFs. The heatmap helps
+#' visualize differential ribosome loading across ORFs within genes.
+#'
+#' @importFrom biomaRt useMart getBM
+#' @importFrom stats setNames
+#' @importFrom stats heatmap
 #' @export
-plotHeatmap <- function(results = df, dou_estimates_col = "PosteriorMean", dou_padj_col = "tests.padj", flip_sign = TRUE, orf_type = "uORF", 
-                        species_dataset = "hsapiens_gene_ensembl", symbol_col = "hgnc_symbol", output_file) {
+plotHeatmap <- function(results = df, dou_estimates_col = "PosteriorMean", dou_padj_col = "lfsr", flip_sign = TRUE, orf_type = "uORF", 
+                        species_dataset = "hsapiens_gene_ensembl", symbol_col = "hgnc_symbol") {
   prep_out <- pairedData(
     results = results,
     dou_estimates_col = dou_estimates_col,
@@ -228,4 +255,6 @@ plotHeatmap <- function(results = df, dou_estimates_col = "PosteriorMean", dou_p
   }, error = function(e) {
     message("Try enlarging the plot area: ", e$message)
   })
+  
+  return(prep_out$genes)
 }

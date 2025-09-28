@@ -3,23 +3,22 @@
 #' @description
 #' Visualizes the relationship between differential translation efficiency (DTE)
 #' and differential ORF usage (DOU) using a scatter plot with marginal histograms.
-#' ORFs are colored based on significance in DTE, DOU, or both tests, using a
-#' color-blind friendly palette. This plot helps assess the overlap and divergence
-#' between DTE and DOU signals.
+#' ORFs are colored based on significance in DTE, DOU, or both tests. 
+#' This plot helps assess the overlap and divergence between DTE and DOU signals.
 #'
 #' @param res A data frame containing results from DTE and DOU analyses.
 #'   Must include columns for DTE log2 fold-change, DOU estimates, and adjusted p-values
 #'   (e.g., \code{padj} for DTE and \code{tests.padj} for DOU).
 #' @param dou_estimates_col Character string specifying the column name for DOU estimates.
 #'   Default is \code{"PosteriorMean"}.
-#' @param dou_padj_col Character string specifying the column name for DOU adjusted p-values.
-#'   Default is \code{"tests.padj"}.
+#' @param dou_padj_col Character string specifying the column name for DOU significance values.
+#'   Should correspond to local false sign rate (lfsr). Default is \code{"lfsr"}.
 #' @param dte_estimates_col Character string specifying the column name for DTE log2 fold-change.
 #'   Default is \code{"log2FoldChange"}.
 #' @param dte_padj_col Character string specifying the column name for DTE adjusted p-values.
 #'   Default is \code{"padj"}.
 #' @param flip_sign Logical; if \code{TRUE}, flips the sign of the DOU estimates.
-#'   Useful for aligning directionality with DTE. Default is \code{FALSE}.
+#'   Useful for aligning directionality with DTE. Default is \code{TRUE}.
 #' @param lhist Integer; number of bins to use for the marginal histograms.
 #'   Default is \code{20}.
 #'
@@ -38,7 +37,8 @@
 #' @importFrom graphics plot points legend par layout barplot plot.new hist
 #' @importFrom grDevices adjustcolor
 #' @importFrom stats density
-plotDOT <- function(res, dou_estimates_col = "PosteriorMean", dou_padj_col = "tests.padj", dte_estimates_col = "log2FoldChange", dte_padj_col = "padj", flip_sign = FALSE, lhist=20) {
+#' @importFrom eulerr euler
+plotDOT <- function(res, dou_estimates_col = "PosteriorMean", dou_padj_col = "lfsr", dte_estimates_col = "log2FoldChange", dte_padj_col = "padj", flip_sign = TRUE, lhist=20) {
   if (isTRUE(flip_sign)) {
     res[[dou_estimates_col]] <- -res[[dou_estimates_col]]
   }
@@ -106,4 +106,24 @@ plotDOT <- function(res, dou_estimates_col = "PosteriorMean", dou_padj_col = "te
   })
   
   par(old_par)
+  
+  padj_set <- rownames(res)[padj_sig]
+  fdr_set <- rownames(res)[fdr_sig]
+  
+  # Create Euler fit
+  fit <- eulerr::euler(c(
+    "DTE" = length(setdiff(padj_set, fdr_set)),
+    "DOT" = length(setdiff(fdr_set, padj_set)),
+    "DTE&DOT" = length(intersect(padj_set, fdr_set))
+  ))
+  
+  # Define color-blind friendly palette
+  venn_colors <- c("DTE" = "#0072B2", "DOT" = "#E69F00", "DTE&DOT" = "#CC79A7")
+  
+  # pdf("dte_dot_venn_cycling_arrest.pdf", 2.5, 2)
+  plot(fit,
+       fills = list(fill = venn_colors, alpha = 0.6),
+       labels = list(font = 2),
+       quantities = TRUE,
+       main = "Differentially translated ORFs")
 }

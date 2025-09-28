@@ -7,35 +7,45 @@
 plotHeatmap(
   results = df,
   dou_estimates_col = "PosteriorMean",
-  dou_padj_col = "tests.padj",
+  dou_padj_col = "lfsr",
   flip_sign = TRUE,
   orf_type = "uORF",
   species_dataset = "hsapiens_gene_ensembl",
-  symbol_col = "hgnc_symbol",
-  output_file
+  symbol_col = "hgnc_symbol"
 )
 }
 \arguments{
-\item{results}{A data frame containing DOU estimates, labels, and group IDs.}
+\item{results}{A data frame containing DOU estimates, ORF labels, and group IDs.
+Must include columns for DOU effect sizes and lfsr values.}
 
-\item{dou_estimates_col}{Character string specifying the column name for DOU estimates.
+\item{dou_estimates_col}{Character string specifying the column name for DOU effect size estimates.
 Default is \code{"PosteriorMean"}.}
 
-\item{dou_padj_col}{Character string specifying the column name for DOU adjusted p-values.
-Default is \code{"tests.padj"}.}
+\item{dou_padj_col}{Character string specifying the column name for DOU significance values.
+Should correspond to local false sign rate (lfsr). Default is \code{"lfsr"}.}
 
-\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU estimates (default: \code{TRUE}).}
+\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU estimates to align directionality
+with translation efficiency. Default is \code{TRUE}.}
 
-\item{orf_type}{Character string specifying the ORF type to compare with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.}
+\item{orf_type}{Character string specifying the ORF type to compare with mORFs.
+Accepts \code{"uORF"} or \code{"dORF"}.}
 
 \item{species_dataset}{Ensembl dataset name, e.g., \code{"hsapiens_gene_ensembl"}.}
 
 \item{symbol_col}{Column name for gene symbols in Ensembl, e.g., \code{"hgnc_symbol"} or \code{"mgi_symbol"}.}
-
-\item{output_file}{Optional filename for PDF output (currently unused).}
+}
+\value{
+A data frame containing full gene annotation data retrieved from Ensembl.
 }
 \description{
 This wrapper function prepares data and plots a heatmap of differential ORF usage (DOU),
-comparing mORFs with either uORFs or dORFs. It retrieves gene annotations from Ensembl
-and highlights significant ORFs.
+comparing mORFs with either uORFs or dORFs. It highlights significant ORFs based on
+local false sign rate (lfsr) from empirical Bayes shrinkage (via the \code{ashr} package),
+and retrieves gene annotations from Ensembl for labeling.
+}
+\details{
+The function filters and reshapes DOU results for heatmap visualization, highlighting ORFs
+with lfsr < 0.05 as significant. It uses Ensembl BioMart to annotate genes and supports
+comparison of mORFs with upstream (uORFs) or downstream (dORFs) ORFs. The heatmap helps
+visualize differential ribosome loading across ORFs within genes.
 }
