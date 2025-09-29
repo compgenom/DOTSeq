@@ -12,6 +12,7 @@
   target = NULL,
   dispersionStrategy = c("auto", "strategy", "shared", "custom"),
   dispformula = NULL,
+  lrt = FALSE,
   diagnostic = FALSE,
   seed = NULL,
   optimizers = FALSE,
@@ -41,6 +42,9 @@ Options are:
 }}
 
 \item{dispformula}{Optional formula object specifying a custom dispersion model (used when \code{dispersionStrategy = "custom"}).}
+
+\item{lrt}{Logical; if \code{TRUE}, performs a likelihood ratio test to compare the full model (with interaction) against a reduced model
+(without interaction) to assess translation-specific effects (default: \code{FALSE}).}
 
 \item{diagnostic}{Logical; if \code{TRUE}, runs DHARMa diagnostics to assess model fit (default: \code{FALSE}).}
 

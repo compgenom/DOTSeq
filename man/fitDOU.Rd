@@ -23,6 +23,9 @@ Options: \code{"auto"}, \code{"strategy"}, \code{"shared"}, or \code{"custom"}.}
 
 \item{dispformula}{Optional formula object for custom dispersion modeling.}
 
+\item{lrt}{Logical; if \code{TRUE}, performs a likelihood ratio test to compare the full model (with interaction) against a reduced model
+(without interaction) to assess translation-specific effects (default: \code{FALSE}).}
+
 \item{diagnostic}{Logical; if \code{TRUE}, enables DHARMa diagnostics (default: \code{FALSE}).}
 
 \item{parallel}{A list passed to \code{glmmTMBControl} to configure parallel optimization,

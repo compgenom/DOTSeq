@@ -139,6 +139,8 @@ StatModel <- function(type = "fitError",
 #'     \item{\code{"custom"}}{Use a user-specified dispersion formula via \code{dispformula}.}
 #'   }
 #' @param dispformula Optional formula object specifying a custom dispersion model (used when \code{dispersionStrategy = "custom"}).
+#' @param lrt Logical; if \code{TRUE}, performs a likelihood ratio test to compare the full model (with interaction) against a reduced model 
+#' (without interaction) to assess translation-specific effects (default: \code{FALSE}).
 #' @param diagnostic Logical; if \code{TRUE}, runs DHARMa diagnostics to assess model fit (default: \code{FALSE}).
 #' @param seed Optional integer to set the random seed for reproducibility (default: \code{NULL}).
 #' @param optimizers Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers in \code{glmmTMB} (default: \code{FALSE}).
@@ -147,13 +149,19 @@ StatModel <- function(type = "fitError",
 #' @param verbose Logical; if \code{TRUE}, prints progress messages (default: \code{FALSE}).
 #'
 #' @return A named \code{list} of \code{StatModel} objects, one for each ORF in the gene.
-.fitBetaBinomial <- function(ribo_mat, rna_mat, anno, formula = ~ condition * strategy, 
+.fitBetaBinomial <- function(ribo_mat, 
+                             rna_mat, 
+                             anno, 
+                             formula = ~ condition * strategy, 
                              target = NULL,
                              dispersionStrategy = c("auto", "strategy", "shared", "custom"), 
                              dispformula = NULL, 
-                             diagnostic = FALSE, seed = NULL, 
+                             lrt = FALSE,
+                             diagnostic = FALSE, 
+                             seed = NULL, 
                              optimizers = FALSE,
-                             parallel = list(n=8L, autopar=TRUE), verbose = FALSE) {
+                             parallel = list(n=8L, autopar=TRUE), 
+                             verbose = FALSE) {
   
   if (!is.null(seed)) set.seed(seed)
   
@@ -238,9 +246,11 @@ StatModel <- function(type = "fitError",
     # null_formula <- as.formula(null_formula_str)
     
     full_formula <- as.formula(paste("cbind(success, failure) ~", as.character(formula)[2]))
-
-    null_formula_str <- paste0(as.character(formula)[2], " - condition:strategy")
-    null_formula <- as.formula(paste("cbind(success, failure) ~", null_formula_str))
+    
+    if (isTRUE(lrt)) {
+      null_formula_str <- paste0(as.character(formula)[2], " - condition:strategy")
+      null_formula <- as.formula(paste("cbind(success, failure) ~", null_formula_str)) 
+    }
     
     # Use a single, robust tryCatch block to handle all potential errors
     result <- tryCatch({
@@ -252,7 +262,11 @@ StatModel <- function(type = "fitError",
       model_null_shared <- NULL
       
       # Initialize the results list with the new structure
-      results <- list(model_fit = list(), tests = list(), estimates = list(), dispersion = list(), diagnostics = list())
+      if (isTRUE(lrt)) {
+        results <- list(model_fit = list(), tests = list(), estimates = list(), dispersion = list(), diagnostics = list())
+      } else {
+        results <- list(model_fit = list(), estimates = list(), dispersion = list(), diagnostics = list())
+      }
       
       fit_glmm <- function(formula, dispformula, data,
                            optimizers = c("nlminb", "bobyqa", "optim"), max_iter = 1000) {
@@ -279,18 +293,24 @@ StatModel <- function(type = "fitError",
         # Fit Models based on dispersionStrategy
         if (dispersionStrategy %in% c("auto", "strategy")) {
           model_strategy <- fit_glmm(formula = full_formula, dispformula = ~strategy, data = model_data_this_orf)
-          model_null <- fit_glmm(formula = null_formula, dispformula = ~ strategy, data = model_data_this_orf)
+          if (isTRUE(lrt)) {
+            model_null <- fit_glmm(formula = null_formula, dispformula = ~ strategy, data = model_data_this_orf)
+          }
         }
         
         if (dispersionStrategy %in% c("auto", "shared")) {
           model_shared <- fit_glmm(formula = full_formula, dispformula = ~1, data = model_data_this_orf)
-          model_null_shared <- fit_glmm(formula = null_formula, dispformula = ~1, data = model_data_this_orf)
+          if (isTRUE(lrt)) {
+            model_null_shared <- fit_glmm(formula = null_formula, dispformula = ~1, data = model_data_this_orf)
+          }
         }
         
         if (dispersionStrategy == "custom") {
           if  (!is.null(dispformula)) {
             model_custom <- fit_glmm(formula = full_formula, dispformula = dispformula, data = model_data_this_orf)
-            model_null <- fit_glmm(formula = null_formula, dispformula = dispformula, data = model_data_this_orf)
+            if (isTRUE(lrt)) {
+              model_null <- fit_glmm(formula = null_formula, dispformula = dispformula, data = model_data_this_orf)
+            }
           } else {
             stop("Please provide dispformula.")
           }
@@ -298,18 +318,24 @@ StatModel <- function(type = "fitError",
       } else {
         if (dispersionStrategy %in% c("auto", "strategy")) {
           model_strategy <- glmmTMB(full_formula, dispformula = ~strategy, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
-          model_null <- glmmTMB(null_formula, dispformula = ~ strategy, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+          if (isTRUE(lrt)) {
+            model_null <- glmmTMB(null_formula, dispformula = ~ strategy, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+          }
         }
         
         if (dispersionStrategy %in% c("auto", "shared")) {
           model_shared <- glmmTMB(full_formula, dispformula = ~1, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
-          model_null_shared <- glmmTMB(null_formula, dispformula = ~1, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+          if (isTRUE(lrt)) {
+            model_null_shared <- glmmTMB(null_formula, dispformula = ~1, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+          }
         }
         
         if (dispersionStrategy == "custom") {
           if  (!is.null(dispformula)) {
             model_custom <- glmmTMB(full_formula, dispformula = dispformula, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
-            model_null <- glmmTMB(null_formula, dispformula = dispformula, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+            if (isTRUE(lrt)) {
+              model_null <- glmmTMB(null_formula, dispformula = dispformula, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+            }
           } else {
             stop("Please provide dispformula.")
           }
@@ -324,7 +350,9 @@ StatModel <- function(type = "fitError",
         # Add strategy-specific metrics
         if (!is.null(model_strategy) && model_strategy$fit$convergence == 0 && isTRUE(model_strategy$sdr$pdHess)) {
           results$model_fit$aic <- AIC(model_strategy)
-          results$tests$pvalue <- anova(model_strategy, model_null)$P[2]
+          if (isTRUE(lrt)) {
+            results$tests$pvalue <- anova(model_strategy, model_null)$P[2]
+          }
           if (isTRUE(diagnostic)) {
             sim_out <- DHARMa::simulateResiduals(fittedModel = model_strategy, plot = FALSE)
             results$diagnostics$diagnostics_strategy <- list(overdispersion = DHARMa::testDispersion(sim_out, plot = FALSE)$p.value, 
@@ -338,8 +366,11 @@ StatModel <- function(type = "fitError",
         # Add shared-specific metrics
         if (!is.null(model_shared) && model_shared$fit$convergence == 0 && isTRUE(model_shared$sdr$pdHess)) {
           results$model_fit$aicSharedDisp <- AIC(model_shared)
-          results$tests$lrtSharedDisp <- anova(model_strategy, model_shared)$P[2]
-          results$tests$lrtShared <- anova(model_shared, model_null_shared)$P[2]
+          
+          if (isTRUE(lrt)) {
+            results$tests$lrtSharedDisp <- anova(model_strategy, model_shared)$P[2]
+            results$tests$lrtShared <- anova(model_shared, model_null_shared)$P[2]
+          }
           if (isTRUE(diagnostic)) {
             sim_out <- DHARMa::simulateResiduals(fittedModel = model_shared, plot = FALSE)
             results$diagnostics$diagnostics_shared <- list(overdispersion = DHARMa::testDispersion(sim_out, plot = FALSE)$p.value, 
@@ -351,7 +382,7 @@ StatModel <- function(type = "fitError",
         }
         
         # Determine the final p-value based on the gene-by-gene selection logic
-        if (!is.null(results$tests$lrtSharedDisp) && !is.na(results$tests$lrtSharedDisp) && results$tests$lrtSharedDisp < 0.05) {
+        if (isTRUE(lrt) && !is.null(results$tests$lrtSharedDisp) && !is.na(results$tests$lrtSharedDisp) && results$tests$lrtSharedDisp < 0.05) {
           if (!is.null(results$tests$pvalue) && !is.na(results$tests$pvalue)) {
             results$tests$pvalueBest <- results$tests$pvalue
           } else {
@@ -369,8 +400,10 @@ StatModel <- function(type = "fitError",
         model_to_return <- model_strategy
         if (!is.null(model_to_return) && model_to_return$fit$convergence == 0 && isTRUE(model_to_return$sdr$pdHess)) {
           results$model_fit$aic <- AIC(model_to_return)
-          results$tests$pvalue <- anova(model_to_return, model_null)$P[2]
-          results$tests$pvalueBest <- results$tests$pvalue
+          if (isTRUE(lrt)) {
+            results$tests$pvalue <- anova(model_to_return, model_null)$P[2]
+            results$tests$pvalueBest <- results$tests$pvalue
+          }
           if (isTRUE(diagnostic)) {
             sim_out <- DHARMa::simulateResiduals(fittedModel = model_to_return, plot = FALSE)
             results$diagnostics$diagnostics_strategy <- list(overdispersion = DHARMa::testDispersion(sim_out, plot = FALSE)$p.value, 
@@ -386,8 +419,10 @@ StatModel <- function(type = "fitError",
         model_to_return <- model_shared
         if (!is.null(model_to_return) && model_to_return$fit$convergence == 0 && isTRUE(model_to_return$sdr$pdHess)) {
           results$model_fit$aic <- AIC(model_to_return)
-          results$tests$pvalue <- anova(model_to_return, model_null_shared)$P[2]
-          results$tests$pvalueBest <- results$tests$pvalue
+          if (isTRUE(lrt)) {
+            results$tests$pvalue <- anova(model_to_return, model_null_shared)$P[2]
+            results$tests$pvalueBest <- results$tests$pvalue
+          }
           if (isTRUE(diagnostic)) {
             sim_out <- DHARMa::simulateResiduals(fittedModel = model_to_return, plot = FALSE)
             results$diagnostics$diagnostics_shared <- list(overdispersion = DHARMa::testDispersion(sim_out, plot = FALSE)$p.value, 
@@ -402,8 +437,10 @@ StatModel <- function(type = "fitError",
         model_to_return <- model_custom
         if (!is.null(model_to_return) && model_to_return$fit$convergence == 0 && isTRUE(model_to_return$sdr$pdHess)) {
           results$model_fit$aic <- AIC(model_to_return)
-          results$tests$pvalue <- anova(model_to_return, model_null)$P[2]
-          results$tests$pvalueBest <- results$tests$pvalue
+          if (isTRUE(lrt)) {
+            results$tests$pvalue <- anova(model_to_return, model_null)$P[2]
+            results$tests$pvalueBest <- results$tests$pvalue
+          }
           if (isTRUE(diagnostic)) {
             sim_out <- DHARMa::simulateResiduals(fittedModel = model_to_return, plot = FALSE)
             results$diagnostics$diagnostics_strategy <- list(overdispersion = DHARMa::testDispersion(sim_out, plot = FALSE)$p.value, 
@@ -423,34 +460,36 @@ StatModel <- function(type = "fitError",
                           model = NA))
       }
       
-      # Extract and calculate dispersion-related metrics for the chosen model
-      coeffs <- summary(model_to_return)$coefficients$cond
-      interaction_term <- grep("condition.*?:strategy.*?", rownames(coeffs), value = TRUE)
-      
-      selected_term <- NULL
-      
-      if (length(interaction_term) == 1) {
-        selected_term <- interaction_term[1]
+      if (isTRUE(lrt)) {
+        # Extract and calculate dispersion-related metrics for the chosen model
+        coeffs <- summary(model_to_return)$coefficients$cond
+        interaction_term <- grep("condition.*?:strategy.*?", rownames(coeffs), value = TRUE)
         
-      } else if (length(interaction_term) > 1 && !is.null(target)) {
-        target_match <- grep(paste0("condition", target, ":strategy"), interaction_term, value = TRUE)
-        if (length(target_match) == 1) {
-          selected_term <- target_match
+        selected_term <- NULL
+        
+        if (length(interaction_term) == 1) {
+          selected_term <- interaction_term[1]
+          
+        } else if (length(interaction_term) > 1 && !is.null(target)) {
+          target_match <- grep(paste0("condition", target, ":strategy"), interaction_term, value = TRUE)
+          if (length(target_match) == 1) {
+            selected_term <- target_match
+          } else {
+            warning("Target condition not found. Using first available interaction term.")
+            selected_term <- interaction_term[1]
+          }
+          
         } else {
-          warning("Target condition not found. Using first available interaction term.")
+          if (isTRUE(verbose)) {
+            message("Detected interaction terms: ", paste(interaction_term, collapse = ", "), ". Using first available term.")
+          }
           selected_term <- interaction_term[1]
         }
         
-      } else {
-        if (isTRUE(verbose)) {
-          message("Detected interaction terms: ", paste(interaction_term, collapse = ", "), ". Using first available term.")
-        }
-        selected_term <- interaction_term[1]
+        # Final assignment
+        results$shrinkage$estimate <- coeffs[selected_term, "Estimate"]
+        results$shrinkage$se <- coeffs[selected_term, "Std. Error"]
       }
-      
-      # Final assignment
-      results$shrinkage$estimate <- coeffs[selected_term, "Estimate"]
-      results$shrinkage$se <- coeffs[selected_term, "Std. Error"]
       
       raw_rho_rna <- .calculate_mean_dispersion(model_data_this_orf[model_data_this_orf$strategy == 0, ]$counts, model_data_this_orf[model_data_this_orf$strategy == 0, ]$success + model_data_this_orf[model_data_this_orf$strategy == 0, ]$failure)
       raw_rho_ribo <- .calculate_mean_dispersion(model_data_this_orf[model_data_this_orf$strategy == 1, ]$counts, model_data_this_orf[model_data_this_orf$strategy == 1, ]$success + model_data_this_orf[model_data_this_orf$strategy == 1, ]$failure)
@@ -520,6 +559,8 @@ StatModel <- function(type = "fitError",
 #'     \item{\code{"shared"}}{Assume constant dispersion across all predictor levels.}
 #'     \item{\code{"custom"}}{Use a user-specified dispersion formula via \code{dispformula}.}
 #'   }
+#' @param lrt Logical; if \code{TRUE}, performs a likelihood ratio test to compare the full model (with interaction) against a reduced model 
+#' (without interaction) to assess translation-specific effects (default: \code{FALSE}).
 #' @param diagnostic Logical; if \code{TRUE}, runs DHARMa diagnostics to assess model fit (default: \code{FALSE}).
 #' @param parallel Logical; if \code{TRUE}, enables parallel processing using \code{BiocParallel} (default: \code{FALSE}).
 #' @param BPPARAM An object specifying the parallel back-end, e.g., \code{MulticoreParam()} or \code{SnowParam()}.
@@ -537,6 +578,7 @@ StatModel <- function(type = "fitError",
                              target,
                              dispformula,
                              dispersionStrategy,
+                             lrt,
                              diagnostic, 
                              parallel,
                              optimizers,
@@ -566,7 +608,7 @@ StatModel <- function(type = "fitError",
     tryCatch({
       models_gene <- .fitBetaBinomial(ribo_mat = ribo_mat, rna_mat = rna_mat, anno = anno, 
                                       formula = formula, target = target,
-                                      dispersionStrategy = dispersionStrategy, dispformula = dispformula, 
+                                      dispersionStrategy = dispersionStrategy, dispformula = dispformula, lrt = lrt,
                                       diagnostic = diagnostic, seed = seed, 
                                       parallel = parallel, optimizers = optimizers,
                                       verbose = verbose)
@@ -636,6 +678,8 @@ StatModel <- function(type = "fitError",
 #' @param dispersionStrategy Character string specifying the dispersion modeling strategy.
 #'   Options: \code{"auto"}, \code{"strategy"}, \code{"shared"}, or \code{"custom"}.
 #' @param dispformula Optional formula object for custom dispersion modeling.
+#' @param lrt Logical; if \code{TRUE}, performs a likelihood ratio test to compare the full model (with interaction) against a reduced model 
+#' (without interaction) to assess translation-specific effects (default: \code{FALSE}).
 #' @param diagnostic Logical; if \code{TRUE}, enables DHARMa diagnostics (default: \code{FALSE}).
 #' @param parallel A list passed to \code{glmmTMBControl} to configure parallel optimization,
 #'   e.g., \code{list(n = 8L, autopar = TRUE)}.
@@ -677,6 +721,7 @@ setMethod(
            target,
            dispersionStrategy,
            dispformula,
+           lrt = FALSE,
            diagnostic = FALSE,
            parallel = list(n=8L, autopar=TRUE),
            optimizers = FALSE,
@@ -702,6 +747,7 @@ setMethod(
       target = target,
       dispersionStrategy = dispersionStrategy, 
       dispformula = dispformula,
+      lrt = lrt,
       diagnostic = diagnostic,
       parallel = parallel,
       optimizers = optimizers,

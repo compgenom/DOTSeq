@@ -16,6 +16,7 @@ fitDOT(
   formula = ~condition * strategy,
   dispersionStrategy = "strategy",
   dispformula = NULL,
+  lrt = FALSE,
   diagnostic = FALSE,
   batchCol = NULL,
   pseudoCnt = 1e-06,
@@ -53,6 +54,9 @@ This is contrasted against the baseline condition (default: \code{NULL}).}
 Used to select between default, constant, or custom dispersion models.}
 
 \item{dispformula}{Optional formula object for custom dispersion modeling.}
+
+\item{lrt}{Logical; if \code{TRUE}, performs a likelihood ratio test to compare the full model (with interaction) against a reduced model
+(without interaction) to assess translation-specific effects (default: \code{FALSE}).}
 
 \item{diagnostic}{Logical; if \code{TRUE}, enables model diagnostics including tests for overdispersion,
 zero inflation, and residual properties (default: \code{FALSE}).}

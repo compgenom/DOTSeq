@@ -65,6 +65,8 @@ remove_random_effects <- function(formula) {
 #' @param dispersionStrategy Optional string specifying the dispersion modeling strategy.
 #'   Used to select between default, constant, or custom dispersion models.
 #' @param dispformula Optional formula object for custom dispersion modeling.
+#' @param lrt Logical; if \code{TRUE}, performs a likelihood ratio test to compare the full model (with interaction) against a reduced model 
+#' (without interaction) to assess translation-specific effects (default: \code{FALSE}).
 #' @param diagnostic Logical; if \code{TRUE}, enables model diagnostics including tests for overdispersion,
 #'   zero inflation, and residual properties (default: \code{FALSE}).
 #' @param verbose Logical; if \code{TRUE}, prints progress messages (default: \code{FALSE}).
@@ -107,6 +109,7 @@ fitDOT <- function(countTable, conditionTable,
                    formula = ~ condition * strategy,
                    dispersionStrategy = "strategy",
                    dispformula = NULL,
+                   lrt = FALSE,
                    diagnostic = FALSE,
                    # sampleDelim = NULL,
                    batchCol = NULL,
@@ -449,6 +452,7 @@ fitDOT <- function(countTable, conditionTable,
                                target = target,
                                dispersionStrategy= dispersionStrategy,
                                dispformula = dispformula,
+                               lrt = lrt,
                                diagnostic = diagnostic,
                                parallel = parallel,
                                optimizers = optimizers,

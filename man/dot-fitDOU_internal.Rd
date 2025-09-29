@@ -12,6 +12,7 @@
   target,
   dispformula,
   dispersionStrategy,
+  lrt,
   diagnostic,
   parallel,
   optimizers,
@@ -41,6 +42,9 @@ Options are:
 \item{\code{"shared"}}{Assume constant dispersion across all predictor levels.}
 \item{\code{"custom"}}{Use a user-specified dispersion formula via \code{dispformula}.}
 }}
+
+\item{lrt}{Logical; if \code{TRUE}, performs a likelihood ratio test to compare the full model (with interaction) against a reduced model
+(without interaction) to assess translation-specific effects (default: \code{FALSE}).}
 
 \item{diagnostic}{Logical; if \code{TRUE}, runs DHARMa diagnostics to assess model fit (default: \code{FALSE}).}
 
