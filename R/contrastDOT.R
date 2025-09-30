@@ -137,6 +137,7 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
         WaldP = 2 * (1 - pnorm(abs(betas_for_ashr / ses_for_ashr))),
         PosteriorMean = ashr::get_pm(ash_result),
         lfsr = ashr::get_lfsr(ash_result),
+        lfdr = ashr::get_lfdr(ash_result),
         qvalue = ashr::get_qvalue(ash_result)
       )
       
@@ -187,6 +188,7 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
         WaldP = 2 * (1 - pnorm(abs(betas / ses))),
         PosteriorMean = ashr::get_pm(ash_result),
         lfsr = ashr::get_lfsr(ash_result),
+        lfdr = ashr::get_lfdr(ash_result),
         qvalue = ashr::get_qvalue(ash_result)
       )
       
