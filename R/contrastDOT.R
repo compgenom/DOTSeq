@@ -21,9 +21,13 @@
 #'
 #' @return A named list with two components:
 #' \describe{
-#'   \item{interaction_specific}{A list of contrast-specific data frames containing:
-#'     \code{beta}, \code{se}, \code{PosteriorMean}, \code{lfsr}, and \code{qvalue}.}
-#'   \item{strategy_specific}{A nested list of contrast-strategy combinations with the same structure.}
+#'   \item{interaction_specific}{A named list of contrast-specific data frames. Each data frame contains:
+#'     \code{betahat} (DOU effect size), \code{sebetahat} (standard error), \code{WaldP} (Wald test p-value),
+#'     \code{WaldPadj} (Benjamini-Hochberg adjusted p-value), \code{PosteriorMean} (shrunken effect size),
+#'     \code{lfsr} (local false sign rate), \code{lfdr} (local false discovery rate), and \code{qvalue}.}
+#'   \item{strategy_specific}{A nested list where each top-level element is a contrast name, and each sub-element 
+#'     is a strategy (e.g., "0" for RNA-seq, "1" for Ribo-seq). Each contains a data frame with the same structure 
+#'     as above, but without DOU subtraction.}
 #' }
 #'
 #' @details
@@ -121,6 +125,7 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
     # Extract the betas and SEs for the current contrast name
     betas_for_ashr <- sapply(all_contrasts, `[[`, "beta")
     ses_for_ashr <- sapply(all_contrasts, `[[`, "se")
+    pvalues <- 2 * (1 - pnorm(abs(betas_for_ashr / ses_for_ashr)))
     
     # Run ashr on the full set of data for this contrast
     if (any(!is.na(betas_for_ashr))) {
@@ -134,7 +139,8 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
       res_df <- data.frame(
         betahat = betas_for_ashr,
         sebetahat = ses_for_ashr,
-        WaldP = 2 * (1 - pnorm(abs(betas_for_ashr / ses_for_ashr))),
+        WaldP = pvalues,
+        WaldPadj = p.adjust(pvalues, method = "BH"),
         PosteriorMean = ashr::get_pm(ash_result),
         lfsr = ashr::get_lfsr(ash_result),
         lfdr = ashr::get_lfdr(ash_result),
@@ -176,6 +182,8 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
       res$SE[res$contrast == c_name & res$strategy == by_name]
     }, FUN.VALUE = numeric(1))
     
+    pvalues <- 2 * (1 - pnorm(abs(betas / ses)))
+    
     if (verbose) {
       message(" - Perform empirical Bayesian shrinkage on the effect size for ", c_name)
     }
@@ -185,7 +193,8 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
       res_df <- data.frame(
         betahat = betas,
         sebetahat = ses,
-        WaldP = 2 * (1 - pnorm(abs(betas / ses))),
+        WaldP = pvalues,
+        WaldPadj = p.adjust(pvalues, method = "BH"),
         PosteriorMean = ashr::get_pm(ash_result),
         lfsr = ashr::get_lfsr(ash_result),
         lfdr = ashr::get_lfdr(ash_result),

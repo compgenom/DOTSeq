@@ -37,9 +37,13 @@ Default is \code{BiocParallel::bpparam()}.}
 \value{
 A named list with two components:
 \describe{
-\item{interaction_specific}{A list of contrast-specific data frames containing:
-\code{beta}, \code{se}, \code{PosteriorMean}, \code{lfsr}, and \code{qvalue}.}
-\item{strategy_specific}{A nested list of contrast-strategy combinations with the same structure.}
+\item{interaction_specific}{A named list of contrast-specific data frames. Each data frame contains:
+\code{betahat} (DOU effect size), \code{sebetahat} (standard error), \code{WaldP} (Wald test p-value),
+\code{WaldPadj} (Benjamini-Hochberg adjusted p-value), \code{PosteriorMean} (shrunken effect size),
+\code{lfsr} (local false sign rate), \code{lfdr} (local false discovery rate), and \code{qvalue}.}
+\item{strategy_specific}{A nested list where each top-level element is a contrast name, and each sub-element
+is a strategy (e.g., "0" for RNA-seq, "1" for Ribo-seq). Each contains a data frame with the same structure
+as above, but without DOU subtraction.}
 }
 }
 \description{
