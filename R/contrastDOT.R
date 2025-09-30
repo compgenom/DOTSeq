@@ -134,9 +134,10 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
       res_df <- data.frame(
         betahat = betas_for_ashr,
         sebetahat = ses_for_ashr,
+        WaldP = 2 * (1 - pnorm(abs(betas_for_ashr / ses_for_ashr))),
         PosteriorMean = ashr::get_pm(ash_result),
         lfsr = ashr::get_lfsr(ash_result),
-        qvalue = ashr::get_qvalue(ash_result)
+        qvalue = ashr::get_qvalue(ash_result),
       )
       
       all_results[["interaction_specific"]][[c_name]] <- res_df
@@ -181,12 +182,14 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
     if (any(!is.na(betas))) {
       ash_result <- ashr::ash(betas, ses)
       res_df <- data.frame(
-        beta = betas,
-        se = ses,
+        betahat = betas,
+        sebetahat = ses,
+        WaldP = 2 * (1 - pnorm(abs(betas / ses))),
         PosteriorMean = ashr::get_pm(ash_result),
         lfsr = ashr::get_lfsr(ash_result),
         qvalue = ashr::get_qvalue(ash_result)
       )
+      
     } else {
       res_df <- data.frame(beta = NA, se = NA, PosteriorMean = NA, lfsr = NA, qvalue = NA)
     }
