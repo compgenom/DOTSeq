@@ -11,11 +11,11 @@ simDOT(
   orfs = NULL,
   te_genes = 10,
   bgenes = 10,
-  num_samples = 3,
+  num_samples = 2,
   conditions = 2,
   gcoeff = 1.5,
   bcoeff = 0.9,
-  num_batches = 1,
+  num_batches = 2,
   shape = 0.6,
   scale = 0.5,
   batch_scenario = "balanced",
@@ -38,7 +38,7 @@ Passed to the \code{scenario} argument of \code{generate_coefficients}.}
 
 \item{bgenes}{Numeric. Percentage of genes to carry a batch effect (default: 10).}
 
-\item{num_samples}{Integer. Number of biological replicates per condition (default: 3).}
+\item{num_samples}{Integer. Number of biological replicates per condition (default: 2).}
 
 \item{conditions}{Integer. Number of experimental conditions (default: 2).}
 
@@ -46,7 +46,7 @@ Passed to the \code{scenario} argument of \code{generate_coefficients}.}
 
 \item{bcoeff}{Numeric. Magnitude of batch effect coefficient (default: 0.9).}
 
-\item{num_batches}{Integer. Number of batches (default: 1).}
+\item{num_batches}{Integer. Number of batches (default: 2).}
 
 \item{shape}{Numeric. Shape parameter for gamma distribution used to simulate baseline coefficients (default: 0.6).}
 

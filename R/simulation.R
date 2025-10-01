@@ -128,11 +128,11 @@ generate_coefficients <- function(orfs,
 #' @param orfs A data frame of ORF annotations. Must include `groupID` and `labels` columns.
 #' @param te_genes Numeric. Percentage of genes to be assigned as differentially translated (default: 10).
 #' @param bgenes Numeric. Percentage of genes to carry a batch effect (default: 10).
-#' @param num_samples Integer. Number of biological replicates per condition (default: 3).
+#' @param num_samples Integer. Number of biological replicates per condition (default: 2).
 #' @param conditions Integer. Number of experimental conditions (default: 2).
 #' @param gcoeff Numeric. Magnitude of log-fold change for DOT effects (default: 1.5).
 #' @param bcoeff Numeric. Magnitude of batch effect coefficient (default: 0.9).
-#' @param num_batches Integer. Number of batches (default: 1).
+#' @param num_batches Integer. Number of batches (default: 2).
 #' @param shape Numeric. Shape parameter for gamma distribution used to simulate baseline coefficients (default: 0.6).
 #' @param scale Numeric. Scale parameter for gamma distribution used to simulate baseline coefficients (default: 0.5).
 #' @param batch_scenario Character. Specifies the batch effect design. Must be one of:
@@ -165,11 +165,11 @@ simDOT <- function(
     orfs = NULL,
     te_genes = 10,
     bgenes = 10,
-    num_samples = 3,
+    num_samples = 2,
     conditions = 2,
     gcoeff = 1.5,
     bcoeff = 0.9,
-    num_batches = 1,
+    num_batches = 2,
     shape = 0.6, 
     scale = 0.5,
     batch_scenario = "balanced",
@@ -243,7 +243,7 @@ simDOT <- function(
   } else if (batch_scenario == "confounded") {
     message(" - Use batch_scenario: ", batch_scenario)
     if (num_batches > 1) {
-      # Corrected: In a confounded design, batch and group are the same factor
+      # In a confounded design, batch and group are the same factor
       batch <- group
       mod <- model.matrix(~ -1 + group)
     } else {
@@ -274,7 +274,7 @@ simDOT <- function(
     
   } else if (batch_scenario == "nested") {
     message(" - Use batch_scenario: ", batch_scenario)
-    # Corrected: Create a single factor representing the nested structure
+    # Create a single factor representing the nested structure
     nested_factor <- as.factor(paste0("C", rep(seq(0, conditions - 1), each = num_samples * num_batches),
                                       "_B", rep(rep(seq(1, num_batches), each = num_samples), conditions)))
     mod <- model.matrix(~ -1 + nested_factor)
@@ -285,7 +285,7 @@ simDOT <- function(
   } else if (batch_scenario == "modality_specific") {
     if (num_batches > 1) {
       message(" - Use batch_scenario: ", batch_scenario)
-      # Corrected: Create a consistent batch vector for both modalities
+      # Create a consistent batch vector for both modalities
       batch <- rep(seq_len(num_batches), each = num_samples * conditions)
       batch <- as.factor(batch)
       mod_ribo <- model.matrix(~ -1 + batch + group)
@@ -343,7 +343,7 @@ simDOT <- function(
   
   # Build the beta matrices using the list output and bcoeffs
   if (batch_scenario == "modality_specific") {
-    # Corrected: Create beta matrices with correct dimensions for each modality
+    # Create beta matrices with correct dimensions for each modality
     coeffs_ribo <- matrix(0, nrow = nrow(counts_ribo_filtered), ncol = ncol(mod_ribo))
     colnames(coeffs_ribo) <- colnames(mod_ribo)
     batch_cols <- grep("^batch", colnames(mod_ribo))
@@ -364,7 +364,7 @@ simDOT <- function(
     coeffs_rna[, group_cols] <- gcoeffs_rna
     
   } else if (batch_scenario == "nested") {
-    # Corrected: Assign coefficients to the nested factor columns directly
+    # Assign coefficients to the nested factor columns directly
     coeffs_ribo <- matrix(0, nrow = nrow(counts_ribo_filtered), ncol = ncol(mod))
     colnames(coeffs_ribo) <- colnames(mod)
     coeffs_rna <- matrix(0, nrow = nrow(counts_rna_filtered), ncol = ncol(mod))
@@ -388,7 +388,7 @@ simDOT <- function(
     # Assign batch coefficients
     batch_cols <- grep("^batch", colnames(mod))
     if (length(bselect) > 0 && length(batch_cols) > 0) {
-      # Corrected: Assign coefficients per batch column
+      # Assign coefficients per batch column
       for (i in seq_along(batch_cols)) {
         coeffs_ribo[bselect, batch_cols[i]] <- bcoeffs[bselect] * runif(length(bselect), 0.8, 1.2)
         coeffs_rna[bselect, batch_cols[i]] <- bcoeffs[bselect] * runif(length(bselect), 0.8, 1.2)
@@ -423,7 +423,7 @@ simDOT <- function(
   merged <- cbind(sim_ribo_full, sim_rna_full)
   replicate <- rep(rep(seq(1, num_samples), conditions), num_batches)
   
-  # Corrected: Ensure batch vector is correct for colData
+  # Ensure batch vector is correct for colData
   if (batch_scenario == "modality_specific") {
     batch_rna <- rep("none", total_samples)
     batch_ribo <- as.character(batch)

@@ -14,9 +14,9 @@
 \value{
 A \code{list} containing:
 \describe{
-\item{meanProp}{Mean proportion of ORF counts relative to total gene counts.}
+\item{mean_prop}{Mean proportion of ORF counts relative to total gene counts.}
 \item{rawRho}{Unclamped dispersion estimate (can be negative).}
-\item{rawIntraClassCorr}{Clamped dispersion estimate (non-negative).}
+\item{raw_intra_class_corr}{Clamped dispersion estimate (non-negative).}
 }
 }
 \description{

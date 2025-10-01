@@ -113,12 +113,12 @@ plotDOT <- function(res, dou_estimates_col = "PosteriorMean", dou_padj_col = "lf
   # Create Euler fit
   fit <- eulerr::euler(c(
     "DTE" = length(setdiff(padj_set, fdr_set)),
-    "DOT" = length(setdiff(fdr_set, padj_set)),
-    "DTE&DOT" = length(intersect(padj_set, fdr_set))
+    "DOU" = length(setdiff(fdr_set, padj_set)),
+    "DTE&DOU" = length(intersect(padj_set, fdr_set))
   ))
   
   # Define color-blind friendly palette
-  venn_colors <- c("DTE" = "#0072B2", "DOT" = "#E69F00", "DTE&DOT" = "#CC79A7")
+  venn_colors <- c("DTE" = "#0072B2", "DOU" = "#E69F00", "DTE&DOU" = "#CC79A7")
   
   # pdf("dte_dot_venn_cycling_arrest.pdf", 2.5, 2)
   plot(fit,

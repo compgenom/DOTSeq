@@ -11,7 +11,7 @@ contrastDOU(
   workers = 1,
   nullweight = 500,
   BPPARAM = BiocParallel::bpparam(),
-  verbose = FALSE
+  verbose = TRUE
 )
 }
 \arguments{
@@ -32,7 +32,7 @@ Higher values yield more conservative lfsr estimates. Default is \code{500}.}
 \item{BPPARAM}{A BiocParallel parameter object for parallel execution.
 Default is \code{BiocParallel::bpparam()}.}
 
-\item{verbose}{Logical. If \code{TRUE}, prints progress messages. Default is \code{FALSE}.}
+\item{verbose}{Logical. If \code{TRUE}, prints progress messages. Default is \code{TRUE}.}
 }
 \value{
 A named list with two components:

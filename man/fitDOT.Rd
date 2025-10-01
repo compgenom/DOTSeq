@@ -5,43 +5,36 @@
 \title{Fit DOTSeq Differential Translation Models}
 \usage{
 fitDOT(
-  countTable,
-  conditionTable,
-  flattenedFile,
+  count_table,
+  condition_table,
+  flattened_gtf,
   bed,
-  rnaSuffix = ".rna",
-  riboSuffix = ".ribo",
   target = NULL,
   baseline = NULL,
   formula = ~condition * strategy,
-  dispersionStrategy = "strategy",
+  dispersion_modeling = "strategy",
   dispformula = NULL,
   lrt = FALSE,
   diagnostic = FALSE,
-  batchCol = NULL,
-  pseudoCnt = 1e-06,
-  minCount = 1,
+  pseudocount = 1e-06,
+  min_count = 1,
   stringent = TRUE,
   parallel = list(n = 4L, autopar = TRUE),
   optimizers = FALSE,
-  verbose = FALSE
+  verbose = TRUE
 )
 }
 \arguments{
-\item{countTable}{Either a path to a count table file or a data frame.
+\item{count_table}{Either a path to a count table file or a data frame.
 Must contain columns: Geneid, Chr, Start, End, Strand, Length,
 plus one column per sample.}
 
-\item{conditionTable}{Either a path to a condition metadata file or a data frame.
+\item{condition_table}{Either a path to a condition metadata file or a data frame.
 Must include columns: run, strategy, condition, replicate.}
 
-\item{flattenedFile}{Optional path to a flattened GFF/GTF file containing exon definitions.}
+\item{flattened_gtf}{Optional path to a flattened GFF/GTF file containing exon definitions.}
 
 \item{bed}{Path to a BED file with ORF annotations.}
-
-\item{rnaSuffix}{Character suffix to identify RNA-seq columns (default: \code{".rna"}).}
-
-\item{riboSuffix}{Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).}
 
 \item{target}{Character string specifying the non-reference condition level to extract the corresponding interaction term from the model.
 This is contrasted against the baseline condition (default: \code{NULL}).}
@@ -50,7 +43,7 @@ This is contrasted against the baseline condition (default: \code{NULL}).}
 
 \item{formula}{A formula object specifying the design, e.g., \code{~ condition * strategy}.}
 
-\item{dispersionStrategy}{Optional string specifying the dispersion modeling strategy.
+\item{dispersion_modeling}{Optional string specifying the dispersion modeling strategy.
 Used to select between default, constant, or custom dispersion models.}
 
 \item{dispformula}{Optional formula object for custom dispersion modeling.}
@@ -61,18 +54,15 @@ Used to select between default, constant, or custom dispersion models.}
 \item{diagnostic}{Logical; if \code{TRUE}, enables model diagnostics including tests for overdispersion,
 zero inflation, and residual properties (default: \code{FALSE}).}
 
-\item{batchCol}{String; name of the column in \code{conditionTable} that specifies batch assignments,
-e.g., \code{"batch"}. If \code{NULL}, batch effects are not modeled (default: \code{NULL}).}
+\item{pseudocount}{Numeric pseudo-count to avoid division by zero when computing TE (default: \code{1e-6}).}
 
-\item{pseudoCnt}{Numeric pseudo-count to avoid division by zero when computing TE (default: \code{1e-6}).}
-
-\item{minCount}{Minimum count threshold for filtering ORFs (default: \code{1}).}
+\item{min_count}{Minimum count threshold for filtering ORFs (default: \code{1}).}
 
 \item{stringent}{Logical or \code{NULL}; determines the filtering strategy:
 \describe{
-\item{\code{TRUE}}{Keep ORFs where all replicates in at least one condition pass \code{minCount}.}
-\item{\code{FALSE}}{Keep ORFs where all replicates in at least one condition-strategy group pass \code{minCount}.}
-\item{\code{NULL}}{Keep ORFs where total counts across replicates pass \code{minCount}.}
+\item{\code{TRUE}}{Keep ORFs where all replicates in at least one condition pass \code{min_count}.}
+\item{\code{FALSE}}{Keep ORFs where all replicates in at least one condition-strategy group pass \code{min_count}.}
+\item{\code{NULL}}{Keep ORFs where total counts across replicates pass \code{min_count}.}
 }}
 
 \item{parallel}{A list passed to \code{glmmTMBControl} to configure parallel optimization.
@@ -81,18 +71,18 @@ If \code{NULL}, parallelism is disabled (default: \code{list(n = 4L, autopar = T
 \item{optimizers}{Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers
 in \code{glmmTMB}: \code{nlminb}, \code{bobyqa}, and \code{optim} (default: \code{FALSE}).}
 
-\item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{FALSE}).}
+\item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{TRUE}).}
 }
 \value{
 A named \code{list} with the following elements:
 \describe{
-\item{rawCnts}{Raw counts matrix for all samples.}
-\item{normCnts}{Normalized counts matrix for all samples.}
+\item{raw_counts}{Raw counts matrix for all samples.}
+\item{norm_counts}{Normalized counts matrix for all samples.}
 \item{orfs}{Data frame of ORFs derived from the BED file matched to the DOTSeq object.}
-\item{dds}{DESeq2 object used for modeling differential gene translation.}
+\item{dds}{DESeq2 object used for modeling differential translation efficiency.}
 \item{sumExp}{SummarizedExperiment object containing normalized counts and sample metadata.}
 \item{dxd}{DOTSeq object used for modeling exon/ORF-level counts.}
-\item{formula}{Design formula used in \code{DOTSeq::fitDOU}.}
+\item{formula}{Conditional formula used in \code{DOTSeq::fitDOU}.}
 }
 }
 \description{
@@ -105,14 +95,12 @@ differential ORF translation using \code{DOTSeq::fitDOU} and \code{DESeq2::DESeq
 \examples{
 \dontrun{
 result <- fitDOT(
-  countTable = "counts.txt",
-  conditionTable = "samples.txt",
-  flattenedFile = "flattened.gff",
+  count_table = "counts.txt",
+  condition_table = "samples.txt",
+  flattened_gtf = "flattened.gff",
   bed = "orfs.bed",
-  rnaSuffix = ".rna",
-  riboSuffix = ".ribo",
-  pseudoCnt = 1e-6,
-  minCount = 1,
+  pseudocount = 1e-6,
+  min_count = 1,
   stringent = TRUE,
   verbose = TRUE
 )

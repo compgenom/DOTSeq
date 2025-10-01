@@ -32,7 +32,7 @@ myModel <- StatModel(
   type = "glmmTMB",
   results = list(
     model_fit = list(aic = 96.03),
-    tests = list(pvalueBest = 0.355)
+    tests = list(pvalue_best = 0.355)
   )
 )
 myModel

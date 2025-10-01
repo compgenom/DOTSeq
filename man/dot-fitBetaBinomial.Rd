@@ -10,7 +10,7 @@
   anno,
   formula = ~condition * strategy,
   target = NULL,
-  dispersionStrategy = c("auto", "strategy", "shared", "custom"),
+  dispersion_modeling = c("auto", "strategy", "shared", "custom"),
   dispformula = NULL,
   lrt = FALSE,
   diagnostic = FALSE,
@@ -32,7 +32,7 @@
 \item{target}{Character string specifying the non-reference condition level to extract the corresponding interaction term from the model.
 This is contrasted against the baseline condition (default: \code{NULL}).}
 
-\item{dispersionStrategy}{Character string specifying the dispersion modeling strategy.
+\item{dispersion_modeling}{Character string specifying the dispersion modeling strategy.
 Options are:
 \describe{
 \item{\code{"auto"}}{Fit both strategy-dependent and shared dispersion models, and select the best via likelihood ratio test.}
@@ -41,7 +41,7 @@ Options are:
 \item{\code{"custom"}}{Use a user-specified dispersion formula via \code{dispformula}.}
 }}
 
-\item{dispformula}{Optional formula object specifying a custom dispersion model (used when \code{dispersionStrategy = "custom"}).}
+\item{dispformula}{Optional formula object specifying a custom dispersion model (used when \code{dispersion_modeling = "custom"}).}
 
 \item{lrt}{Logical; if \code{TRUE}, performs a likelihood ratio test to compare the full model (with interaction) against a reduced model
 (without interaction) to assess translation-specific effects (default: \code{FALSE}).}

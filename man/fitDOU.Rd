@@ -18,7 +18,7 @@ specified in the metadata or passed directly.}
 \item{target}{Character string specifying the non-reference condition level to extract the corresponding interaction term from the model.
 This is contrasted against the baseline condition (default: \code{NULL}).}
 
-\item{dispersionStrategy}{Character string specifying the dispersion modeling strategy.
+\item{dispersion_modeling}{Character string specifying the dispersion modeling strategy.
 Options: \code{"auto"}, \code{"strategy"}, \code{"shared"}, or \code{"custom"}.}
 
 \item{dispformula}{Optional formula object for custom dispersion modeling.}
@@ -53,7 +53,7 @@ data(sumExp_example, package = "satuRn")
 sumExp <- fitDOU(
   object = sumExp_example,
   formula = ~ 0 + group,
-  dispersionStrategy = "auto",
+  dispersion_modeling = "auto",
   parallel = list(n = 4L, autopar = TRUE),
   verbose = TRUE
 )

@@ -17,7 +17,7 @@
 #'   Higher values yield more conservative lfsr estimates. Default is \code{500}.
 #' @param BPPARAM A BiocParallel parameter object for parallel execution.
 #'   Default is \code{BiocParallel::bpparam()}.
-#' @param verbose Logical. If \code{TRUE}, prints progress messages. Default is \code{FALSE}.
+#' @param verbose Logical. If \code{TRUE}, prints progress messages. Default is \code{TRUE}.
 #'
 #' @return A named list with two components:
 #' \describe{
@@ -47,7 +47,7 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
                     contrasts_method = "pairwise", 
                     workers = 1, nullweight = 500,
                     BPPARAM = BiocParallel::bpparam(), 
-                    verbose = FALSE) {
+                    verbose = TRUE) {
   
   fitted_models_list <- rowData(m$sumExp)[['fitDOUModels']]
   
@@ -211,108 +211,3 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
 }
 
 
-#' Extract Model Results into a Unified Data Frame
-#'
-#' @description
-#' Extracts scalar results from a named list of model objects (typically from `glmmTMB` fits)
-#' into a tidy data frame. Handles nested lists, missing or `NULL` models, and ensures
-#' consistent columns across all entries.
-#'
-#' @param models_list A named list of model objects, each representing an ORF.
-#'   Each object should contain a `@type` slot and optionally a `@results` slot.
-#' @param verbose Logical. If \code{TRUE}, messages will be printed for skipped or failed models.
-#'
-#' @return A data frame where each row corresponds to an ORF and its associated model results.
-#'   Columns include scalar parameters extracted from the model, \code{ORF_ID}, and \code{modelType}.
-#'
-#' @details
-#' The function uses a recursive helper (`flatten_scalars`) to extract scalar values
-#' from nested lists. It supports models of type \code{"glmmTMB"} and \code{"glmmTMB_joint"},
-#' and gracefully handles \code{NULL} or unsupported model types by returning minimal rows.
-#'
-#' Missing columns across models are filled with \code{NA} to ensure a consistent structure.
-#'
-#' @import SummarizedExperiment
-#' @export
-extract_results <- function(models_list, verbose = TRUE) {
-  
-  # Helper to recursively flatten and extract scalar values
-  flatten_scalars <- function(x, prefix = NULL) {
-    if (is.atomic(x) && length(x) == 1) {
-      name <- if (is.null(prefix)) "value" else prefix
-      return(setNames(list(x), name))
-    } else if (is.list(x)) {
-      result <- list()
-      # Use `names(x)` and `seq_along` to handle unnamed elements gracefully
-      list_names <- names(x)
-      if (is.null(list_names)) {
-        list_names <- paste0("elem", seq_along(x))
-      }
-      for (i in seq_along(x)) {
-        n <- list_names[i]
-        sub_prefix <- if (is.null(prefix)) n else paste0(prefix, ".", n)
-        result <- c(result, flatten_scalars(x[[i]], sub_prefix))
-      }
-      return(result)
-    } else {
-      return(list()) # Return an empty list for non-atomic, non-list objects
-    }
-  }
-  
-  # Process a single model
-  process_model <- function(model_obj, name) {
-    # --- ADDED: Check for NULL objects here ---
-    if (is.null(model_obj)) {
-      if (verbose) message("Skipping ORF_ID ", name, " due to NULL model object.")
-      return(data.frame(
-        ORF_ID = name,
-        modelType = "NULL", # Or "Failed", etc.
-        stringsAsFactors = FALSE
-      ))
-    }
-    
-    model_type <- model_obj@type
-    
-    if ((model_type == "glmmTMB_joint") | (model_type == "glmmTMB")) {
-      params <- model_obj@results
-      param_values <- flatten_scalars(params)
-      
-      param_values$ORF_ID <- name
-      param_values$modelType <- model_type
-      
-      # --- CORRECTED: Create data.frame from the single list to guarantee one row ---
-      df <- as.data.frame(param_values, stringsAsFactors = FALSE)
-      
-    } else {
-      # Return minimal row with NA for failed or single-ORF models
-      df <- data.frame(
-        ORF_ID = name,
-        modelType = model_type,
-        stringsAsFactors = FALSE
-      )
-    }
-    
-    return(df)
-  }
-  
-  # Apply to all models
-  results_df_list <- lapply(names(models_list), function(name) {
-    process_model(models_list[[name]], name)
-  })
-  
-  # Get all unique column names
-  all_cols <- unique(unlist(lapply(results_df_list, names)))
-  
-  # Fill missing columns with NA
-  results_df_list_filled <- lapply(results_df_list, function(df) {
-    missing <- setdiff(all_cols, names(df))
-    for (col in missing) df[[col]] <- NA
-    df[all_cols]
-  })
-  
-  # Combine all rows
-  results_df <- do.call(rbind, results_df_list_filled)
-  rownames(results_df) <- NULL
-  
-  return(results_df)
-}

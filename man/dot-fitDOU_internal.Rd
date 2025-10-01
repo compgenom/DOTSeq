@@ -11,7 +11,7 @@
   formula,
   target,
   dispformula,
-  dispersionStrategy,
+  dispersion_modeling,
   lrt,
   diagnostic,
   parallel,
@@ -32,9 +32,9 @@
 \item{target}{Character string specifying the non-reference condition level to extract the corresponding interaction term from the model.
 This is contrasted against the baseline condition (default: \code{NULL}).}
 
-\item{dispformula}{Optional formula object specifying a custom dispersion model (used when \code{dispersionStrategy = "custom"}).}
+\item{dispformula}{Optional formula object specifying a custom dispersion model (used when \code{dispersion_modeling = "custom"}).}
 
-\item{dispersionStrategy}{Character string specifying the dispersion modeling strategy.
+\item{dispersion_modeling}{Character string specifying the dispersion modeling strategy.
 Options are:
 \describe{
 \item{\code{"auto"}}{Fit both strategy-dependent and shared dispersion models, and select the best via likelihood ratio test.}
