@@ -16,12 +16,13 @@ fitDOT(
   dispformula = NULL,
   lrt = FALSE,
   diagnostic = FALSE,
+  batch_col = NULL,
   pseudocount = 1e-06,
   min_count = 1,
   stringent = TRUE,
   parallel = list(n = 4L, autopar = TRUE),
   optimizers = FALSE,
-  verbose = TRUE
+  verbose = FALSE
 )
 }
 \arguments{
@@ -54,6 +55,9 @@ Used to select between default, constant, or custom dispersion models.}
 \item{diagnostic}{Logical; if \code{TRUE}, enables model diagnostics including tests for overdispersion,
 zero inflation, and residual properties (default: \code{FALSE}).}
 
+\item{batch_col}{String; name of the column in \code{condition_table} that specifies batch assignments,
+e.g., \code{"batch"}. If \code{NULL}, batch effects are not modeled (default: \code{NULL}).}
+
 \item{pseudocount}{Numeric pseudo-count to avoid division by zero when computing TE (default: \code{1e-6}).}
 
 \item{min_count}{Minimum count threshold for filtering ORFs (default: \code{1}).}
@@ -71,7 +75,11 @@ If \code{NULL}, parallelism is disabled (default: \code{list(n = 4L, autopar = T
 \item{optimizers}{Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers
 in \code{glmmTMB}: \code{nlminb}, \code{bobyqa}, and \code{optim} (default: \code{FALSE}).}
 
-\item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{TRUE}).}
+\item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{FALSE}).}
+
+\item{rnaSuffix}{Character suffix to identify RNA-seq columns (default: \code{".rna"}).}
+
+\item{riboSuffix}{Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).}
 }
 \value{
 A named \code{list} with the following elements:
@@ -79,10 +87,10 @@ A named \code{list} with the following elements:
 \item{raw_counts}{Raw counts matrix for all samples.}
 \item{norm_counts}{Normalized counts matrix for all samples.}
 \item{orfs}{Data frame of ORFs derived from the BED file matched to the DOTSeq object.}
-\item{dds}{DESeq2 object used for modeling differential translation efficiency.}
+\item{dds}{DESeq2 object used for modeling differential gene translation.}
 \item{sumExp}{SummarizedExperiment object containing normalized counts and sample metadata.}
 \item{dxd}{DOTSeq object used for modeling exon/ORF-level counts.}
-\item{formula}{Conditional formula used in \code{DOTSeq::fitDOU}.}
+\item{formula}{Design formula used in \code{DOTSeq::fitDOU}.}
 }
 }
 \description{
@@ -99,6 +107,8 @@ result <- fitDOT(
   condition_table = "samples.txt",
   flattened_gtf = "flattened.gff",
   bed = "orfs.bed",
+  rnaSuffix = ".rna",
+  riboSuffix = ".ribo",
   pseudocount = 1e-6,
   min_count = 1,
   stringent = TRUE,

@@ -13,10 +13,14 @@
 #'   Must include columns: run, strategy, condition, replicate.
 #' @param flattened_gtf Optional path to a flattened GFF/GTF file containing exon definitions.
 #' @param bed Path to a BED file with ORF annotations.
+#' @param rnaSuffix Character suffix to identify RNA-seq columns (default: \code{".rna"}).
+#' @param riboSuffix Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).
 #' @param target Character string specifying the non-reference condition level to extract the corresponding interaction term from the model. 
 #' This is contrasted against the baseline condition (default: \code{NULL}).
 #' @param baseline Character string specifying the desired reference level.
 #' @param formula A formula object specifying the design, e.g., \code{~ condition * strategy}.
+#' @param batch_col String; name of the column in \code{condition_table} that specifies batch assignments, 
+#'   e.g., \code{"batch"}. If \code{NULL}, batch effects are not modeled (default: \code{NULL}).
 #' @param pseudocount Numeric pseudo-count to avoid division by zero when computing TE (default: \code{1e-6}).
 #' @param min_count Minimum count threshold for filtering ORFs (default: \code{1}).
 #' @param stringent Logical or \code{NULL}; determines the filtering strategy:
@@ -36,17 +40,17 @@
 #' (without interaction) to assess translation-specific effects (default: \code{FALSE}).
 #' @param diagnostic Logical; if \code{TRUE}, enables model diagnostics including tests for overdispersion,
 #'   zero inflation, and residual properties (default: \code{FALSE}).
-#' @param verbose Logical; if \code{TRUE}, prints progress messages (default: \code{TRUE}).
+#' @param verbose Logical; if \code{TRUE}, prints progress messages (default: \code{FALSE}).
 #'
 #' @return A named \code{list} with the following elements:
 #' \describe{
 #'   \item{raw_counts}{Raw counts matrix for all samples.}
 #'   \item{norm_counts}{Normalized counts matrix for all samples.}
 #'   \item{orfs}{Data frame of ORFs derived from the BED file matched to the DOTSeq object.}
-#'   \item{dds}{DESeq2 object used for modeling differential translation efficiency.}
+#'   \item{dds}{DESeq2 object used for modeling differential gene translation.}
 #'   \item{sumExp}{SummarizedExperiment object containing normalized counts and sample metadata.}
 #'   \item{dxd}{DOTSeq object used for modeling exon/ORF-level counts.}
-#'   \item{formula}{Conditional formula used in \code{DOTSeq::fitDOU}.}
+#'   \item{formula}{Design formula used in \code{DOTSeq::fitDOU}.}
 #' }
 #'
 #' @examples
@@ -56,6 +60,8 @@
 #'   condition_table = "samples.txt",
 #'   flattened_gtf = "flattened.gff",
 #'   bed = "orfs.bed",
+#'   rnaSuffix = ".rna",
+#'   riboSuffix = ".ribo",
 #'   pseudocount = 1e-6,
 #'   min_count = 1,
 #'   stringent = TRUE,
@@ -67,8 +73,8 @@
 #' @export
 fitDOT <- function(count_table, condition_table, 
                    flattened_gtf, bed, 
-                   # rna_suffix = ".rna", 
-                   # ribo_suffix = ".ribo", 
+                   # rnaSuffix = ".rna", 
+                   # riboSuffix = ".ribo", 
                    target = NULL,
                    baseline = NULL,
                    formula = ~ condition * strategy,
@@ -77,34 +83,35 @@ fitDOT <- function(count_table, condition_table,
                    lrt = FALSE,
                    diagnostic = FALSE,
                    # sampleDelim = NULL,
+                   batch_col = NULL,
                    pseudocount = 1e-6, 
                    min_count = 1, 
                    stringent = TRUE, 
                    parallel = list(n=4L, autopar=TRUE),
                    optimizers = FALSE,
-                   verbose = TRUE) {
+                   verbose = FALSE) {
   
   if (verbose) {
     start_parsing <- Sys.time()
     message(" - Use ", parallel$n, " threads")
   }
   
-  cnt_cols <- c("Geneid", "Chr", "Start",  "End", "Strand", "Length")
+  cntCols <- c("Geneid", "Chr", "Start",  "End", "Strand", "Length")
   
   if (is.character(count_table) && file.exists(count_table)) {
     # If count_table is a file path (character) and the file exists
     # Read the first line to get column names
-    first_line <- readLines(count_table, n = 1)
-    cnt_header <- strsplit(first_line, "\t|,|\\s+")[[1]]
+    firstLine <- readLines(count_table, n = 1)
+    cntHeader <- strsplit(firstLine, "\t|,|\\s+")[[1]]
     
     # Check if all expected columns are present
-    if (all(cnt_cols %in% cnt_header)) {
+    if (all(cntCols %in% cntHeader)) {
       cond <- read.table(count_table, header = TRUE, comment.char = "#", stringsAsFactors = FALSE)
     } else {
       stop("Header must contain the following columns: Geneid, Chr, Start, End, Strand, Length")
     }
     
-  } else if (is.data.frame(count_table) && all(cnt_cols %in% names(count_table))) {
+  } else if (is.data.frame(count_table) && all(cntCols %in% names(count_table))) {
     # If count_table is already a data frame
     cnt <- count_table
   } else {
@@ -112,34 +119,34 @@ fitDOT <- function(count_table, condition_table,
   }
   
   # Define expected column names
-  cond_cols <- c("run", "strategy", "condition", "replicate")
+  condCols <- c("run", "strategy", "condition", "replicate")
   
   # Helper to normalize column names
-  normalise_names <- function(x) tolower(trimws(x))
+  normaliseNames <- function(x) tolower(trimws(x))
   
   if (is.character(condition_table) && file.exists(condition_table)) {
     # Read header line and normalize
-    first_line <- readLines(condition_table, n = 1)
-    cond_header <- normalise_names(strsplit(first_line, "\t|,|\\s+")[[1]])
+    firstLine <- readLines(condition_table, n = 1)
+    condHeader <- normaliseNames(strsplit(firstLine, "\t|,|\\s+")[[1]])
     
-    missing_cols <- setdiff(normalise_names(cond_cols), cond_header)
+    missingCols <- setdiff(normaliseNames(condCols), condHeader)
     
-    if (length(missing_cols) == 0) {
+    if (length(missingCols) == 0) {
       cond <- read.table(condition_table, header = TRUE, comment.char = "#", stringsAsFactors = FALSE)
-      names(cond) <- normalise_names(names(cond))
+      names(cond) <- normaliseNames(names(cond))
     } else {
-      stop(paste("Missing expected columns (case-insensitive match):", paste(missing_cols, collapse = ", ")))
+      stop(paste("Missing expected columns (case-insensitive match):", paste(missingCols, collapse = ", ")))
     }
     
   } else if (is.data.frame(condition_table)) {
-    cond_header <- normalise_names(names(condition_table))
-    missing_cols <- setdiff(normalise_names(cond_cols), cond_header)
+    condHeader <- normaliseNames(names(condition_table))
+    missingCols <- setdiff(normaliseNames(condCols), condHeader)
     
-    if (length(missing_cols) == 0) {
+    if (length(missingCols) == 0) {
       cond <- condition_table
-      names(cond) <- normalise_names(names(cond))
+      names(cond) <- normaliseNames(names(cond))
     } else {
-      stop(paste("Data frame is missing expected columns (case-insensitive match):", paste(missing_cols, collapse = ", ")))
+      stop(paste("Data frame is missing expected columns (case-insensitive match):", paste(missingCols, collapse = ", ")))
     }
     
   } else {
@@ -158,26 +165,47 @@ fitDOT <- function(count_table, condition_table,
   cond <- cond[order(cond$strategy, cond$replicate), ]
   
   # Combine with metadata columns
-  # cnt <- cbind(cnt[names(cnt) %in% cnt_cols], cnt_aligned)
-  cnt <- cnt[, c(cnt_cols, rownames(cond))]
+  # cnt <- cbind(cnt[names(cnt) %in% cntCols], cnt_aligned)
+  cnt <- cnt[, c(cntCols, rownames(cond))]
   
   # Rename header
   rownames(cond) <- apply(cond[, c("run","condition", "replicate", "strategy")], 1, function(x) {
     paste0(trimws(x[1]), ".", trimws(x[2]), ".", trimws(x[3]), ".", trimws(x[4]))
   })
   # Find the indices of the columns that match cond$run
-  lib_indices <- match(cond$run, names(cnt))
+  libIndices <- match(cond$run, names(cnt))
   # Replace those column names with rownames(cond)
   if (ncol(cnt) == (length(rownames(cond))+6)) {
-    names(cnt)[lib_indices] <- rownames(cond)
+    names(cnt)[libIndices] <- rownames(cond)
   } else {
     stop("Number of samples in count_table and condition_table doesn't match.")
   }
   
-  cond$strategy <- ifelse(grepl("ribo", cond$strategy, ignore.case = TRUE), 1,
-                                 ifelse(grepl("rna", cond$strategy, ignore.case = TRUE), 0, NA))
+  riboCond <- cond[cond$strategy=="ribo",]
+  riboCond$strategy <- 1
+  rnaCond <- cond[cond$strategy=="rna",]
+  rnaCond$strategy <- 0
   
-  combined_cond <- cond[, !(names(cond) %in% "run")]
+  # Combine and duplicate columns
+  combined_cond <- rbind(rnaCond, riboCond)
+  
+  combined_cond <- combined_cond[, !(names(combined_cond) %in% "run")]
+  
+  # Robust batch column detection if batch_col is NULL
+  if (is.null(batch_col)) {
+    possiblebatch_cols <- grep("^batch$", names(combined_cond), ignore.case = TRUE, value = TRUE)
+    if (length(possiblebatch_cols) > 0) {
+      batch_col <- possiblebatch_cols[1]
+      if (verbose) message(" - Auto-detected batch column: ", batch_col)
+    }
+  } else if (batch_col==FALSE) {
+    possiblebatch_cols <- grep("^batch$", names(combined_cond), ignore.case = TRUE, value = TRUE)
+    if (length(possiblebatch_cols) > 0) {
+      batch_col <- possiblebatch_cols[1]
+      combined_cond[[batch_col]] <- NULL
+      if (verbose) message(" - Auto-removed batch column: ", batch_col)
+    }
+  }
   
   # Convert to factors
   for (col in colnames(combined_cond)) {
@@ -192,14 +220,15 @@ fitDOT <- function(count_table, condition_table,
   }
   
   # Remove columns with fewer than 2 levels
-  valid_cols <- sapply(combined_cond, function(x) !(is.factor(x) && length(unique(x)) < 2))
-  combined_cond <- combined_cond[, valid_cols]
+  validCols <- sapply(combined_cond, function(x) !(is.factor(x) && length(unique(x)) < 2))
+  combined_cond <- combined_cond[, validCols]
   
+  # fmla <- as.formula(formula)
   fmla <- DOTSeq:::reduce_formula(formula, combined_cond)
   
   if (verbose) {
     message(" - Start differential ORF usage analysis")
-    message(" - Conditional formula: ", deparse(fmla))
+    message(" - Design formula: ", deparse(fmla))
   }
   cnt <- cnt[order(cnt$Geneid, cnt$Start, cnt$End), ]
   dcounts <- cnt[c(1, 7:ncol(cnt))]
@@ -309,9 +338,9 @@ fitDOT <- function(count_table, condition_table,
                            genesrle, exoninfo[matching], transcripts[matching])
       
       # Get ORF annotation
-      ORF_df <- parseBed(bed, dxd)
-      names(ORF_df)[names(ORF_df) == "exonBaseMean"] <- "orfBaseMean"
-      names(ORF_df)[names(ORF_df) == "exonBaseVar"] <- "orfBaseVar"
+      orfDf <- parseBed(bed, dxd)
+      names(orfDf)[names(orfDf) == "exonBaseMean"] <- "orfBaseMean"
+      names(orfDf)[names(orfDf) == "exonBaseVar"] <- "orfBaseVar"
       
       counts <- counts(dxd)
       
@@ -366,14 +395,14 @@ fitDOT <- function(count_table, condition_table,
       colnames(norm_counts) <- colData(dxd)$sample
       norm_counts <- norm_counts[, seq_len(ncol(norm_counts)/2)]
       
-      # te <- calculateTE(norm_counts, sampleDelim = sampleDelim, rna_suffix = rna_suffix, ribo_suffix = ribo_suffix, pseudocount = pseudocount)
+      # te <- calculateTE(norm_counts, sampleDelim = sampleDelim, rnaSuffix = rnaSuffix, riboSuffix = riboSuffix, pseudocount = pseudocount)
       
       # Run DOTSeq::fitDOU
       exonInfo <- rowData(dxd)
       colnames(exonInfo)[1:2] <- c("isoform_id", "gene_id")
       exonInfo$isoform_id <- rownames(exonInfo)
       
-      # Get sampleAnnotation
+      # Get sampleAnnotation and set effect1 and batch to none for RNA-seq samples
       anno <- sampleAnnotation(dxd)
       anno$sizeFactor <- NULL
       
@@ -384,23 +413,16 @@ fitDOT <- function(count_table, condition_table,
       
       if (verbose) {
         end_parsing <- Sys.time()
+        elapsed_parsing <- as.numeric(difftime(end_parsing, start_parsing, units = "mins"))
+        message(" - Data parsing runtime: ", elapsed_parsing)
         
-        elapsed_parsing <- DOTSeq:::runtime(end_parsing, start_parsing)
-        
-        if (!is.null(elapsed_parsing$mins)) {
-          message(sprintf(" - Data parsing runtime: %d mins %.3f secs", elapsed_parsing$mins, elapsed_parsing$secs))
-        } else {
-          message(sprintf(" - Data parsing runtime: %.3f secs", elapsed_parsing$secs))
-        }
-        
-        message(" - Fit beta-binomial generalized linear models")
+        message(" - Fit beta-binomial generalised linear models")
         start_dou <- Sys.time()
       }
-      
       sumExp <- DOTSeq::fitDOU(object = sumExp,
                                formula = fmla,
                                target = target,
-                               dispersion_modeling = dispersion_modeling,
+                               dispersion_modeling= dispersion_modeling,
                                dispformula = dispformula,
                                lrt = lrt,
                                diagnostic = diagnostic,
@@ -410,20 +432,13 @@ fitDOT <- function(count_table, condition_table,
       
       # L <- contrastMatrix(sumExp, fmla, baseline = baseline)
       
-      
       if (verbose) {
         end_dou <- Sys.time()
-        
-        elapsed_dou <- DOTSeq:::runtime(end_dou, start_dou)
-        
-        if (!is.null(elapsed_parsing$mins)) {
-          message(sprintf(" - DOU runtime: %d mins %.3f secs", elapsed_dou$mins, elapsed_dou$secs))
-        } else {
-          message(sprintf(" - DOU runtime: %.3f secs", elapsed_dou$secs))
-        }
+        elapsed_dou <- as.numeric(difftime(end_dou, start_dou, units = "mins"))
+        message(" - DOU runtime: ", elapsed_dou)
         
         message(" - Start differential translation efficiency analysis")
-        start_dte <- Sys.time()
+        start_dot <- Sys.time()
       }
       
       deseq_formula <- remove_random_effects(formula)
@@ -433,10 +448,10 @@ fitDOT <- function(count_table, condition_table,
         message(" - Design formula: ", deparse(deseq_formula))
       }
       
-      # Create DESeqDataSet
+      # Creating DESeqDataSet
       dds <- DESeq2::DESeqDataSetFromMatrix(countData = dcounts,
-                                       colData = anno,
-                                       design = deseq_formula)
+                                            colData = anno,
+                                            design = deseq_formula)
       
       # Run the DESeq2 analysis
       dds <- DESeq2::DESeq(dds)
@@ -451,36 +466,9 @@ fitDOT <- function(count_table, condition_table,
       # }
       
       if (verbose) {
-        end_dte <- Sys.time()
-        
-        elapsed_dte <- DOTSeq:::runtime(end_dte, start_dte)
-        
-        if (!is.null(elapsed_dte$mins)) {
-          message(sprintf("\n - DTE runtime: %d mins %.3f secs", elapsed_dte$mins, elapsed_dte$secs))
-        } else {
-          message(sprintf(" - DTE runtime: %.3f secs", elapsed_dte$secs))
-        }
-        
-        # DOU summary
-        dou_res <- extract_results(sumExp)
-        msg <- capture.output(print(table(dou_res$model_type)))
-        msg <- msg[2:length(msg)]
-        message(paste(" - DOU model fitting summary:\n  ", paste(msg, collapse = "\n")))
-        
-        # DTE summary
-        dte_res <- results(dds)
-        dte_success <- sum(!is.na(dte_res$padj))
-        dte_total <- nrow(dte_res)
-        dte_failed <- dte_total - dte_success
-        
-        msg_dte <- c(
-          "nonTestable" = dte_failed,
-          "DESeq2" = dte_success
-        )
-        
-        msg_dte_str <- capture.output(print(as.table(msg_dte)))
-        message(paste(" - DTE model fitting summary:\n", paste(msg_dte_str, collapse = "\n")))
-
+        end_dot <- Sys.time()
+        elapsed_dot <- as.numeric(difftime(end_dot, start_dot, units = "mins"))
+        message(" - DOT runtime: ", elapsed_dot)
       }
       
     } else {
@@ -494,7 +482,7 @@ fitDOT <- function(count_table, condition_table,
   return(list(
     raw_counts = dcounts,
     norm_counts = norm_counts,
-    orfs = ORF_df,
+    orfs = orfDf,
     # te = te$absoluteTE,
     # occupancyShift = te$occupancyShift,
     dds = dds,
@@ -598,11 +586,11 @@ reduce_formula <- function(formula_input, data) {
   new_formula_str <- paste("~", paste(valid_terms, collapse = " + "))
   reduced_formula <- as.formula(new_formula_str)
   
-  if (new_formula_str != formula_str) {
+  if (!isTRUE(all.equal(reduced_formula, formula_input, ignore.environment = TRUE))) {
     message(paste0(
-      " - Formula has been reduced due to missing variables or terms with only one level.\n",
-      "   Original formula: ", formula_str, "\n",
-      "   Reduced formula:  ", new_formula_str
+      " - Formula has been reduced due to missing variables or terms with only one level\n",
+      "   Original formula: ", deparse(formula_input), "\n",
+      "   Reduced formula:  ", deparse(reduced_formula)
     ))
   }
   
