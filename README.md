@@ -59,6 +59,9 @@ please refer to the [vignettes](https://github.com/compgenom/DOTSeq/tree/main/vi
 #### Step 1. Align Ribo-seq and RNA-seq reads
 We use a publicly available HeLa cell cycle dataset from [Ly 2024](https://pubmed.ncbi.nlm.nih.gov/39443796/). 
 ```shell
+# Clone DOTSeq repository
+git clone https://github.com/compgenom/DOTSeq.git
+
 # Assume FASTQ files are downloaded via SRA Toolkit and stored in:
 # DOTSeq/inst/extdata/ly_2024
 # STAR index will be generated in:
@@ -102,9 +105,6 @@ done
 DOTSeq uses the [`RIBOSS`](https://github.com/lcscs12345/riboss) engine to generate flattened annotations from 
 GENCODE, Ensembl, or Araport GTFs.
 ```shell
-# Clone DOTSeq repository
-git clone https://github.com/compgenom/DOTSeq.git
-
 # Generate ORF-level GTF using DOTSeq's Python script
 python DOTSeq/inst/python_scripts/orf_to_gtf.py \
   --gtf DOTSeq/inst/extdata/gencode.v47.annotation.gtf.gz \
