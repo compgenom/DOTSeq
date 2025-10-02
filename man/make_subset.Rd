@@ -36,12 +36,3 @@ It also randomly sets counts of a proportion of missing ORFs to zero to simulate
 This function is useful for vignette demonstrations or for testing DOTSeq on a smaller
 subset of ORFs to reduce computation time. It ensures reproducibility by using a fixed random seed.
 }
-\examples{
-\dontrun{
-df <- readRDS("fitDOT_ly_2024.rds")
-cnt <- read.table("featureCounts.dotseq.out.gz", header = TRUE, comment.char = '#')
-cnt_subset <- make_subset(df, cnt, seed = 123)
-head(cnt_subset)
-}
-
-}
