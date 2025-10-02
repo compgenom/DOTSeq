@@ -2,49 +2,49 @@
 % Please edit documentation in R/calculateTE.R
 \name{calculateTE}
 \alias{calculateTE}
-\title{Calculate Translational Efficiency and Occupancy Shift}
+\title{Calculate Translational Efficiency and Shifts in ORF Usage}
 \usage{
 calculateTE(
-  normCnts,
-  rnaSuffix = ".rna",
-  riboSuffix = ".ribo",
-  sampleDelim = NULL,
-  pseudoCnt = 1e-06
+  norm_counts,
+  rna_suffix = ".rna",
+  ribo_suffix = ".ribo",
+  sample_delim = ".",
+  pseudocount = 1e-06
 )
 }
 \arguments{
-\item{normCnts}{A numeric matrix or data frame of normalized counts,
+\item{norm_counts}{A numeric matrix or data frame of normalized counts,
 where rows correspond to ORFs and columns correspond to samples.
 RNA-seq and Ribo-seq reads are distinguished by suffixes.}
 
-\item{rnaSuffix}{Character string indicating the suffix of RNA-seq
+\item{rna_suffix}{Character string indicating the suffix of RNA-seq
 samples in the column names (default is ".rna").}
 
-\item{riboSuffix}{Character string indicating the suffix of Ribo-seq
+\item{ribo_suffix}{Character string indicating the suffix of Ribo-seq
 samples in the column names (default is ".ribo").}
 
-\item{sampleDelim}{Delimiter used in sample name (default: NULL).}
+\item{sample_delim}{_delimiter used in sample name (default: ".").}
 
-\item{pseudoCnt}{Numeric value added to counts to avoid division by zero
+\item{pseudocount}{Numeric value added to counts to avoid division by zero
 (default is 1e-6).}
 }
 \value{
 A list with two elements:
 \describe{
-\item{absoluteTE}{A matrix of translational efficiency (Ribo / RNA).}
-\item{occupancyShift}{A matrix of log2 ratios of Ribo-proportion / RNA-proportion within each gene.}
+\item{te}{A matrix of translational efficiency (Ribo / RNA).}
+\item{usage_shift}{A matrix of log2 ratios of Ribo-proportion / RNA-proportion within each gene.}
 }
 }
 \description{
-This function computes translational efficiency (TE) and occupancy shift
+This function computes translational efficiency (TE) and shifts in ORF usage
 for a set of normalized RNA-seq and Ribo-seq counts. TE is calculated
-as the ratio of Ribo-seq counts to RNA-seq counts. Occupancy
-shift is calculated as the log2 ratio of Ribo-seq proportion to RNA-seq
+as the ratio of Ribo-seq counts to RNA-seq counts. Shifts in ORF usage
+is calculated as the log2 ratio of Ribo-seq proportion to RNA-seq
 proportion within each gene.
 }
 \examples{
-result <- calculateTE(normCounts)
-head(result$absoluteTE)
-head(result$occupancyShift)
+result <- calculateTE(norm_counts)
+head(result$te)
+head(result$usage_shift)
 
 }

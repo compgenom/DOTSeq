@@ -76,10 +76,6 @@ If \code{NULL}, parallelism is disabled (default: \code{list(n = 4L, autopar = T
 in \code{glmmTMB}: \code{nlminb}, \code{bobyqa}, and \code{optim} (default: \code{FALSE}).}
 
 \item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{FALSE}).}
-
-\item{rnaSuffix}{Character suffix to identify RNA-seq columns (default: \code{".rna"}).}
-
-\item{riboSuffix}{Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).}
 }
 \value{
 A named \code{list} with the following elements:

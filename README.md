@@ -18,30 +18,28 @@ Post hoc contrasts are computed using [`emmeans`](https://cran.r-project.org/web
 * GenomicRanges (>= 1.61.1)
 * SummarizedExperiment (>= 1.39.1)
 * rtracklayer (>= 1.69.1)
-* satuRn (>= 1.17.0)
-* locfdr (>= 1.1-8)
 
 ## INSTALLATION
 Please ensure the dependencies listed above are installed using the following steps before installing `DOTSeq`:
 ```r
+# Create a directory for R packages if not already
+dir.create(file.path(Sys.getenv("HOME"), "R/4.5"), showWarnings = TRUE, recursive = TRUE)
+
 # Install BiocManager if not already available
 if (!require("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
+  install.packages("BiocManager", lib = file.path(Sys.getenv("HOME"), "R/4.5"))
 
 # Initialise usage of Bioconductor devel version
 BiocManager::install(version = "devel")
 
 # Install required Bioconductor packages
 BiocManager::install(c(
-  "biomaRt@2.65.0",
-  "IRanges@2.43.0",
-  "GenomicRanges@1.61.1",
-  "SummarizedExperiment@1.39.1",
-  "rtracklayer@1.69.1",
-  "DEXSeq@1.55.1",
-  "satuRn@1.17.0",
-  "locfdr@1.1-8"
-))
+  "biomaRt",
+  "IRanges",
+  "GenomicRanges",
+  "SummarizedExperiment",
+  "rtracklayer",
+  "DEXSeq"), lib = file.path(Sys.getenv("HOME"), "R/4.5"))
 
 # Install devtools if not already available
 install.packages("devtools")

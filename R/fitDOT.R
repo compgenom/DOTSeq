@@ -13,8 +13,6 @@
 #'   Must include columns: run, strategy, condition, replicate.
 #' @param flattened_gtf Optional path to a flattened GFF/GTF file containing exon definitions.
 #' @param bed Path to a BED file with ORF annotations.
-#' @param rnaSuffix Character suffix to identify RNA-seq columns (default: \code{".rna"}).
-#' @param riboSuffix Character suffix to identify Ribo-seq columns (default: \code{".ribo"}).
 #' @param target Character string specifying the non-reference condition level to extract the corresponding interaction term from the model. 
 #' This is contrasted against the baseline condition (default: \code{NULL}).
 #' @param baseline Character string specifying the desired reference level.
@@ -73,8 +71,6 @@
 #' @export
 fitDOT <- function(count_table, condition_table, 
                    flattened_gtf, bed, 
-                   # rnaSuffix = ".rna", 
-                   # riboSuffix = ".ribo", 
                    target = NULL,
                    baseline = NULL,
                    formula = ~ condition * strategy,
@@ -82,7 +78,6 @@ fitDOT <- function(count_table, condition_table,
                    dispformula = NULL,
                    lrt = FALSE,
                    diagnostic = FALSE,
-                   # sampleDelim = NULL,
                    batch_col = NULL,
                    pseudocount = 1e-6, 
                    min_count = 1, 

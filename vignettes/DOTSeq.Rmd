@@ -33,16 +33,16 @@ knitr::opts_chunk$set(tidy = FALSE,
 ```
 
 # Introduction
-DOTSeq is a R package for identifying differentially translated open reading frames (ORFs) from paired Ribo- and RNA-seq data. Unlike most existing tools that operate at gene level, DOTSeq performs analysis at the ORF level, enabling the detection of:
+`DOTSeq` is an R package for identifying differentially translated open reading frames (ORFs) from ribosome profiling (Ribo-seq) and matched RNA-seq datasets. Unlike traditional gene-level approaches, DOTSeq performs analysis at the ORF level, enabling detection of:
+- Differential ORF Usage (DOU) — changes in ORF usage within the same gene.
+- Differential Translation Efficiency (DTE) — changes in ribosome loading relative to RNA level across conditions.
 
-* Differential translation between conditions, and
-* Occupancy shifts of ribosomes on ORFs within a single gene
+`DOTSeq` models Ribo-seq and RNA-seq read counts using a beta-binomial generalised linear model (GLM) implemented via `glmmTMB`. It supports experimental designs with multiple conditions, and uses an interaction term `(condition:strategy)` to isolate translation-specific effects.
 
-DOTSeq integrates both Ribo- and RNAseq read counts into a single generalized linear model (GLM) using a modified design matrix and model fitting formula inspired by [Riborex](https://github.com/smithlabcode/riborex) and 
-[satuRn](https://github.com/statOmics/satuRn) respectively. At present, DOTSeq only accepts count data generated with [featureCounts](https://subread.sourceforge.net/featureCounts.html). Development is underway to extend support for additional quantification tools, including `mmquant` and `HTseq`.
+Post hoc contrasts are computed using `emmeans`, and empirical Bayes shrinkage is applied via `ashr`.
 
 # Load Library
-First, we need to load the DOTSeq library.
+First, we need to load the `DOTSeq` library.
 
 ```{r setup,warning=FALSE}
 library(DOTSeq)
@@ -55,9 +55,10 @@ dir <- system.file("extdata", package = "DOTSeq")
 list.files(dir)
 ```
 
-# Input Data 
-The input for DOTSeq is the read counts table summarized from featureCounts. This table should include both the Ribo- and RNAseq data combined. It should also be organised as a dataframe with rows correspond to genes, while the first 6 columns represents what is in the column names and all columns after that correspond to the counts of each to sample as shown below.
-```{r read-in-input-file}
+# Input data
+Both Ribo-seq and match RNA-seq reads has been preprocessed by aligning to the reference genome using a splice-aware aligner, such as STAR or HISAT2 and the counts were aggregated per ORF based on the flattened annotation using featureCounts. 
+This table should include both the Ribo- and RNAseq data combined. It should also be organised as a dataframe with rows correspond to genes, while the first 6 columns contains the default output from featureCounts and all columns after that correspond to the counts of each to sample as shown below.
+```{r read-in-count-file}
 cnt <- read.table(file.path(dir, "featureCounts.dotseq.out.gz"), header=TRUE, comment.char ='#')
 names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
 ```
@@ -65,76 +66,150 @@ We can check the first five lines of the table:
 ```{r count-table-example}
 head(cnt)
 ```
-DOTSeq also requires annotation files describing the genomic locations of ORFs (open reading frames). Here, we specify the file path for the annotation files:
+
+Since the dataset is large, users can speed up vignette execution by using the `make_subset` function to create a smaller dataset before proceeding.
+```{r cnt-subset}
+df <- read.csv(file.path(dir, "subset_20.csv"), header = TRUE)
+cnt <- make_subset(df, cnt, seed = 123)
+# cnt <- read.table(file.path(dir, "featureCounts.dotseq.out.gz"), header=TRUE, comment.char ='#')
+# names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
+```
+
+# Annotation files 
+To allow ORF level analysis, DOTSeq requires flatten reference GTF annotation and BED files with discrete, non-overlapping ORF annotation describing the genomic locations of ORFs. These annotation files, were generated using the orf_to_gtf.py wrapper from the RIBOSS engine. 
+Here, we specify the file path for the annotation files:
 ```{r ref}
 flat <- file.path(dir, "dotseq.gtf.gz")
 bed <- file.path(dir, "dotseq.bed.gz")
 ```
 
 # Prepare Condition Table
-A condition (metadata) table is also needed to specify experimental design information for both Ribo-seq and RNA-seq samples. This table must contain four required columns: run (sample identifier), strategy (sequencing type; e.g., Ribo-seq or RNA-seq), condition (biological condition), and replicate (biological replicate number). Users may also include additional columns as needed to capture study-specific variables. In our case, an extra column treatment was included to reflect the two experimental treatments applied in [Ly et al. (2024)](https://doi.org/10.1038/s41586-024-08088-3)[@Ly2024].
+A condition (metadata) table is required to define the experimental design for both Ribo-seq and RNA-seq samples. 
+This table must include four essential columns: run (sample identifier), strategy (sequencing type, either "ribo" or "rna"), replicate (biological replicate number), and condition (biological condition, such as treatment or control). 
+Additional columns may also be included to capture study-specific factors, for example batch information or other variables that could influence the analysis.
+In this example, an extra column treatment was included to reflect the two experimental treatments applied in [Ly et al. (2024)](https://doi.org/10.1038/s41586-024-08088-3)[@Ly2024].
 ```{r condition-table}
 meta <- read.table(file.path(dir, "metadata.txt"))
 names(meta) <-  c("run","strategy","replicate","treatment","condition")
 head(meta)
 ```
-In this example, we will only look at the cells treated with cyclohexamide (chx).
+In this example, we are interested in studying the differential ORF translation between Interphase and Mitotic Cycling and cells that were treated with cyclohexamide (chx).
 ```{r extract-chx}
-cond <- meta[meta$treatment=="chx",]
-cond$treatment <- NULL
+cond <- meta[meta$treatment=="chx",] # extract only samples treated with cyclohexamide
+cond$treatment <- NULL # remove the treatment column
 ```
 
 # Testing for Differential ORF Translation
-After the read count table and condition dataframe is ready, we can use fitDOT(). This function integrates the dispersion estimation and normalization approach from [DESeq2](https://github.com/thelovelab/DESeq2) and the design matrix inspired by [Riborex](https://github.com/smithlabcode/riborex/tree/master) to prepare a [satuRn](https://github.com/statOmics/satuRn) model fitting formula[@deseq2;@saturn,@riborex].
-```{r model-fitting}
-m <- fitDOT(countTable = cnt, conditionTable = cond, flattenedFile = flat, bed = bed, stringent = TRUE, verbose = TRUE)
-```
-*Note: With `stringent=TRUE`, fitDOT removes single-ORF genes and users should set this as 'TRUE' if wanting to calculate the occupancy shift. 
+The next step is to apply fitDOT, which fits beta-binomial and negative binomial generalized linear models to test for differential ORF translation (DOT). Users can explicitly define the target and baseline conditions of their experiment, ensuring results are aligned with their study design.
+In addition to model fitting, fitDOT automates several key preprocessing steps:
+- loading count data
+- aligning samples with metadata
+- filtering ORFs
+- normalizing counts
+- calculating translational efficiency
+By default, fitDOT uses the formula ~ condition * strategy, but users may supply their own formula for more complex experimental designs (e.g., batch effects, interaction terms). Users are
 
-The default formula for `DOTSeq` is `~0 + condition + replicate + modality + effect1 + effect2`
+This flexibility allows `fitDOT` to accommodate both simple and advanced study setups.
+Finally, the fitted object can be saved and exported for downstream analyses:
+```{r fitdot}
+fmla <- ~ condition * strategy
+m <- fitDOT(
+  count_table = cnt, 
+  condition_table = cond, 
+  flattened_gtf = flat, 
+  bed = bed, 
+  target = "Mitotic_Cycling", 
+  baseline = "Interphase", 
+  formula = fmla,  
+  stringent = TRUE, 
+  verbose = TRUE
+)
+saveRDS(m, file = file.path(dir, "fitDOT_ly_2024_subset.rds"))
+```
 
-# Contrast
-Once the model is fitted using fitDOT(), users can select the specific contrast (i.e., condition comparison) they wish to test from the contrast matrix stored in the output object `m`. 
-```{r contrast-viewing}
-colnames(m$contrastMat)
-```
-This function will also generate a volcano plot. For example, the following code tests the second contrast (Mitotic Cycling vs Interphase) in the matrix:
-```{r contrast-testing}
-results <- testDOT(sumExp = m$sumExp, m$contrastMat[, 2], main = colnames(m$contrastMat)[[2]], diagplot1 = TRUE, diagplot2 = TRUE)
-```
-From this object, we can also obtain the dataframe of differentially translated ORFs that are significant with a false discovery rate of 5% and export them:
-```{r sigRes}
-sigRes <- results[results$empirical.fdr<0.05,]
-write.csv(sigRes, "DOTSeq_files/results-html/dotseq_sigres.csv", quote = FALSE, row.names = TRUE)
-```
-The information of detected ORFs is stored in the `m$orfs` dataframe. Columns include seqnames (chromosome), start/end (genomic positions), strand, featureID (ORF ID), groupID (gene ID), orfBaseMean and orfBaseVar (expression statistics), transcripts (associated transcripts), and labels (ORF type: dORF, uORF, mORF).
-```{r orf-info}
-head(m$orfs)
-```
-We will have to merge these detected ORFs information with the final results dataframe to get the ORFs label to plot the heatmap. However, please take note that the transcript column is a list and is unable to export using `write.csv`.
+# DOTSeq object
+The returned object m from the fitDOT function contains results from both the Differential ORF Usage (DOU) and Differential Translational Efficiency (DTE) modules
+## Differential ORF Usage (DOU):
+  We can now parse the fitted GLMM object `m` to `contrastDOU` to perform DOU analysis. `contrastDOU` uses the estimated marginal means (EMMs) from `m` to compute contrasts between conditions, capturing how translation of individual ORFs changes relative to mRNA abundance.
+  ```{r dou-contrast}
+  dou <- contrastDOU(m, nullweight = 500)
+  ```
+  Within the dou results object, there are two main components: strategy_specific and interaction_specific.
+  ```{r dou-names}
+  names(dou)
+  ```
+  `interaction_specific` contains the main results for DOU, the differential ORF usage derived from the interaction term. This is the part you would typically focus on when interpreting changes in ORF usage between conditions.
+  ```{r dou-is-names}
+  names(dou$interaction_specific)
+  ```
+  * Notes: Within `contrastDOU`, the interaction terms are flipped due to the way the `emmeans` package handles contrasts. This behavior is accounted for, and the terms are flipped back in the final results and plots.
+
+  `strategy_specific` contains additional results computed separately for each strategy:
+  - `0` corresponds to differential expression analysis at the RNA level.
+  - `1` corresponds to differential analysis of ribosome footprints, not strictly “differential translation” as in DTE.
+  ```{r dou-ss-names}
+  names(dou$strategy_specific)
+  ```
+
+## Differential Translational Efficiency (DTE):
+  The results for DTE are stored in the `dds` object within `m` and the since DTE leverages the DESeq2 model type, we are able to list the available contrast with resultsName function from DESeq2.
+  ```{r dte-contrast}
+  resultsNames(m$dds)
+  ```
+  The effect size shrinkage for DTE, can be performed with DESeq2's `lfcShrink` function. 
+  Since we are interested in looking at the DOT of Interphase vs Mitotic Cycling, we extracted the coefficient for the Mitotic Cycling Strategy.
+  ```{r dte}
+  dte <- lfcShrink(m$dds, coef = "conditionMitotic_Cycling.strategy1")
+  dte <- as.data.frame(dte)
+  ```
+
+# Merging Results for Visualization
+To prepare the results for visualization, we first merge the outputs from both modules into a single dataframe, aligning them by ORF ID. 
+We then incorporate the corresponding ORF annotations from the m$orfs dataframe, ensuring that the detected ORFs are included in the final results. 
+The combined dataframe can then be exported for downstream analysis or visualization.
 ```{r merge-df}
-results <- merge(m$orfs, results, by = "row.names")
+df <- merge(dou$interaction_specific$`Interphase - Mitotic_Cycling`, dte, by.x = "row.names", by.y = "row.names")
+df <- df[!is.na(df$lfsr) | !is.na(df$padj), ]
+
+df <- merge(df, m$orfs[names(m$orfs) %in% c("groupID","labels")], by.x = "Row.names", by.y = "row.names", all.x = TRUE)
+write.table(df, file = file.path(dir, "DOTSeq_results_MC_vs_I.csv"), quote = FALSE, sep = '\t', row.names = FALSE)
 ```
-From this object, we can also obtain the dataframe of differentially translated ORFs that are significant with a false discovery rate of 5%:
-```{r sigRes}
-sigRes <- results[results$empirical.fdr<0.05,]
-```
+# Column description of the main DOTSeq output (DOTSeq_results_MC_vs_I.csv)
+| column | Module  | Name           | DEscription                                                                                                                                                               |
+|--------|---------|----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1      | DOU     | Row.names      | Open reading frame identification.                                                                                                                                                            |
+| 2      | DOU     | betahat        |
+| 3      | DOU     | sebetahat      |
+| 4      | DOU     | WaldP          |
+| 5      | DOU     | WaldPadj       |
+| 6      | DOU     | PosteriorMean  |
+| 7      | DOU     | lfsr           |
+| 8      | DOU     | lfdr           |
+| 9      | DOU     | qvalue         |
+| 10     | DTE     | log2FoldChange |
+| 11     | DTE     | lfcSE          |
+| 12     | DTE     | pvalue         |
+| 13     | DTE     | padj           |
+| 14     | -       | groupID        | 
+| 15     | -       | labels         |
 
 # Visualisation
-Users can specify which ORF they want to compare on the heatmap and it will be saved as a .pdf format. 
+`plotDOT` generates a scatter plot that compares DTE and DOU results side by side. Each point represents an ORF, positioned by its DTE and DOU effect sizes. 
+To enhance interpretability, the plot includes marginal histograms along each axis, showing the distribution of DTE and DOU separately. 
+The points are also color-coded by significance, allowing users to distinguish ORFs significance in DTE, DOU, or both modules.
+```{r plotdot}
+plotDOT(res = df)
+```
+![DOT_plot](DOTSeq_files/figure-html/sp.png)
+![Venn_Diagram](DOTSeq_files/figure-html/vd.png)
+
+Users can also specify which ORF they want to compare on the heatmap and it will be saved as a .pdf format. 
 For example, this heatmap is showing the differential translation between uORF and mORF:
 ```{r uORF_heatmap}
-pairedDOTHeatmap(sigRes, "uORF", "hsapiens_gene_ensembl", "hgnc_symbol", "uORF.dot.pdf")
+dou_go_20_80 <- plotHeatmap(results =  df_20_80, orf_type = "uORF", flip_sign = TRUE, species_dataset = "hsapiens_gene_ensembl", symbol_col = "hgnc_symbol")
 ```
-![uORF_Heatmap](DOTSeq_files/figures-html/uORF.dot.png)
-
-and this heatmap is showing the differential translation between dORF and mORF:
-```{r dORF_heatmap}
-pairedDOTHeatmap(sigRes, "dORF", "hsapiens_gene_ensembl", "hgnc_symbol", "dORF.dot.pdf")
-```
-![dORF_Heatmap](DOTSeq_files/figures-html/dORF.dot.png)
+![uORF_Heatmap](DOTSeq_files/figure-html/uORF_hm.png)
 
 # Session Info
 ```{r sessionInfo}
 sessionInfo()
-```
