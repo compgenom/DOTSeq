@@ -45,7 +45,8 @@ Post hoc contrasts are computed using `emmeans`, and empirical Bayes shrinkage i
 First, we need to load the `DOTSeq` library.
 
 ```{r setup,warning=FALSE}
-library(DOTSeq)
+# library(DOTSeq)
+devtools::document("~/projects_limgroup/dotseq/src/DOTSeq/")
 ```
 
 # Example Dataset
@@ -67,12 +68,10 @@ We can check the first five lines of the table:
 head(cnt)
 ```
 
-Since the dataset is large, users can speed up vignette execution by using the `make_subset` function to create a smaller dataset before proceeding.
+To speed up the vignette execution we will be using the `make_subset` function to create a smaller dataset before proceeding. Please skip this step you wish to run DOTSeq using the full dataset. 
 ```{r cnt-subset}
-df <- read.csv(file.path(dir, "subset_20.csv"), header = TRUE)
-cnt <- make_subset(df, cnt, seed = 123)
-# cnt <- read.table(file.path(dir, "featureCounts.dotseq.out.gz"), header=TRUE, comment.char ='#')
-# names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
+df <- read.delim(file.path(dir, "subset_20.csv"), header = TRUE)
+cnt <- DOTSeq::make_subset(df, cnt, seed = 123)
 ```
 
 # Annotation files 
@@ -113,55 +112,46 @@ This flexibility allows `fitDOT` to accommodate both simple and advanced study s
 Finally, the fitted object can be saved and exported for downstream analyses:
 ```{r fitdot}
 fmla <- ~ condition * strategy
-m <- fitDOT(
-  count_table = cnt, 
-  condition_table = cond, 
-  flattened_gtf = flat, 
-  bed = bed, 
-  target = "Mitotic_Cycling", 
-  baseline = "Interphase", 
-  formula = fmla,  
-  stringent = TRUE, 
-  verbose = TRUE
-)
+m <- fitDOT(count_table = cnt, condition_table = cond, flattened_gtf = flat, bed = bed, formula = fmla,
+            target = "Mitotic_Cycling", baseline = "Interphase", stringent = TRUE, verbose = TRUE)
 saveRDS(m, file = file.path(dir, "fitDOT_ly_2024_subset.rds"))
 ```
 
 # DOTSeq object
 The returned object m from the fitDOT function contains results from both the Differential ORF Usage (DOU) and Differential Translational Efficiency (DTE) modules
 ## Differential ORF Usage (DOU):
-  We can now parse the fitted GLMM object `m` to `contrastDOU` to perform DOU analysis. `contrastDOU` uses the estimated marginal means (EMMs) from `m` to compute contrasts between conditions, capturing how translation of individual ORFs changes relative to mRNA abundance.
-  ```{r dou-contrast}
-  dou <- contrastDOU(m, nullweight = 500)
-  ```
-  Within the dou results object, there are two main components: strategy_specific and interaction_specific.
-  ```{r dou-names}
-  names(dou)
-  ```
-  `interaction_specific` contains the main results for DOU, the differential ORF usage derived from the interaction term. This is the part you would typically focus on when interpreting changes in ORF usage between conditions.
-  ```{r dou-is-names}
-  names(dou$interaction_specific)
-  ```
-  * Notes: Within `contrastDOU`, the interaction terms are flipped due to the way the `emmeans` package handles contrasts. This behavior is accounted for, and the terms are flipped back in the final results and plots.
+We can now parse the fitted GLMM object `m` to `contrastDOU` to perform DOU analysis. `contrastDOU` uses the estimated marginal means (EMMs) from `m` to compute contrasts between conditions, capturing how translation of individual ORFs changes relative to mRNA abundance.
+```{r dou-contrast}
+dou <- contrastDOU(m)
+```
+Within the dou results object, there are two main components: strategy_specific and interaction_specific.
+```{r dou-names}
+names(dou)
+```
+`interaction_specific` contains the main results for DOU, the differential ORF usage derived from the interaction term. This is the part you would typically focus on when interpreting changes in ORF usage between conditions.
+```{r dou-is-names}
+names(dou$interaction_specific)
+```
+* Notes: Within `contrastDOU`, the interaction terms are flipped due to the way the `emmeans` package handles contrasts. This behavior is accounted for, and the terms are flipped back in the final results and plots.
 
-  `strategy_specific` contains additional results computed separately for each strategy:
-  - `0` corresponds to differential expression analysis at the RNA level.
-  - `1` corresponds to differential analysis of ribosome footprints, not strictly “differential translation” as in DTE.
-  ```{r dou-ss-names}
-  names(dou$strategy_specific)
-  ```
+`strategy_specific` contains additional results computed separately for each strategy:
+- `0` corresponds to differential expression analysis at the RNA level.
+- `1` corresponds to differential analysis of ribosome footprints, not strictly “differential translation” as in DTE.
+```{r dou-ss-names}
+names(dou$strategy_specific)
+```
 
 ## Differential Translational Efficiency (DTE):
-  The results for DTE are stored in the `dds` object within `m` and the since DTE leverages the DESeq2 model type, we are able to list the available contrast with resultsName function from DESeq2.
-  ```{r dte-contrast}
-  resultsNames(m$dds)
-  ```
-  The effect size shrinkage for DTE, can be performed with DESeq2's `lfcShrink` function. 
-  Since we are interested in looking at the DOT of Interphase vs Mitotic Cycling, we extracted the coefficient for the Mitotic Cycling Strategy.
-  ```{r dte}
-  dte <- lfcShrink(m$dds, coef = "conditionMitotic_Cycling.strategy1")
-  dte <- as.data.frame(dte)
-  ```
+The results for DTE are stored in the `dds` object within `m` and the since DTE leverages the DESeq2 model type, we are able to list the available contrast with resultsName function from DESeq2.
+```{r dte-contrast}
+resultsNames(m$dds)
+```
+The effect size shrinkage for DTE, can be performed with DESeq2's `lfcShrink` function. 
+Since we are interested in looking at the DOT of Interphase vs Mitotic Cycling, we extracted the coefficient for the Mitotic Cycling Strategy.
+```{r dte}
+dte <- lfcShrink(m$dds, coef = "conditionMitotic_Cycling.strategy1")
+dte <- as.data.frame(dte)
+```
 
 # Merging Results for Visualization
 To prepare the results for visualization, we first merge the outputs from both modules into a single dataframe, aligning them by ORF ID. 
@@ -175,11 +165,11 @@ df <- merge(df, m$orfs[names(m$orfs) %in% c("groupID","labels")], by.x = "Row.na
 write.table(df, file = file.path(dir, "DOTSeq_results_MC_vs_I.csv"), quote = FALSE, sep = '\t', row.names = FALSE)
 ```
 # Column description of the main DOTSeq output (DOTSeq_results_MC_vs_I.csv)
-| column | Module  | Name           | DEscription                                                                                                                                                               |
-|--------|---------|----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1      | DOU     | Row.names      | Open reading frame identification.                                                                                                                                                            |
-| 2      | DOU     | betahat        |
-| 3      | DOU     | sebetahat      |
+|        | Module  | Name           | Description                                         |
+|--------|---------|----------------|-----------------------------------------------------|
+| 1      | DOU     | ORF_ID         | Open reading frame identification.                  |
+| 2      | DOU     | betahat        | 
+| 3      | DOU     | sebetahat      | Standard error of `betahat`, reflecting uncertainty in the estimate.
 | 4      | DOU     | WaldP          |
 | 5      | DOU     | WaldPadj       |
 | 6      | DOU     | PosteriorMean  |
@@ -190,8 +180,8 @@ write.table(df, file = file.path(dir, "DOTSeq_results_MC_vs_I.csv"), quote = FAL
 | 11     | DTE     | lfcSE          |
 | 12     | DTE     | pvalue         |
 | 13     | DTE     | padj           |
-| 14     | -       | groupID        | 
-| 15     | -       | labels         |
+| 14     | -       | Gene_ID        | Gene identification
+| 15     | -       | labels         | Type of ORFs 
 
 # Visualisation
 `plotDOT` generates a scatter plot that compares DTE and DOU results side by side. Each point represents an ORF, positioned by its DTE and DOU effect sizes. 
@@ -200,16 +190,14 @@ The points are also color-coded by significance, allowing users to distinguish O
 ```{r plotdot}
 plotDOT(res = df)
 ```
-![DOT_plot](DOTSeq_files/figure-html/sp.png)
-![Venn_Diagram](DOTSeq_files/figure-html/vd.png)
 
 Users can also specify which ORF they want to compare on the heatmap and it will be saved as a .pdf format. 
 For example, this heatmap is showing the differential translation between uORF and mORF:
 ```{r uORF_heatmap}
-dou_go_20_80 <- plotHeatmap(results =  df_20_80, orf_type = "uORF", flip_sign = TRUE, species_dataset = "hsapiens_gene_ensembl", symbol_col = "hgnc_symbol")
+dou_go <- plotHeatmap(results =  df, orf_type = "uORF", flip_sign = TRUE, species_dataset = "hsapiens_gene_ensembl", symbol_col = "hgnc_symbol")
 ```
-![uORF_Heatmap](DOTSeq_files/figure-html/uORF_hm.png)
 
 # Session Info
 ```{r sessionInfo}
 sessionInfo()
+```

@@ -420,6 +420,19 @@ simDOT <- function(
   sim_ribo_full[common_filtered_genes, ] <- sim_ribo_filtered
   sim_rna_full[common_filtered_genes, ] <- sim_rna_filtered
   
+  uorf_ids <- rownames(orfs[orfs$labels == "uORF", ])
+  dorf_ids <- rownames(orfs[orfs$labels == "dORF", ])
+  
+  scale_uorf <- 0.1
+  scale_dorf_ribo <- 0.01
+  scale_dorf_rna <- 0.1
+  
+  sim_ribo_full[uorf_ids, ] <- sim_ribo_full[uorf_ids, ] * scale_uorf
+  sim_ribo_full[dorf_ids, ] <- sim_ribo_full[dorf_ids, ] * scale_dorf_ribo
+  
+  sim_rna_full[uorf_ids, ] <- sim_rna_full[uorf_ids, ] * scale_uorf
+  sim_rna_full[dorf_ids, ] <- sim_rna_full[dorf_ids, ] * scale_dorf_rna
+  
   merged <- cbind(sim_ribo_full, sim_rna_full)
   replicate <- rep(rep(seq(1, num_samples), conditions), num_batches)
   

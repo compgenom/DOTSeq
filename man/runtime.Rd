@@ -4,14 +4,14 @@
 \alias{runtime}
 \title{Format elapsed time between two timestamps}
 \usage{
-runtime(end_time, start_time, units = "mins")
+runtime(end_time, start_time, units = "secs")
 }
 \arguments{
 \item{end_time}{POSIXct. The end time of the process.}
 
 \item{start_time}{POSIXct. The start time of the process.}
 
-\item{units}{Character. Units for \code{difftime()} calculation. Default is \code{"mins"}.}
+\item{units}{Character. Units for \code{difftime()} calculation. Default is \code{"secs"}.}
 }
 \value{
 A named list containing:

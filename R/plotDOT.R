@@ -6,7 +6,7 @@
 #' ORFs are colored based on significance in DTE, DOU, or both tests. 
 #' This plot helps assess the overlap and divergence between DTE and DOU signals.
 #'
-#' @param res A data frame containing results from DTE and DOU analyses.
+#' @param results A data frame containing results from DTE and DOU analyses.
 #'   Must include columns for DTE log2 fold-change, DOU estimates, and adjusted p-values
 #'   (e.g., \code{padj} for DTE and \code{tests.padj} for DOU).
 #' @param dou_estimates_col Character string specifying the column name for DOU estimates.
@@ -38,7 +38,7 @@
 #' @importFrom grDevices adjustcolor
 #' @importFrom stats density
 #' @importFrom eulerr euler
-plotDOT <- function(res, dou_estimates_col = "PosteriorMean", dou_padj_col = "lfsr", dte_estimates_col = "log2FoldChange", dte_padj_col = "padj", flip_sign = TRUE, lhist=20) {
+plotDOT <- function(results, dou_estimates_col = "PosteriorMean", dou_padj_col = "lfsr", dte_estimates_col = "log2FoldChange", dte_padj_col = "padj", flip_sign = TRUE, lhist=20) {
   if (isTRUE(flip_sign)) {
     res[[dou_estimates_col]] <- -res[[dou_estimates_col]]
   }

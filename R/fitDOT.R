@@ -223,7 +223,7 @@ fitDOT <- function(count_table, condition_table,
   
   if (verbose) {
     message(" - Start differential ORF usage analysis")
-    message(" - Design formula: ", deparse(fmla))
+    message(" - Conditional formula: ", deparse(fmla))
   }
   cnt <- cnt[order(cnt$Geneid, cnt$Start, cnt$End), ]
   dcounts <- cnt[c(1, 7:ncol(cnt))]
@@ -408,8 +408,14 @@ fitDOT <- function(count_table, condition_table,
       
       if (verbose) {
         end_parsing <- Sys.time()
-        elapsed_parsing <- as.numeric(difftime(end_parsing, start_parsing, units = "mins"))
-        message(" - Data parsing runtime: ", elapsed_parsing)
+
+        elapsed_parsing <- DOTSeq:::runtime(end_parsing, start_parsing)
+        
+        if (!is.null(elapsed_parsing$mins)) {
+          message(sprintf(" - Data parsing runtime: %d mins %.3f secs", elapsed_parsing$mins, elapsed_parsing$secs))
+        } else {
+          message(sprintf(" - Data parsing runtime: %.3f secs", elapsed_parsing$secs))
+        }
         
         message(" - Fit beta-binomial generalised linear models")
         start_dou <- Sys.time()
@@ -429,11 +435,17 @@ fitDOT <- function(count_table, condition_table,
       
       if (verbose) {
         end_dou <- Sys.time()
-        elapsed_dou <- as.numeric(difftime(end_dou, start_dou, units = "mins"))
-        message(" - DOU runtime: ", elapsed_dou)
+
+        elapsed_dou <- DOTSeq:::runtime(end_dou, start_dou)
+        
+        if (!is.null(elapsed_dou$mins)) {
+          message(sprintf(" - DOU runtime: %d mins %.3f secs", elapsed_dou$mins, elapsed_dou$secs))
+        } else {
+          message(sprintf(" - DOU runtime: %.3f secs", elapsed_dou$secs))
+        }
         
         message(" - Start differential translation efficiency analysis")
-        start_dot <- Sys.time()
+        start_dte <- Sys.time()
       }
       
       deseq_formula <- remove_random_effects(formula)
@@ -461,9 +473,30 @@ fitDOT <- function(count_table, condition_table,
       # }
       
       if (verbose) {
-        end_dot <- Sys.time()
-        elapsed_dot <- as.numeric(difftime(end_dot, start_dot, units = "mins"))
-        message(" - DOT runtime: ", elapsed_dot)
+        end_dte <- Sys.time()
+
+        elapsed_dte <- DOTSeq:::runtime(end_dte, start_dte)
+        
+        if (!is.null(elapsed_dte$mins)) {
+          message(sprintf(" - DTE runtime: %d mins %.3f secs", elapsed_dte$mins, elapsed_dte$secs))
+        } else {
+          message(sprintf(" - DTE runtime: %.3f secs", elapsed_dte$secs))
+        }
+        
+        # DOU summary
+        dou_res <- DOTSeq:::extract_results(sumExp)
+        msg <- capture.output(print(table(dou_res$model_type)))
+        msg <- msg[2:length(msg)]
+        message(paste(" - DOU model fitting summary:\n  ", paste(msg, collapse = "\n")))
+        
+        # DTE summary
+        dte_res <- results(dds)
+        dte_res$model_type <- ifelse(is.na(dte_res$padj), "NA", "nbinom")
+        
+        msg_dte <- capture.output(print(table(dte_res$model_type)))
+        msg_dte <- msg_dte[2:length(msg_dte)]
+        message(paste(" - DTE model fitting summary:\n", paste(msg_dte, collapse = "\n")))
+        
       }
       
     } else {
@@ -602,7 +635,7 @@ reduce_formula <- function(formula_input, data) {
 #'
 #' @param end_time POSIXct. The end time of the process.
 #' @param start_time POSIXct. The start time of the process.
-#' @param units Character. Units for `difftime()` calculation. Default is `"mins"`.
+#' @param units Character. Units for `difftime()` calculation. Default is `"secs"`.
 #'
 #' @return A named list containing:
 #' \itemize{
@@ -615,12 +648,11 @@ reduce_formula <- function(formula_input, data) {
 #' Sys.sleep(3.5)
 #' end <- Sys.time()
 #' runtime(end, start)
-runtime <- function(end_time, start_time, units = "mins") {
-  elapsed <- as.numeric(difftime(end_time, start_time, units = units))
+runtime <- function(end_time, start_time, units = "secs") {
+  total_seconds <- as.numeric(difftime(end_time, start_time, units = units))
   
-  total_seconds <- elapsed * 60
-  mins <- total_seconds %/% 60
-  secs <- total_seconds %% 60
+  mins <- floor(total_seconds / 60)
+  secs <- total_seconds - (mins * 60)
   
   if (mins > 0) {
     return(list(mins = mins, secs = secs))
@@ -652,7 +684,6 @@ runtime <- function(end_time, start_time, units = "mins") {
 #' Missing columns across models are filled with \code{NA} to ensure a consistent structure.
 #'
 #' @import SummarizedExperiment
-#' @export
 extract_results <- function(sumExp, verbose = TRUE) {
   
   models_list <- rowData(sumExp)[["fitDOUModels"]]

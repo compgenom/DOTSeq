@@ -29,6 +29,22 @@ def main():
     parser.add_argument("--stop_codon", action="store_true", help="Require stop codon")
 
     args = parser.parse_args()
+    
+    output_dir = os.path.dirname(args.output)
+    if output_dir:
+        if not os.path.exists(output_dir):
+            try:
+                os.makedirs(output_dir)
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to create the output directory '{output_dir}': {e}. "
+                    "Please check that the path is valid and that you have write permissions."
+                )
+        elif not os.access(output_dir, os.W_OK):
+            raise PermissionError(
+                f"The output directory '{output_dir}' exists but is not writable. "
+                "Please choose a different location or adjust the directory permissions."
+            )
 
     if args.gtf and args.transcripts and not args.orf_finder:
         cds_range, df = orf_finder(args.gtf, args.transcripts, ncrna=False, outdir=None,

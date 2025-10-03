@@ -259,7 +259,7 @@ StatModel <- function(type = "fitError",
       model_null_shared <- NULL
       
       # Initialize the results list with the new structure
-      if (isTRUE(lrt)) {
+      if (isTRUE(lrt) || (dispersion_modeling == "auto")) {
         results <- list(model_fit = list(), tests = list(), estimates = list(), dispersion = list(), diagnostics = list())
       } else {
         results <- list(model_fit = list(), estimates = list(), dispersion = list(), diagnostics = list())
@@ -364,10 +364,11 @@ StatModel <- function(type = "fitError",
         if (!is.null(model_shared) && model_shared$fit$convergence == 0 && isTRUE(model_shared$sdr$pdHess)) {
           results$model_fit$aic_shared_disp <- AIC(model_shared)
           
+          results$tests$lrt_shared_disp <- anova(model_strategy, model_shared)$P[2]
           if (isTRUE(lrt)) {
-            results$tests$lrt_shared_disp <- anova(model_strategy, model_shared)$P[2]
             results$tests$lrt_shared <- anova(model_shared, model_null_shared)$P[2]
           }
+          
           if (isTRUE(diagnostic)) {
             sim_out <- DHARMa::simulateResiduals(fittedModel = model_shared, plot = FALSE)
             results$diagnostics$diagnostics_shared <- list(overdispersion = DHARMa::testDispersion(sim_out, plot = FALSE)$p.value, 
@@ -389,8 +390,18 @@ StatModel <- function(type = "fitError",
           results$tests$pvalue_best <- results$tests$lrt_shared
         }
         
-        # The 'auto' use the strategy model as the default.
-        model_to_return <- model_strategy
+        valid_strategy <- !is.null(model_strategy) && model_strategy$fit$convergence == 0 && isTRUE(model_strategy$sdr$pdHess)
+        valid_shared <- !is.null(model_shared) && model_shared$fit$convergence == 0 && isTRUE(model_shared$sdr$pdHess)
+        
+        if (isTRUE(lrt) && !is.na(results$tests$lrt_shared_disp) && results$tests$lrt_shared_disp < 0.05 && valid_strategy) {
+          model_to_return <- model_strategy
+        } else if (valid_shared) {
+          model_to_return <- model_shared
+        } else if (valid_strategy) {
+          model_to_return <- model_strategy
+        } else {
+          model_to_return <- NULL
+        }
         
       } else if (dispersion_modeling == "strategy") {
         # Only fit strategy model
