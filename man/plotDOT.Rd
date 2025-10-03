@@ -5,7 +5,7 @@
 \title{Plot DTE vs DOU Comparison with Marginal Histograms}
 \usage{
 plotDOT(
-  res,
+  results,
   dou_estimates_col = "PosteriorMean",
   dou_padj_col = "lfsr",
   dte_estimates_col = "log2FoldChange",
@@ -15,7 +15,7 @@ plotDOT(
 )
 }
 \arguments{
-\item{res}{A data frame containing results from DTE and DOU analyses.
+\item{results}{A data frame containing results from DTE and DOU analyses.
 Must include columns for DTE log2 fold-change, DOU estimates, and adjusted p-values
 (e.g., \code{padj} for DTE and \code{tests.padj} for DOU).}
 

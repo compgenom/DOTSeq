@@ -315,12 +315,15 @@ StatModel <- function(type = "fitError",
       } else {
         if (dispersion_modeling %in% c("auto", "strategy")) {
           model_strategy <- glmmTMB(full_formula, dispformula = ~strategy, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+          if (dispersion_modeling == "auto"  && (is.null(model_strategy) | model_strategy$fit$convergence == 1 | isFALSE(model_strategy$sdr$pdHess))) {
+            model_shared <- glmmTMB(full_formula, dispformula = ~1, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+          }
           if (isTRUE(lrt)) {
             model_null <- glmmTMB(null_formula, dispformula = ~ strategy, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
           }
         }
         
-        if (dispersion_modeling %in% c("auto", "shared")) {
+        if (dispersion_modeling %in% c("shared")) { #"auto", 
           model_shared <- glmmTMB(full_formula, dispformula = ~1, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
           if (isTRUE(lrt)) {
             model_null_shared <- glmmTMB(null_formula, dispformula = ~1, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
@@ -379,26 +382,26 @@ StatModel <- function(type = "fitError",
           }
         }
         
-        # Determine the final p-value based on the gene-by-gene selection logic
-        if (isTRUE(lrt) && !is.null(results$tests$lrt_shared_disp) && !is.na(results$tests$lrt_shared_disp) && results$tests$lrt_shared_disp < 0.05) {
-          if (!is.null(results$tests$pvalue) && !is.na(results$tests$pvalue)) {
-            results$tests$pvalue_best <- results$tests$pvalue
-          } else {
-            results$tests$pvalue_best <- results$tests$lrt_shared
-          }
-        } else {
-          results$tests$pvalue_best <- results$tests$lrt_shared
-        }
+        # # Determine the final p-value based on the gene-by-gene selection logic
+        # if (isTRUE(lrt) && !is.null(results$tests$lrt_shared_disp) && !is.na(results$tests$lrt_shared_disp) && results$tests$lrt_shared_disp < 0.05) {
+        #   if (!is.null(results$tests$pvalue) && !is.na(results$tests$pvalue)) {
+        #     results$tests$pvalue_best <- results$tests$pvalue
+        #   } else {
+        #     results$tests$pvalue_best <- results$tests$lrt_shared
+        #   }
+        # } else {
+        #   results$tests$pvalue_best <- results$tests$lrt_shared
+        # }
         
         valid_strategy <- !is.null(model_strategy) && model_strategy$fit$convergence == 0 && isTRUE(model_strategy$sdr$pdHess)
         valid_shared <- !is.null(model_shared) && model_shared$fit$convergence == 0 && isTRUE(model_shared$sdr$pdHess)
         
-        if (isTRUE(lrt) && !is.na(results$tests$lrt_shared_disp) && results$tests$lrt_shared_disp < 0.05 && valid_strategy) {
+        if (valid_strategy) { # isTRUE(lrt) && !is.na(results$tests$lrt_shared_disp) && results$tests$lrt_shared_disp < 0.05 && 
           model_to_return <- model_strategy
         } else if (valid_shared) {
           model_to_return <- model_shared
-        } else if (valid_strategy) {
-          model_to_return <- model_strategy
+        # } else if (valid_strategy) {
+        #   model_to_return <- model_strategy
         } else {
           model_to_return <- NULL
         }

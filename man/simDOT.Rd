@@ -16,6 +16,10 @@ simDOT(
   gcoeff = 1.5,
   bcoeff = 0.9,
   num_batches = 2,
+  modify_dispersion = FALSE,
+  size_factor = 1.5,
+  min_size = 5,
+  scale_p0 = 1,
   shape = 0.6,
   scale = 0.5,
   batch_scenario = "balanced",
@@ -48,6 +52,20 @@ Passed to the \code{scenario} argument of \code{generate_coefficients}.}
 
 \item{num_batches}{Integer. Number of batches (default: 2).}
 
+\item{size_factor}{Numeric scalar. A \strong{multiplicative factor} applied to the
+estimated size parameter ($r$) for \emph{all} transcripts.
+Since dispersion ($\phi$) is $1/r$, a value \strong{greater than 1}
+(e.g., 1.5) will \strong{decrease} the biological dispersion (noise),
+making the simulated data less variable. A value less than 1
+will increase dispersion (default: 1.5).}
+
+\item{min_size}{Numeric scalar. A \strong{lower bound} for the modified size parameter ($r$).
+Any transcript whose modified $r$ falls below this value will be
+set to \code{min_size}. This is used to \strong{cap the maximum dispersion}
+(noise) in the simulation, preventing transcripts with extremely
+low estimated $r$ values from introducing unrealistic or
+excessive biological variability (default: 5).}
+
 \item{shape}{Numeric. Shape parameter for gamma distribution used to simulate baseline coefficients (default: 0.6).}
 
 \item{scale}{Numeric. Scale parameter for gamma distribution used to simulate baseline coefficients (default: 0.5).}
@@ -67,6 +85,8 @@ Passed to the \code{scenario} argument of \code{generate_coefficients}.}
 \item{diagplot_rna}{Logical. If \code{TRUE}, generate diagnostic plots for RNA data (default: \code{FALSE}).}
 
 \item{seed}{Optional integer. Sets the random seed for reproducibility (default: \code{NULL}).}
+
+\item{modify_size_factor}{Enable (default: \code{FALSE})}
 }
 \value{
 A list with the following components:

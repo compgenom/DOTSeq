@@ -12,7 +12,7 @@ fitDOT(
   target = NULL,
   baseline = NULL,
   formula = ~condition * strategy,
-  dispersion_modeling = "strategy",
+  dispersion_modeling = "auto",
   dispformula = NULL,
   lrt = FALSE,
   diagnostic = FALSE,
@@ -44,8 +44,8 @@ This is contrasted against the baseline condition (default: \code{NULL}).}
 
 \item{formula}{A formula object specifying the design, e.g., \code{~ condition * strategy}.}
 
-\item{dispersion_modeling}{Optional string specifying the dispersion modeling strategy.
-Used to select between default, constant, or custom dispersion models.}
+\item{dispersion_modeling}{Optional string specifying the dispersion modeling approach.
+Used to select between default, constant, or custom dispersion models (default: \code{"auto"}).}
 
 \item{dispformula}{Optional formula object for custom dispersion modeling.}
 

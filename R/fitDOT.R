@@ -31,8 +31,8 @@
 #'   If \code{NULL}, parallelism is disabled (default: \code{list(n = 4L, autopar = TRUE)}).
 #' @param optimizers Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers
 #'   in \code{glmmTMB}: \code{nlminb}, \code{bobyqa}, and \code{optim} (default: \code{FALSE}).
-#' @param dispersion_modeling Optional string specifying the dispersion modeling strategy.
-#'   Used to select between default, constant, or custom dispersion models.
+#' @param dispersion_modeling Optional string specifying the dispersion modeling approach.
+#'   Used to select between default, constant, or custom dispersion models (default: \code{"auto"}).
 #' @param dispformula Optional formula object for custom dispersion modeling.
 #' @param lrt Logical; if \code{TRUE}, performs a likelihood ratio test to compare the full model (with interaction) against a reduced model 
 #' (without interaction) to assess translation-specific effects (default: \code{FALSE}).
@@ -74,7 +74,7 @@ fitDOT <- function(count_table, condition_table,
                    target = NULL,
                    baseline = NULL,
                    formula = ~ condition * strategy,
-                   dispersion_modeling = "strategy",
+                   dispersion_modeling = "auto",
                    dispformula = NULL,
                    lrt = FALSE,
                    diagnostic = FALSE,
@@ -245,7 +245,7 @@ fitDOT <- function(count_table, condition_table,
   
   if (!is.null(flattened_gtf)) {
     if (verbose) {
-      message(" - Parse the flattened GFF file")
+      message(" - Parse the flattened GTF file")
     }
     aggregates <- read.delim(flattened_gtf, stringsAsFactors = FALSE, 
                              header = FALSE)

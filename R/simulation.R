@@ -133,6 +133,19 @@ generate_coefficients <- function(orfs,
 #' @param gcoeff Numeric. Magnitude of log-fold change for DOT effects (default: 1.5).
 #' @param bcoeff Numeric. Magnitude of batch effect coefficient (default: 0.9).
 #' @param num_batches Integer. Number of batches (default: 2).
+#' @param modify_size_factor Enable (default: \code{FALSE})
+#' @param size_factor Numeric scalar. A **multiplicative factor** applied to the 
+#'                    estimated size parameter ($r$) for *all* transcripts. 
+#'                    Since dispersion ($\phi$) is $1/r$, a value **greater than 1**
+#'                    (e.g., 1.5) will **decrease** the biological dispersion (noise), 
+#'                    making the simulated data less variable. A value less than 1 
+#'                    will increase dispersion (default: 1.5).
+#' @param min_size Numeric scalar. A **lower bound** for the modified size parameter ($r$). 
+#'                 Any transcript whose modified $r$ falls below this value will be 
+#'                 set to `min_size`. This is used to **cap the maximum dispersion** 
+#'                 (noise) in the simulation, preventing transcripts with extremely 
+#'                 low estimated $r$ values from introducing unrealistic or 
+#'                 excessive biological variability (default: 5).
 #' @param shape Numeric. Shape parameter for gamma distribution used to simulate baseline coefficients (default: 0.6).
 #' @param scale Numeric. Scale parameter for gamma distribution used to simulate baseline coefficients (default: 0.5).
 #' @param batch_scenario Character. Specifies the batch effect design. Must be one of:
@@ -170,6 +183,10 @@ simDOT <- function(
     gcoeff = 1.5,
     bcoeff = 0.9,
     num_batches = 2,
+    modify_dispersion = FALSE,
+    size_factor = 1.5,
+    min_size = 5,
+    scale_p0 = 1,
     shape = 0.6, 
     scale = 0.5,
     batch_scenario = "balanced",
@@ -296,7 +313,44 @@ simDOT <- function(
   }
   
   params_ribo <- polyester::get_params(counts_ribo_filtered)
-  params_rna <- polyester::get_params(counts_rna_filtered)
+  params_rna  <- polyester::get_params(counts_rna_filtered)
+  
+  modify_polyester_fit <- function(params_object, log_mu, size_factor = 1.5, min_size = 5) {
+    # Extract the original log(size) estimates
+    # The 'predict' function applies the spline fit (log(r) ~ log(mu))
+    # to the log_mu values to get the predicted log(r)
+    original_log_r <- predict(params_object$fit, x = log_mu)$y
+    
+    # Convert to linear scale (size parameter r)
+    original_r <- exp(original_log_r)
+    
+    # Modify the size parameter (r)
+    modified_r <- original_r * size_factor
+    
+    # Set a minimum size (r) value to prevent extreme over-dispersion
+    modified_r[modified_r < min_size] <- min_size
+    
+    # Convert back to log scale
+    modified_log_r <- log(modified_r)
+    
+    # Create a new smooth.spline object
+    # Use the *original* log_mu values with the *modified* log_size values.
+    mod_fit <- smooth.spline(
+      x = log_mu,
+      y = modified_log_r,
+      df = params_object$fit$df
+    )
+    
+    return(mod_fit)
+  }
+  
+  if (isTRUE(modify_dispersion)){
+    params_ribo$fit <- modify_polyester_fit(params_ribo, rowMeans(counts_ribo_filtered))
+    params_rna$fit <- modify_polyester_fit(params_rna, rowMeans(counts_rna_filtered))
+  }
+  # Reduce zero-inflation
+  params_ribo$p0  <- params_ribo$p0 * scale_p0   # fewer zeros
+  params_rna$p0  <- params_rna$p0 * scale_p0
   
   if (!is.null(regulation_type) & !is.null(orfs)) {
     coeffs_list <- generate_coefficients(
@@ -405,7 +459,7 @@ simDOT <- function(
   
   if (batch_scenario == "modality_specific") {
     sim_ribo_filtered <- polyester::create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0, beta = coeffs_ribo, mod = mod_ribo, seed = seed)
-    sim_rna_filtered <- polyester::create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0, beta = coeffs_rna, mod = mod_rna, seed = seed)
+    sim_rna_filtered <- polyester::create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0, beta = coeffs_rna, mod = mod_rna, seed = seed) # params_rna$fit
   } else {
     sim_ribo_filtered <- polyester::create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0, beta = coeffs_ribo, mod = mod, seed = seed)
     sim_rna_filtered <- polyester::create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0, beta = coeffs_rna, mod = mod, seed = seed)
@@ -434,6 +488,8 @@ simDOT <- function(
   sim_rna_full[dorf_ids, ] <- sim_rna_full[dorf_ids, ] * scale_dorf_rna
   
   merged <- cbind(sim_ribo_full, sim_rna_full)
+  merged <- round(merged)
+  
   replicate <- rep(rep(seq(1, num_samples), conditions), num_batches)
   
   # Ensure batch vector is correct for colData
