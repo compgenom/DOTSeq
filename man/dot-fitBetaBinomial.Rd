@@ -10,7 +10,7 @@
   anno,
   formula = ~condition * strategy,
   target = NULL,
-  dispersion_modeling = c("auto", "strategy", "shared", "custom"),
+  dispersion_modeling = c("auto", "shared", "custom"),
   dispformula = NULL,
   lrt = FALSE,
   diagnostic = FALSE,
@@ -36,7 +36,6 @@ This is contrasted against the baseline condition (default: \code{NULL}).}
 Options are:
 \describe{
 \item{\code{"auto"}}{Fit both strategy-dependent and shared dispersion models, and select the best via likelihood ratio test.}
-\item{\code{"strategy"}}{Model dispersion as a function of sequencing strategy.}
 \item{\code{"shared"}}{Assume constant dispersion across all predictor levels.}
 \item{\code{"custom"}}{Use a user-specified dispersion formula via \code{dispformula}.}
 }}

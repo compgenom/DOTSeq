@@ -134,7 +134,6 @@ StatModel <- function(type = "fitError",
 #'   Options are:
 #'   \describe{
 #'     \item{\code{"auto"}}{Fit both strategy-dependent and shared dispersion models, and select the best via likelihood ratio test.}
-#'     \item{\code{"strategy"}}{Model dispersion as a function of sequencing strategy.}
 #'     \item{\code{"shared"}}{Assume constant dispersion across all predictor levels.}
 #'     \item{\code{"custom"}}{Use a user-specified dispersion formula via \code{dispformula}.}
 #'   }
@@ -154,7 +153,7 @@ StatModel <- function(type = "fitError",
                              anno, 
                              formula = ~ condition * strategy, 
                              target = NULL,
-                             dispersion_modeling = c("auto", "strategy", "shared", "custom"), 
+                             dispersion_modeling = c("auto", "shared", "custom"), 
                              dispformula = NULL, 
                              lrt = FALSE,
                              diagnostic = FALSE, 
@@ -259,7 +258,7 @@ StatModel <- function(type = "fitError",
       model_null_shared <- NULL
       
       # Initialize the results list with the new structure
-      if (isTRUE(lrt) || (dispersion_modeling == "auto")) {
+      if (isTRUE(lrt)) {
         results <- list(model_fit = list(), tests = list(), estimates = list(), dispersion = list(), diagnostics = list())
       } else {
         results <- list(model_fit = list(), estimates = list(), dispersion = list(), diagnostics = list())
@@ -288,17 +287,35 @@ StatModel <- function(type = "fitError",
       
       if (isTRUE(optimizers)) {
         # Fit Models based on dispersion_modeling
-        if (dispersion_modeling %in% c("auto", "strategy")) {
+        if (dispersion_modeling %in% c("auto")) { #, "strategy"
           model_strategy <- fit_glmm(formula = full_formula, dispformula = ~strategy, data = model_data_this_orf)
+          if ((is.null(model_strategy) | model_strategy$fit$convergence == 1 | isFALSE(model_strategy$sdr$pdHess))) {
+            model_shared <- fit_glmm(full_formula, dispformula = ~1, family = betabinomial, data = model_data_this_orf)
+            if (isTRUE(lrt)) {
+              model_null_shared <- tryCatch({
+                fit_glmm(formula = null_formula, dispformula = ~1, data = model_data_this_orf)
+              }, error = function(e) {
+                return(NA)
+              })
+            }
+          }
           if (isTRUE(lrt)) {
-            model_null <- fit_glmm(formula = null_formula, dispformula = ~ strategy, data = model_data_this_orf)
+            model_null <- tryCatch({
+              fit_glmm(formula = null_formula, dispformula = ~ strategy, data = model_data_this_orf)
+            }, error = function(e) {
+              return(NA)
+            })
           }
         }
         
-        if (dispersion_modeling %in% c("auto", "shared")) {
+        if (dispersion_modeling %in% c("shared")) { # "auto", 
           model_shared <- fit_glmm(formula = full_formula, dispformula = ~1, data = model_data_this_orf)
           if (isTRUE(lrt)) {
-            model_null_shared <- fit_glmm(formula = null_formula, dispformula = ~1, data = model_data_this_orf)
+            model_null_shared <- tryCatch({
+              fit_glmm(formula = null_formula, dispformula = ~1, data = model_data_this_orf)
+            }, error = function(e) {
+              return(NA)
+            })
           }
         }
         
@@ -306,27 +323,46 @@ StatModel <- function(type = "fitError",
           if  (!is.null(dispformula)) {
             model_custom <- fit_glmm(formula = full_formula, dispformula = dispformula, data = model_data_this_orf)
             if (isTRUE(lrt)) {
-              model_null <- fit_glmm(formula = null_formula, dispformula = dispformula, data = model_data_this_orf)
+              model_null <- tryCatch({
+                fit_glmm(formula = null_formula, dispformula = dispformula, data = model_data_this_orf)
+              }, error = function(e) {
+                return(NA)
+              })
             }
           } else {
             stop("Please provide dispformula.")
           }
         }
       } else {
-        if (dispersion_modeling %in% c("auto", "strategy")) {
+        if (dispersion_modeling %in% c("auto")) { #, "strategy"
           model_strategy <- glmmTMB(full_formula, dispformula = ~strategy, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
-          if (dispersion_modeling == "auto"  && (is.null(model_strategy) | model_strategy$fit$convergence == 1 | isFALSE(model_strategy$sdr$pdHess))) {
+          if ((is.null(model_strategy) | model_strategy$fit$convergence == 1 | isFALSE(model_strategy$sdr$pdHess))) {
             model_shared <- glmmTMB(full_formula, dispformula = ~1, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+            if (isTRUE(lrt)) {
+              model_null_shared <- tryCatch({
+                glmmTMB(null_formula, dispformula = ~ 1, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+              }, error = function(e) {
+                return(NA)
+              })
+            }
           }
           if (isTRUE(lrt)) {
-            model_null <- glmmTMB(null_formula, dispformula = ~ strategy, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+            model_null <- tryCatch({
+              glmmTMB(null_formula, dispformula = ~ strategy, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+            }, error = function(e) {
+              return(NA)
+            })
           }
         }
         
         if (dispersion_modeling %in% c("shared")) { #"auto", 
           model_shared <- glmmTMB(full_formula, dispformula = ~1, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
           if (isTRUE(lrt)) {
-            model_null_shared <- glmmTMB(null_formula, dispformula = ~1, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+            model_null_shared <- tryCatch({
+              glmmTMB(null_formula, dispformula = ~ 1, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+            }, error = function(e) {
+              return(NA)
+            })
           }
         }
         
@@ -334,7 +370,11 @@ StatModel <- function(type = "fitError",
           if  (!is.null(dispformula)) {
             model_custom <- glmmTMB(full_formula, dispformula = dispformula, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
             if (isTRUE(lrt)) {
-              model_null <- glmmTMB(null_formula, dispformula = dispformula, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+              model_null <- tryCatch({
+                glmmTMB(null_formula, dispformula = dispformula, family = betabinomial, data = model_data_this_orf, control = glmmTMBControl(parallel = parallel))
+              }, error = function(e) {
+                return(NA)
+              })
             }
           } else {
             stop("Please provide dispformula.")
@@ -350,7 +390,7 @@ StatModel <- function(type = "fitError",
         # Add strategy-specific metrics
         if (!is.null(model_strategy) && model_strategy$fit$convergence == 0 && isTRUE(model_strategy$sdr$pdHess)) {
           results$model_fit$aic <- AIC(model_strategy)
-          if (isTRUE(lrt)) {
+          if (isTRUE(lrt) && !is.null(model_null) && model_null$fit$convergence == 0 && isTRUE(model_null$sdr$pdHess)) {
             results$tests$pvalue <- anova(model_strategy, model_null)$P[2]
           }
           if (isTRUE(diagnostic)) {
@@ -367,8 +407,8 @@ StatModel <- function(type = "fitError",
         if (!is.null(model_shared) && model_shared$fit$convergence == 0 && isTRUE(model_shared$sdr$pdHess)) {
           results$model_fit$aic_shared_disp <- AIC(model_shared)
           
-          results$tests$lrt_shared_disp <- anova(model_strategy, model_shared)$P[2]
-          if (isTRUE(lrt)) {
+          # results$tests$lrt_shared_disp <- anova(model_strategy, model_shared)$P[2]
+          if (isTRUE(lrt) && !is.null(model_null_shared) && model_null_shared$fit$convergence == 0 && isTRUE(model_null_shared$sdr$pdHess)) {
             results$tests$lrt_shared <- anova(model_shared, model_null_shared)$P[2]
           }
           
@@ -406,33 +446,33 @@ StatModel <- function(type = "fitError",
           model_to_return <- NULL
         }
         
-      } else if (dispersion_modeling == "strategy") {
-        # Only fit strategy model
-        model_to_return <- model_strategy
-        if (!is.null(model_to_return) && model_to_return$fit$convergence == 0 && isTRUE(model_to_return$sdr$pdHess)) {
-          results$model_fit$aic <- AIC(model_to_return)
-          if (isTRUE(lrt)) {
-            results$tests$pvalue <- anova(model_to_return, model_null)$P[2]
-            results$tests$pvalue_best <- results$tests$pvalue
-          }
-          if (isTRUE(diagnostic)) {
-            sim_out <- DHARMa::simulateResiduals(fittedModel = model_to_return, plot = FALSE)
-            results$diagnostics$diagnostics_strategy <- list(overdispersion = DHARMa::testDispersion(sim_out, plot = FALSE)$p.value, 
-                                                             zeroInflation = DHARMa::testZeroInflation(sim_out, plot = FALSE)$p.value,
-                                                             uniformity = DHARMa::testResiduals(sim_out, plot = FALSE)$uniformity$p.value,
-                                                             residualsDispersion = DHARMa::testResiduals(sim_out, plot = FALSE)$dispersion$p.value,
-                                                             outliers = DHARMa::testResiduals(sim_out, plot = FALSE)$outliers$p.value)
-          }
-        }
+      # } else if (dispersion_modeling == "strategy") {
+      #   # Only fit strategy model
+      #   model_to_return <- model_strategy
+      #   if (!is.null(model_to_return) && model_to_return$fit$convergence == 0 && isTRUE(model_to_return$sdr$pdHess)) {
+      #     results$model_fit$aic <- AIC(model_to_return)
+      #     if (isTRUE(lrt)) {
+      #       results$tests$pvalue <- anova(model_to_return, model_null)$P[2]
+      #       results$tests$pvalue_best <- results$tests$pvalue
+      #     }
+      #     if (isTRUE(diagnostic)) {
+      #       sim_out <- DHARMa::simulateResiduals(fittedModel = model_to_return, plot = FALSE)
+      #       results$diagnostics$diagnostics_strategy <- list(overdispersion = DHARMa::testDispersion(sim_out, plot = FALSE)$p.value, 
+      #                                                        zeroInflation = DHARMa::testZeroInflation(sim_out, plot = FALSE)$p.value,
+      #                                                        uniformity = DHARMa::testResiduals(sim_out, plot = FALSE)$uniformity$p.value,
+      #                                                        residualsDispersion = DHARMa::testResiduals(sim_out, plot = FALSE)$dispersion$p.value,
+      #                                                        outliers = DHARMa::testResiduals(sim_out, plot = FALSE)$outliers$p.value)
+      #     }
+      #   }
         
       } else if (dispersion_modeling == "shared") {
         # Only fit shared model
         model_to_return <- model_shared
         if (!is.null(model_to_return) && model_to_return$fit$convergence == 0 && isTRUE(model_to_return$sdr$pdHess)) {
           results$model_fit$aic <- AIC(model_to_return)
-          if (isTRUE(lrt)) {
+          if (isTRUE(lrt) && !is.null(model_null_shared) && model_null_shared$fit$convergence == 0 && isTRUE(model_null_shared$sdr$pdHess)) {
             results$tests$pvalue <- anova(model_to_return, model_null_shared)$P[2]
-            results$tests$pvalue_best <- results$tests$pvalue
+            # results$tests$pvalue_best <- results$tests$pvalue
           }
           if (isTRUE(diagnostic)) {
             sim_out <- DHARMa::simulateResiduals(fittedModel = model_to_return, plot = FALSE)
@@ -448,13 +488,13 @@ StatModel <- function(type = "fitError",
         model_to_return <- model_custom
         if (!is.null(model_to_return) && model_to_return$fit$convergence == 0 && isTRUE(model_to_return$sdr$pdHess)) {
           results$model_fit$aic <- AIC(model_to_return)
-          if (isTRUE(lrt)) {
+          if (isTRUE(lrt) && !is.null(model_null) && model_null$fit$convergence == 0 && isTRUE(model_null$sdr$pdHess)) {
             results$tests$pvalue <- anova(model_to_return, model_null)$P[2]
-            results$tests$pvalue_best <- results$tests$pvalue
+            # results$tests$pvalue_best <- results$tests$pvalue
           }
           if (isTRUE(diagnostic)) {
             sim_out <- DHARMa::simulateResiduals(fittedModel = model_to_return, plot = FALSE)
-            results$diagnostics$diagnostics_strategy <- list(overdispersion = DHARMa::testDispersion(sim_out, plot = FALSE)$p.value, 
+            results$diagnostics$diagnostics_custom <- list(overdispersion = DHARMa::testDispersion(sim_out, plot = FALSE)$p.value, 
                                                              zeroInflation = DHARMa::testZeroInflation(sim_out, plot = FALSE)$p.value,
                                                              uniformity = DHARMa::testResiduals(sim_out, plot = FALSE)$uniformity$p.value,
                                                              residualsDispersion = DHARMa::testResiduals(sim_out, plot = FALSE)$dispersion$p.value,
@@ -471,36 +511,36 @@ StatModel <- function(type = "fitError",
                           model = NA))
       }
       
-      if (isTRUE(lrt)) {
-        # Extract and calculate dispersion-related metrics for the chosen model
-        coeffs <- summary(model_to_return)$coefficients$cond
-        interaction_term <- grep("condition.*?:strategy.*?", rownames(coeffs), value = TRUE)
-        
-        selected_term <- NULL
-        
-        if (length(interaction_term) == 1) {
-          selected_term <- interaction_term[1]
-          
-        } else if (length(interaction_term) > 1 && !is.null(target)) {
-          target_match <- grep(paste0("condition", target, ":strategy"), interaction_term, value = TRUE)
-          if (length(target_match) == 1) {
-            selected_term <- target_match
-          } else {
-            warning("Target condition not found. Using first available interaction term.")
-            selected_term <- interaction_term[1]
-          }
-          
-        } else {
-          if (isTRUE(verbose)) {
-            message("Detected interaction terms: ", paste(interaction_term, collapse = ", "), ". Using first available term.")
-          }
-          selected_term <- interaction_term[1]
-        }
-        
-        # Final assignment
-        results$shrinkage$estimate <- coeffs[selected_term, "Estimate"]
-        results$shrinkage$se <- coeffs[selected_term, "Std. Error"]
-      }
+      # if (isTRUE(lrt)) {
+      #   # Extract and calculate dispersion-related metrics for the chosen model
+      #   coeffs <- summary(model_to_return)$coefficients$cond
+      #   interaction_term <- grep("condition.*?:strategy.*?", rownames(coeffs), value = TRUE)
+      #   
+      #   selected_term <- NULL
+      #   
+      #   if (length(interaction_term) == 1) {
+      #     selected_term <- interaction_term[1]
+      #     
+      #   } else if (length(interaction_term) > 1 && !is.null(target)) {
+      #     target_match <- grep(paste0("condition", target, ":strategy"), interaction_term, value = TRUE)
+      #     if (length(target_match) == 1) {
+      #       selected_term <- target_match
+      #     } else {
+      #       warning("Target condition not found. Using first available interaction term.")
+      #       selected_term <- interaction_term[1]
+      #     }
+      #     
+      #   } else {
+      #     if (isTRUE(verbose)) {
+      #       message("Detected interaction terms: ", paste(interaction_term, collapse = ", "), ". Using first available term.")
+      #     }
+      #     selected_term <- interaction_term[1]
+      #   }
+      #   
+      #   # Final assignment
+      #   results$shrinkage$estimate <- coeffs[selected_term, "Estimate"]
+      #   results$shrinkage$se <- coeffs[selected_term, "Std. Error"]
+      # }
       
       raw_rho_rna <- .calculate_mean_dispersion(model_data_this_orf[model_data_this_orf$strategy == 0, ]$counts, model_data_this_orf[model_data_this_orf$strategy == 0, ]$success + model_data_this_orf[model_data_this_orf$strategy == 0, ]$failure)
       raw_rho_ribo <- .calculate_mean_dispersion(model_data_this_orf[model_data_this_orf$strategy == 1, ]$counts, model_data_this_orf[model_data_this_orf$strategy == 1, ]$success + model_data_this_orf[model_data_this_orf$strategy == 1, ]$failure)
@@ -516,7 +556,7 @@ StatModel <- function(type = "fitError",
       disp_intercept <- disp_coefs["disp~(Intercept)"]
       results$dispersion$fitted_disp_rna <- exp(disp_intercept)
       
-      if (dispersion_modeling == "strategy" || (dispersion_modeling == "auto" && !is.null(model_strategy))) {
+      if ((dispersion_modeling == "auto" && !is.null(model_strategy))) { # dispersion_modeling == "strategy" || 
         disp_ribo_effect <- disp_coefs["disp~strategy1"]
         results$dispersion$fitted_disp_ribo <- exp(disp_intercept + disp_ribo_effect)
       } else {

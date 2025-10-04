@@ -42,7 +42,6 @@
 #' # Example usage:
 #' # generate_coefficients(orfs_df, scenario = "uORF_up_mORF_down", seed = 123)
 #'
-#' @export
 generate_coefficients <- function(orfs, 
                                   scenario = "uORF_up_mORF_down", 
                                   gcoeff = 1.5, 
@@ -111,6 +110,151 @@ generate_coefficients <- function(orfs,
     gcoeffs_rna = gcoeffs,
     labels = labels
   ))
+}
+
+#' Estimate zero-inflated negative binomial parameters from count data
+#'
+#' This function estimates the parameters of a zero-inflated negative binomial
+#' (ZINB) distribution using the method of moments, based on a real count matrix.
+#' It also returns a spline fit relating log mean to log size, which can be used
+#' for simulating new data.
+#'
+#' @param counts A numeric matrix of counts (e.g., transcript or gene-level).
+#' @param threshold Optional numeric. Only rows with mean counts above this threshold
+#'   are used for parameter estimation.
+#' @param size_factor Optional numeric. A scaling factor applied to the estimated
+#'   size parameters.
+#' @param min_size Optional numeric. Minimum allowed value for size estimates;
+#'   values below this are replaced with `min_size`.
+#' @param scale_p0 Optional numeric. A scaling factor applied to the estimated
+#'   zero-inflation probabilities `p0`. Values are capped at 1.
+#'
+#' @return A list with the following components:
+#' \describe{
+#'   \item{p0}{A numeric vector of estimated probabilities that a count is zero.}
+#'   \item{mu}{A numeric vector of estimated negative binomial means (non-zero counts).}
+#'   \item{size}{A numeric vector of estimated negative binomial size parameters.}
+#'   \item{fit}{A `smooth.spline` object relating log mean to log size.}
+#' }
+#'
+#' @author Jeff Leek (original), Chun Shen Lim (modifications)
+#'
+#' @examples
+#' \dontrun{
+#'   library(ballgown)
+#'   data(bg)
+#'   countmat <- fpkm_to_counts(bg, mean_rps = 400000)
+#'   params <- get_params(countmat, threshold = 1, size_factor = 1.2, min_size = 0.1)
+#' }
+#'
+get_params = function(counts, threshold=NULL, size_factor = NULL, min_size = NULL, scale_p0 = NULL){
+  
+  if(!is.null(threshold)){
+    rowm = rowMeans(counts)
+    index1 = which(rowm > threshold)
+    counts = counts[index1,]
+  }
+  
+  nsamples = dim(counts)[2]
+  counts0 = counts==0
+  nn0 = rowSums(!counts0)
+  if(any(nn0 == 1)){
+    # need more than 1 nonzero count to estimate variance
+    counts = counts[nn0 > 1, ]
+    nn0 = nn0[nn0 > 1]
+    counts0 = counts==0
+  }
+  mu = rowSums((!counts0)*counts)/nn0
+  s2 = rowSums((!counts0)*(counts - mu)^2)/(nn0-1)
+  size = mu^2/(s2-mu + 0.0001)
+  size = ifelse(size > 0, size, min(size[size > 0])) 
+  p0 = (nsamples-nn0)/nsamples
+  
+  if (!is.null(size_factor)) {
+    size = size * size_factor
+  }
+  
+  if (!is.null(min_size)) {
+    size[size < min_size] = min_size
+  }
+  
+  if (!is.null(scale_p0)) {
+    p0 = p0 * scale_p0
+    p0[p0 > 1] = 1
+  }
+  
+  lsize = log(size)
+  lmu = log(mu + 0.0001)
+  fit = smooth.spline(lsize ~ lmu)
+  return(list(p0=p0, mu=mu, size=size, fit=fit))
+}
+
+
+#' Generate a simulated data set based on known model parameters
+#'
+#' @param mu Baseline mean expression for negative binomial model
+#' @param fit Fitted relationship between log mean and log size
+#' @param p0 A vector of the probabilities a count is zero
+#' @param m Number of genes/transcripts to simulate (not necessary if mod,
+#'   beta are specified)
+#' @param n Number of samples to simulate (not necessary if mod, beta are
+#'   specified)
+#' @param mod  Model matrix you would like to simulate from without an intercept
+#' @param beta set of coefficients for the model matrix (must have same number
+#'   of columns as mod)
+#' @param seed optional seed to set (for reproducibility)
+#'
+#' @return counts Data matrix with counts for genes in rows and samples in
+#'   columns
+#'
+#'
+#' @author Jeff Leek
+#' @examples
+#'   library(ballgown)
+#'   data(bg)
+#'   countmat = fpkm_to_counts(bg, mean_rps=400000)
+#'   params = get_params(countmat)
+#'   Ntranscripts = 50
+#'   Nsamples = 10
+#'   custom_readmat = create_read_numbers(mu=params$mu, fit=params$fit,
+#'     p0=params$p0, m=Ntranscripts, n=Nsamples, seed=103)
+#'
+create_read_numbers = function(mu, fit, p0, m=NULL, n=NULL, mod=NULL, beta=NULL,
+                               seed=NULL){
+  
+  if(!is.null(seed)){set.seed(seed)}
+  if(is.null(mod) | is.null(beta)){
+    cat("Generating data from baseline model.\n")
+    if(is.null(m) | is.null(n)){
+      stop(.makepretty("create_read_numbers error: if you don't specify
+            mod and beta, you must specify m and n.\n"))
+    }
+    index = sample(1:length(mu),size=m)
+    mus = mu[index]
+    p0s = p0[index]
+    mumat = log(mus + 0.001) %*% t(rep(1,n))
+  } else {
+    m = dim(beta)[1]
+    n = dim(mod)[1]
+    index = sample(1:length(mu),size=m)
+    mus = mu[index]
+    p0s = p0[index]
+    
+    ind = !apply(mod,2,function(x){all(x==1)})
+    mod = cbind(mod[,ind])
+    beta = cbind(beta[,ind])
+    mumat = log(mus + 0.001) + beta %*% t(mod)
+  }
+  
+  muvec = as.vector(mumat)
+  sizevec = predict(fit,muvec)$y
+  sizemat = matrix(sizevec,nrow=m)
+  counts = sizemat*NA
+  for(i in 1:m){
+    counts[i,] = rbinom(n,prob=(1-p0s[i]),size=1)*
+      rnbinom(n,mu=exp(mumat[i,]),size=exp(sizemat[i,]))
+  }
+  return(counts)
 }
 
 
@@ -183,10 +327,9 @@ simDOT <- function(
     gcoeff = 1.5,
     bcoeff = 0.9,
     num_batches = 2,
-    modify_dispersion = FALSE,
-    size_factor = 1.5,
-    min_size = 5,
-    scale_p0 = 1,
+    size_factor = NULL,
+    min_size = NULL,
+    scale_p0 = NULL,
     shape = 0.6, 
     scale = 0.5,
     batch_scenario = "balanced",
@@ -312,48 +455,11 @@ simDOT <- function(
     }
   }
   
-  params_ribo <- polyester::get_params(counts_ribo_filtered)
-  params_rna  <- polyester::get_params(counts_rna_filtered)
-  
-  modify_polyester_fit <- function(params_object, log_mu, size_factor = 1.5, min_size = 5) {
-    # Extract the original log(size) estimates
-    # The 'predict' function applies the spline fit (log(r) ~ log(mu))
-    # to the log_mu values to get the predicted log(r)
-    original_log_r <- predict(params_object$fit, x = log_mu)$y
-    
-    # Convert to linear scale (size parameter r)
-    original_r <- exp(original_log_r)
-    
-    # Modify the size parameter (r)
-    modified_r <- original_r * size_factor
-    
-    # Set a minimum size (r) value to prevent extreme over-dispersion
-    modified_r[modified_r < min_size] <- min_size
-    
-    # Convert back to log scale
-    modified_log_r <- log(modified_r)
-    
-    # Create a new smooth.spline object
-    # Use the *original* log_mu values with the *modified* log_size values.
-    mod_fit <- smooth.spline(
-      x = log_mu,
-      y = modified_log_r,
-      df = params_object$fit$df
-    )
-    
-    return(mod_fit)
-  }
-  
-  if (isTRUE(modify_dispersion)){
-    params_ribo$fit <- modify_polyester_fit(params_ribo, rowMeans(counts_ribo_filtered))
-    params_rna$fit <- modify_polyester_fit(params_rna, rowMeans(counts_rna_filtered))
-  }
-  # Reduce zero-inflation
-  params_ribo$p0  <- params_ribo$p0 * scale_p0   # fewer zeros
-  params_rna$p0  <- params_rna$p0 * scale_p0
+  params_ribo <- DOTSeq:::get_params(counts_ribo_filtered, size_factor = size_factor, min_size = min_size, scale_p0 = scale_p0)
+  params_rna  <- DOTSeq:::get_params(counts_rna_filtered, size_factor = size_factor, min_size = min_size, scale_p0 = scale_p0)
   
   if (!is.null(regulation_type) & !is.null(orfs)) {
-    coeffs_list <- generate_coefficients(
+    coeffs_list <- DOTSeq:::generate_coefficients(
       orfs = orfs_filtered,
       scenario = regulation_type,
       gcoeff = gcoeff,
@@ -458,11 +564,11 @@ simDOT <- function(
   }
   
   if (batch_scenario == "modality_specific") {
-    sim_ribo_filtered <- polyester::create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0, beta = coeffs_ribo, mod = mod_ribo, seed = seed)
-    sim_rna_filtered <- polyester::create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0, beta = coeffs_rna, mod = mod_rna, seed = seed) # params_rna$fit
+    sim_ribo_filtered <- DOTSeq:::create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0, beta = coeffs_ribo, mod = mod_ribo, seed = seed)
+    sim_rna_filtered <- DOTSeq:::create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0, beta = coeffs_rna, mod = mod_rna, seed = seed) # params_rna$fit
   } else {
-    sim_ribo_filtered <- polyester::create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0, beta = coeffs_ribo, mod = mod, seed = seed)
-    sim_rna_filtered <- polyester::create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0, beta = coeffs_rna, mod = mod, seed = seed)
+    sim_ribo_filtered <- DOTSeq:::create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0, beta = coeffs_ribo, mod = mod, seed = seed)
+    sim_rna_filtered <- DOTSeq:::create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0, beta = coeffs_rna, mod = mod, seed = seed)
   }
   
   final_cols_ribo <- paste0("sample", 1:total_samples, ".condition", group, ".batch", batch, ".ribo")
