@@ -38,10 +38,12 @@
 #'   \item{labels}{Named binary vector indicating truly regulated ORFs (\code{1}) vs. non-regulated (\code{0}).}
 #' }
 #'
+#' @keywords internal
+#' 
 #' @examples
-#' # Example usage:
+#' \dontrun{
 #' # generate_coefficients(orfs_df, scenario = "uORF_up_mORF_down", seed = 123)
-#'
+#' }
 generate_coefficients <- function(orfs, 
                                   scenario = "uORF_up_mORF_down", 
                                   gcoeff = 1.5, 
@@ -97,7 +99,7 @@ generate_coefficients <- function(orfs,
     lfc <- current_scenario_lfc[orf_type]
     
     if (lfc != 0) {
-      orf_ids <- rownames(df)[df$groupID %in% multi_cistronic_genes & df$labels == orf_type]
+      orf_ids <- rownames(df)[df$groupID %in% multi_cistronic_genes & df$orf_type == orf_type]
       gcoeffs_ribo[orf_ids] <- gcoeffs_ribo[orf_ids] + lfc
       regulated_orfs <- c(regulated_orfs, orf_ids)
     }
@@ -112,41 +114,36 @@ generate_coefficients <- function(orfs,
   ))
 }
 
-#' Estimate zero-inflated negative binomial parameters from count data
-#'
+
+#' Estimate zero-inflated negative binomial parameters from a real dataset
+#' 
 #' This function estimates the parameters of a zero-inflated negative binomial
-#' (ZINB) distribution using the method of moments, based on a real count matrix.
-#' It also returns a spline fit relating log mean to log size, which can be used
-#' for simulating new data.
+#' distribution based on a real count data set using the method of moments.
+#' The function also returns a spline fit of log mean to log size which can be
+#' used when generating new simulated data. 
 #'
-#' @param counts A numeric matrix of counts (e.g., transcript or gene-level).
-#' @param threshold Optional numeric. Only rows with mean counts above this threshold
-#'   are used for parameter estimation.
-#' @param size_factor Optional numeric. A scaling factor applied to the estimated
-#'   size parameters.
-#' @param min_size Optional numeric. Minimum allowed value for size estimates;
-#'   values below this are replaced with `min_size`.
-#' @param scale_p0 Optional numeric. A scaling factor applied to the estimated
-#'   zero-inflation probabilities `p0`. Values are capped at 1.
-#'
-#' @return A list with the following components:
-#' \describe{
-#'   \item{p0}{A numeric vector of estimated probabilities that a count is zero.}
-#'   \item{mu}{A numeric vector of estimated negative binomial means (non-zero counts).}
-#'   \item{size}{A numeric vector of estimated negative binomial size parameters.}
-#'   \item{fit}{A `smooth.spline` object relating log mean to log size.}
-#' }
-#'
+#' @param counts A matrix of counts.
+#' @param threshold Only estimate parameters from transcripts with row means 
+#'   greater than this threshold.
+#' @param size_factor Optional numeric scalar to scale the estimated size parameters.
+#' @param min_size Optional numeric value to enforce a minimum size parameter.
+#' @param scale_p0 Optional numeric scalar to scale the zero-inflation probabilities.
+#' 
+#' @return p0 A vector of probabilities that the count will be zero, one for 
+#'   each gene/transcript.
+#' @return mu The estimated negative binomial mean by method of moments for the
+#'   non-zero counts.
+#' @return size The estimated negative binomial size by method of moments for
+#'   the non-zero counts.
+#' @return fit A fit relating log mean to log size for use in simulating new
+#'   data. 
+#' 
 #' @author Jeff Leek (original), Chun Shen Lim (modifications)
+#' 
+#' @importFrom stats smooth.spline
 #'
-#' @examples
-#' \dontrun{
-#'   library(ballgown)
-#'   data(bg)
-#'   countmat <- fpkm_to_counts(bg, mean_rps = 400000)
-#'   params <- get_params(countmat, threshold = 1, size_factor = 1.2, min_size = 0.1)
-#' }
-#'
+#' @keywords internal
+#' 
 get_params = function(counts, threshold=NULL, size_factor = NULL, min_size = NULL, scale_p0 = NULL){
   
   if(!is.null(threshold)){
@@ -209,16 +206,11 @@ get_params = function(counts, threshold=NULL, size_factor = NULL, min_size = NUL
 #'
 #'
 #' @author Jeff Leek
-#' @examples
-#'   library(ballgown)
-#'   data(bg)
-#'   countmat = fpkm_to_counts(bg, mean_rps=400000)
-#'   params = get_params(countmat)
-#'   Ntranscripts = 50
-#'   Nsamples = 10
-#'   custom_readmat = create_read_numbers(mu=params$mu, fit=params$fit,
-#'     p0=params$p0, m=Ntranscripts, n=Nsamples, seed=103)
 #'
+#' @importFrom stats rnbinom
+#'
+#' @keywords internal
+#' 
 create_read_numbers = function(mu, fit, p0, m=NULL, n=NULL, mod=NULL, beta=NULL,
                                seed=NULL){
   
@@ -226,8 +218,8 @@ create_read_numbers = function(mu, fit, p0, m=NULL, n=NULL, mod=NULL, beta=NULL,
   if(is.null(mod) | is.null(beta)){
     cat("Generating data from baseline model.\n")
     if(is.null(m) | is.null(n)){
-      stop(.makepretty("create_read_numbers error: if you don't specify
-            mod and beta, you must specify m and n.\n"))
+      stop("create_read_numbers error: if you don't specify
+            mod and beta, you must specify m and n.\n")
     }
     index = sample(1:length(mu),size=m)
     mus = mu[index]
@@ -277,10 +269,9 @@ create_read_numbers = function(mu, fit, p0, m=NULL, n=NULL, mod=NULL, beta=NULL,
 #' @param gcoeff Numeric. Magnitude of log-fold change for DOT effects (default: 1.5).
 #' @param bcoeff Numeric. Magnitude of batch effect coefficient (default: 0.9).
 #' @param num_batches Integer. Number of batches (default: 2).
-#' @param modify_size_factor Enable (default: \code{FALSE})
 #' @param size_factor Numeric scalar. A **multiplicative factor** applied to the 
 #'                    estimated size parameter ($r$) for *all* transcripts. 
-#'                    Since dispersion ($\phi$) is $1/r$, a value **greater than 1**
+#'                    Since dispersion \eqn{\phi = 1/r}, a value **greater than 1**
 #'                    (e.g., 1.5) will **decrease** the biological dispersion (noise), 
 #'                    making the simulated data less variable. A value less than 1 
 #'                    will increase dispersion (default: 1.5).
@@ -290,6 +281,7 @@ create_read_numbers = function(mu, fit, p0, m=NULL, n=NULL, mod=NULL, beta=NULL,
 #'                 (noise) in the simulation, preventing transcripts with extremely 
 #'                 low estimated $r$ values from introducing unrealistic or 
 #'                 excessive biological variability (default: 5).
+#' @param scale_p0 Optional numeric scalar to scale the zero-inflation probabilities.
 #' @param shape Numeric. Shape parameter for gamma distribution used to simulate baseline coefficients (default: 0.6).
 #' @param scale Numeric. Scale parameter for gamma distribution used to simulate baseline coefficients (default: 0.5).
 #' @param batch_scenario Character. Specifies the batch effect design. Must be one of:
@@ -313,8 +305,13 @@ create_read_numbers = function(mu, fit, p0, m=NULL, n=NULL, mod=NULL, beta=NULL,
 #'   \item{logFC}{Named vector of true log-fold changes for the simulated DOT effect.}
 #' }
 #'
-#' @import DESeq2
+#' @importFrom DESeq2 DESeqDataSetFromMatrix vst design<-
+#' @importFrom stats prcomp rgamma runif df
+#' @importFrom SummarizedExperiment SummarizedExperiment assay
+#' @importFrom grDevices dev.cur dev.new dev.size
+#' 
 #' @export
+#' 
 simDOT <- function(
     ribo,
     rna,
@@ -455,11 +452,11 @@ simDOT <- function(
     }
   }
   
-  params_ribo <- DOTSeq:::get_params(counts_ribo_filtered, size_factor = size_factor, min_size = min_size, scale_p0 = scale_p0)
-  params_rna  <- DOTSeq:::get_params(counts_rna_filtered, size_factor = size_factor, min_size = min_size, scale_p0 = scale_p0)
+  params_ribo <- get_params(counts_ribo_filtered, size_factor = size_factor, min_size = min_size, scale_p0 = scale_p0)
+  params_rna  <- get_params(counts_rna_filtered, size_factor = size_factor, min_size = min_size, scale_p0 = scale_p0)
   
   if (!is.null(regulation_type) & !is.null(orfs)) {
-    coeffs_list <- DOTSeq:::generate_coefficients(
+    coeffs_list <- generate_coefficients(
       orfs = orfs_filtered,
       scenario = regulation_type,
       gcoeff = gcoeff,
@@ -564,11 +561,11 @@ simDOT <- function(
   }
   
   if (batch_scenario == "modality_specific") {
-    sim_ribo_filtered <- DOTSeq:::create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0, beta = coeffs_ribo, mod = mod_ribo, seed = seed)
-    sim_rna_filtered <- DOTSeq:::create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0, beta = coeffs_rna, mod = mod_rna, seed = seed) # params_rna$fit
+    sim_ribo_filtered <- create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0, beta = coeffs_ribo, mod = mod_ribo, seed = seed)
+    sim_rna_filtered <- create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0, beta = coeffs_rna, mod = mod_rna, seed = seed) # params_rna$fit
   } else {
-    sim_ribo_filtered <- DOTSeq:::create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0, beta = coeffs_ribo, mod = mod, seed = seed)
-    sim_rna_filtered <- DOTSeq:::create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0, beta = coeffs_rna, mod = mod, seed = seed)
+    sim_ribo_filtered <- create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0, beta = coeffs_ribo, mod = mod, seed = seed)
+    sim_rna_filtered <- create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0, beta = coeffs_rna, mod = mod, seed = seed)
   }
   
   final_cols_ribo <- paste0("sample", 1:total_samples, ".condition", group, ".batch", batch, ".ribo")
@@ -580,8 +577,8 @@ simDOT <- function(
   sim_ribo_full[common_filtered_genes, ] <- sim_ribo_filtered
   sim_rna_full[common_filtered_genes, ] <- sim_rna_filtered
   
-  uorf_ids <- rownames(orfs[orfs$labels == "uORF", ])
-  dorf_ids <- rownames(orfs[orfs$labels == "dORF", ])
+  uorf_ids <- rownames(orfs[orfs$orf_type == "uORF", ])
+  dorf_ids <- rownames(orfs[orfs$orf_type == "dORF", ])
   
   scale_uorf <- 0.1
   scale_dorf_ribo <- 0.01
@@ -629,7 +626,7 @@ simDOT <- function(
   
   
   if (isTRUE(diagplot_ribo) | isTRUE(diagplot_rna)) {
-    dds <- DESeq2::DESeqDataSetFromMatrix(
+    dds <- DESeqDataSetFromMatrix(
       countData = round(merged),
       colData = coldata,
       design = ~ strategy
@@ -641,10 +638,10 @@ simDOT <- function(
     design(dds_ribo) <- ~ condition + batch
     design(dds_rna) <- ~ condition + batch
     
-    vst_ribo <- DESeq2::vst(dds_ribo, blind = FALSE)
+    vst_ribo <- vst(dds_ribo, blind = FALSE)
     pca_ribo <- prcomp(t(assay(vst_ribo)))
     
-    vst_rna <- DESeq2::vst(dds_rna, blind = FALSE)
+    vst_rna <- vst(dds_rna, blind = FALSE)
     pca_rna <- prcomp(t(assay(vst_rna)))
   }
   

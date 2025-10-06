@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulation.R
 \name{get_params}
 \alias{get_params}
-\title{Estimate zero-inflated negative binomial parameters from count data}
+\title{Estimate zero-inflated negative binomial parameters from a real dataset}
 \usage{
 get_params(
   counts,
@@ -13,44 +13,37 @@ get_params(
 )
 }
 \arguments{
-\item{counts}{A numeric matrix of counts (e.g., transcript or gene-level).}
+\item{counts}{A matrix of counts.}
 
-\item{threshold}{Optional numeric. Only rows with mean counts above this threshold
-are used for parameter estimation.}
+\item{threshold}{Only estimate parameters from transcripts with row means
+greater than this threshold.}
 
-\item{size_factor}{Optional numeric. A scaling factor applied to the estimated
-size parameters.}
+\item{size_factor}{Optional numeric scalar to scale the estimated size parameters.}
 
-\item{min_size}{Optional numeric. Minimum allowed value for size estimates;
-values below this are replaced with \code{min_size}.}
+\item{min_size}{Optional numeric value to enforce a minimum size parameter.}
 
-\item{scale_p0}{Optional numeric. A scaling factor applied to the estimated
-zero-inflation probabilities \code{p0}. Values are capped at 1.}
+\item{scale_p0}{Optional numeric scalar to scale the zero-inflation probabilities.}
 }
 \value{
-A list with the following components:
-\describe{
-\item{p0}{A numeric vector of estimated probabilities that a count is zero.}
-\item{mu}{A numeric vector of estimated negative binomial means (non-zero counts).}
-\item{size}{A numeric vector of estimated negative binomial size parameters.}
-\item{fit}{A \code{smooth.spline} object relating log mean to log size.}
-}
+p0 A vector of probabilities that the count will be zero, one for
+each gene/transcript.
+
+mu The estimated negative binomial mean by method of moments for the
+non-zero counts.
+
+size The estimated negative binomial size by method of moments for
+the non-zero counts.
+
+fit A fit relating log mean to log size for use in simulating new
+data.
 }
 \description{
 This function estimates the parameters of a zero-inflated negative binomial
-(ZINB) distribution using the method of moments, based on a real count matrix.
-It also returns a spline fit relating log mean to log size, which can be used
-for simulating new data.
-}
-\examples{
-\dontrun{
-  library(ballgown)
-  data(bg)
-  countmat <- fpkm_to_counts(bg, mean_rps = 400000)
-  params <- get_params(countmat, threshold = 1, size_factor = 1.2, min_size = 0.1)
-}
-
+distribution based on a real count data set using the method of moments.
+The function also returns a spline fit of log mean to log size which can be
+used when generating new simulated data.
 }
 \author{
 Jeff Leek (original), Chun Shen Lim (modifications)
 }
+\keyword{internal}

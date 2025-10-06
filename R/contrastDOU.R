@@ -6,8 +6,8 @@
 #' Supports both interaction-specific and strategy-specific contrasts, and applies empirical Bayes 
 #' shrinkage via the `ashr` package to stabilize effect size estimates.
 #'
-#' @param m A named list or SummarizedExperiment-like object containing fitted model objects,
-#'   typically stored in `rowData(m$sumExp)[['fitDOUModels']]`.
+#' @param sumExp A SummarizedExperiment object containing fitted model objects,
+#'   typically stored in `rowData(sumExp)[['fitDOUModels']]`.
 #' @param emm_specs A formula specifying the structure of the estimated marginal means.
 #'   Default is \code{~condition * strategy}.
 #' @param contrasts_method Character string specifying the method for computing contrasts.
@@ -19,44 +19,52 @@
 #'   Default is \code{BiocParallel::bpparam()}.
 #' @param verbose Logical. If \code{TRUE}, prints progress messages. Default is \code{TRUE}.
 #'
-#' @return A named list with two components:
+#' @return A **SummarizedExperiment** object (the input \code{sumExp} or \code{m$sumExp}) 
+#'   with two new \code{S4Vectors::DataFrame} objects stored in its \code{metadata} slot.
+#'   These tables contain the long-format results for all computed contrasts:
 #' \describe{
-#'   \item{interaction_specific}{A named list of contrast-specific data frames. Each data frame contains:
-#'     \code{betahat} (DOU effect size), \code{sebetahat} (standard error), \code{WaldP} (Wald test p-value),
-#'     \code{WaldPadj} (Benjamini-Hochberg adjusted p-value), \code{PosteriorMean} (shrunken effect size),
-#'     \code{lfsr} (local false sign rate), \code{lfdr} (local false discovery rate), and \code{qvalue}.}
-#'   \item{strategy_specific}{A nested list where each top-level element is a contrast name, and each sub-element 
-#'     is a strategy (e.g., "0" for RNA-seq, "1" for Ribo-seq). Each contains a data frame with the same structure 
-#'     as above, but without DOU subtraction.}
+#'    \item{\code{interaction_results}}{A long-format \code{S4Vectors::DataFrame} containing the 
+#'      **Differential ORF Usage (DOU) effect sizes** (Ribo-seq contrast minus RNA-seq contrast) 
+#'      for all computed interaction contrasts. Columns include \code{contrast}, 
+#'      the full set of shrunken and unshrunken metrics (e.g., \code{betahat}, \code{sebetahat}, 
+#'      \code{WaldPadj}, \code{PosteriorMean}, \code{lfsr}).}
+#'    \item{\code{strategy_results}}{A long-format \code{S4Vectors::DataFrame} containing the 
+#'      **strategy-specific effect sizes** (e.g., estimates for Ribo-seq only) for all computed contrasts.
+#'      Columns include \code{strategy} (e.g., "ribo", "rna"), \code{contrast},  
+#'      and the full set of shrunken and unshrunken metrics.}
 #' }
-#'
+#' 
 #' @details
-#' The function extracts valid EMM objects from fitted GLMMs. For each contrast, it computes the 
-#' difference in effect sizes between ribosome profiling and RNA-seq (DOU), estimates the standard error, 
-#' and applies shrinkage using \code{ashr::ash}. Strategy-specific contrasts are computed separately 
-#' for each modality. This function is designed to support benchmarking and downstream statistical 
-#' analysis of differential translation at the ORF level.
+#' The results for post hoc contrasts are stored in a long format via explicit \code{contrast} and/or 
+#' \code{strategy} columns. Non-converged models are omitted.
 #'
-#' @import emmeans
-#' @import ashr
-#' @importFrom BiocParallel register
-#' @importFrom BiocParallel bplapply
+#' @importFrom emmeans emmeans contrast
+#' @importFrom ashr ash get_pm get_qvalue get_lfdr get_lfsr
+#' @importFrom methods is
+#' @importFrom S4Vectors Rle DataFrame
+#' @importFrom SummarizedExperiment SummarizedExperiment rowData
+#' @importFrom BiocParallel register bplapply bpparam MulticoreParam register
 #' @importFrom pbapply pblapply
+#' 
+#' @importFrom stats AIC aggregate anova as.dendrogram as.formula complete.cases
+#' @importFrom stats p.adjust pnorm
+#' 
 #' @export
-contrastDOU <- function(m, emm_specs = ~condition * strategy, 
+#' 
+contrastDOU <- function(sumExp, emm_specs = ~condition * strategy, 
                     contrasts_method = "pairwise", 
                     workers = 1, nullweight = 500,
-                    BPPARAM = BiocParallel::bpparam(), 
+                    BPPARAM = bpparam(), 
                     verbose = TRUE) {
   
-  fitted_models_list <- rowData(m$sumExp)[['fitDOUModels']]
+  fitted_models_list <- rowData(sumExp)[['fitDOUModels']]
   
   if (isTRUE(verbose)) {
     message(" - Perform contrasts")
     if (workers > 1) {
-      BPPARAM <- BiocParallel::MulticoreParam(workers = workers, progressbar = TRUE)
-      BiocParallel::register(BPPARAM)
-      emm_list <- BiocParallel::bplapply(fitted_models_list, function(m) {
+      BPPARAM <- MulticoreParam(workers = workers, progressbar = TRUE)
+      register(BPPARAM)
+      emm_list <- bplapply(fitted_models_list, function(m) {
         if (is(m, "StatModel") && m@type == "glmmTMB") {
           tryCatch(emmeans(m@model, specs = emm_specs), error = function(e) NULL)
         } else {
@@ -64,7 +72,7 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
         }
       }, BPPARAM = BPPARAM)
     } else {
-      emm_list <- pbapply::pblapply(fitted_models_list, function(m) {
+      emm_list <- pblapply(fitted_models_list, function(m) {
         if (is(m, "StatModel") && m@type == "glmmTMB") {
           tryCatch(emmeans(m@model, specs = emm_specs), error = function(e) NULL)
         } else {
@@ -109,12 +117,39 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
     all_contrasts <- lapply(emm_list, function(emm) {
       contrast_df <- summary(contrast(emm, method = contrasts_method, by = "strategy", adjust = "none"))
       
-      # Use as.character() for robust subsetting
-      beta_ribo <- contrast_df$estimate[(as.character(contrast_df$strategy) == "1") & (as.character(contrast_df$contrast) == c_name)]
-      se_ribo <- contrast_df$SE[(as.character(contrast_df$strategy) == "1") & (as.character(contrast_df$contrast) == c_name)]
+      # Set baseline
+      strategy_vals <- as.character(contrast_df$strategy)
       
-      beta_rna <- contrast_df$estimate[(as.character(contrast_df$strategy) == "0") & (as.character(contrast_df$contrast) == c_name)]
-      se_rna <- contrast_df$SE[(as.character(contrast_df$strategy) == "0") & (as.character(contrast_df$contrast) == c_name)]
+      # Define a flexible regex pattern: matches "rna", "RNA", "RNA-seq", and "0"
+      rna_pattern <- "(?i)rna|^0$"
+      
+      # Find matching values to RNA-seq
+      rna_like <- unique(strategy_vals[grepl(rna_pattern, strategy_vals)])
+      
+      # Handle multiple matches
+      if (length(rna_like) > 1) {
+        warning("Multiple RNA-seq levels found. Using the first match as reference and the last as .")
+        rna_like <- rna_like[1]
+      } else if (length(rna_like) == 0) {
+        stop("No RNA-seq level found. Please use rna, RNA, RNA-seq, or 0 to represent RNA-seq.")
+      }
+      
+      # Find the Ribo-seq level
+      ribo_like <- setdiff(unique(strategy_vals), rna_like)
+      
+      if (length(ribo_like) > 1) {
+        warning("Multiple Ribo-seq levels found. Use ", ribo_like[1], " as target.")
+        ribo_like <- ribo_like[1]
+      } else if (length(ribo_like) == 0) {
+        stop("No Ribo-seq level found. Please check your data.")
+      }
+      
+      # Use as.character() for robust subsetting
+      beta_ribo <- contrast_df$estimate[(as.character(contrast_df$strategy) == ribo_like) & (as.character(contrast_df$contrast) == c_name)]
+      se_ribo <- contrast_df$SE[(as.character(contrast_df$strategy) == ribo_like) & (as.character(contrast_df$contrast) == c_name)]
+      
+      beta_rna <- contrast_df$estimate[(as.character(contrast_df$strategy) == rna_like) & (as.character(contrast_df$contrast) == c_name)]
+      se_rna <- contrast_df$SE[(as.character(contrast_df$strategy) == rna_like) & (as.character(contrast_df$contrast) == c_name)]
       
       beta_dou <- beta_ribo - beta_rna
       se_dou <- sqrt(se_ribo^2 + se_rna^2)
@@ -133,7 +168,7 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
         message(" - Perform empirical Bayesian shrinkage on the effect size for ", c_name)
       }
       
-      ash_result <- ashr::ash(betas_for_ashr, ses_for_ashr, nullweight = nullweight, pointmass = TRUE)
+      ash_result <- ash(betas_for_ashr, ses_for_ashr, nullweight = nullweight, pointmass = TRUE)
       
       # Collect results in a data frame
       res_df <- data.frame(
@@ -141,10 +176,10 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
         sebetahat = ses_for_ashr,
         WaldP = pvalues,
         WaldPadj = p.adjust(pvalues, method = "BH"),
-        PosteriorMean = ashr::get_pm(ash_result),
-        lfsr = ashr::get_lfsr(ash_result),
-        lfdr = ashr::get_lfdr(ash_result),
-        qvalue = ashr::get_qvalue(ash_result)
+        PosteriorMean = get_pm(ash_result),
+        qvalue = get_qvalue(ash_result),
+        lfdr = get_lfdr(ash_result),
+        lfsr = get_lfsr(ash_result)
       )
       
       all_results[["interaction_specific"]][[c_name]] <- res_df
@@ -189,16 +224,16 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
     }
     
     if (any(!is.na(betas))) {
-      ash_result <- ashr::ash(betas, ses)
+      ash_result <- ash(betas, ses)
       res_df <- data.frame(
         betahat = betas,
         sebetahat = ses,
         WaldP = pvalues,
         WaldPadj = p.adjust(pvalues, method = "BH"),
-        PosteriorMean = ashr::get_pm(ash_result),
-        lfsr = ashr::get_lfsr(ash_result),
-        lfdr = ashr::get_lfdr(ash_result),
-        qvalue = ashr::get_qvalue(ash_result)
+        PosteriorMean = get_pm(ash_result),
+        qvalue = get_qvalue(ash_result),
+        lfdr = get_lfdr(ash_result),
+        lfsr = get_lfsr(ash_result)
       )
       
     } else {
@@ -207,7 +242,39 @@ contrastDOU <- function(m, emm_specs = ~condition * strategy,
     
     all_results[["strategy_specific"]][[c_name]][[by_name]] <- res_df
   }
-  return(all_results)
+  
+  # Flatten interaction_specific
+  interaction_list <- lapply(names(all_results$interaction_specific), function(c_name) {
+    df <- all_results$interaction_specific[[c_name]]
+    df$contrast <- c_name
+    return(df)
+  })
+  interaction_df <- do.call(rbind, interaction_list)
+  interaction_df <- DataFrame(interaction_df)
+  
+  # Apply Rle compression
+  interaction_df$contrast <- Rle(interaction_df$contrast)
+  
+  # Flatten strategy_specific
+  strategy_list <- lapply(names(all_results$strategy_specific), function(c_name) {
+    lapply(names(all_results$strategy_specific[[c_name]]), function(by_name) {
+      df <- all_results$strategy_specific[[c_name]][[by_name]]
+      df$contrast <- c_name
+      df$strategy <- by_name
+      return(df)
+    })
+  })
+  strategy_df <- do.call(rbind, unlist(strategy_list, recursive = FALSE))
+  strategy_df <- DataFrame(strategy_df)
+
+  strategy_df$contrast <- Rle(strategy_df$contrast)
+  strategy_df$strategy <- Rle(strategy_df$strategy)
+  
+  metadata(sumExp)$interaction_results <- interaction_df
+  metadata(sumExp)$strategy_results <- strategy_df
+  
+  return(sumExp)
 }
+
 
 

@@ -53,7 +53,7 @@ Passed to the \code{scenario} argument of \code{generate_coefficients}.}
 
 \item{size_factor}{Numeric scalar. A \strong{multiplicative factor} applied to the
 estimated size parameter ($r$) for \emph{all} transcripts.
-Since dispersion ($\phi$) is $1/r$, a value \strong{greater than 1}
+Since dispersion \eqn{\phi = 1/r}, a value \strong{greater than 1}
 (e.g., 1.5) will \strong{decrease} the biological dispersion (noise),
 making the simulated data less variable. A value less than 1
 will increase dispersion (default: 1.5).}
@@ -64,6 +64,8 @@ set to \code{min_size}. This is used to \strong{cap the maximum dispersion}
 (noise) in the simulation, preventing transcripts with extremely
 low estimated $r$ values from introducing unrealistic or
 excessive biological variability (default: 5).}
+
+\item{scale_p0}{Optional numeric scalar to scale the zero-inflation probabilities.}
 
 \item{shape}{Numeric. Shape parameter for gamma distribution used to simulate baseline coefficients (default: 0.6).}
 
@@ -84,8 +86,6 @@ excessive biological variability (default: 5).}
 \item{diagplot_rna}{Logical. If \code{TRUE}, generate diagnostic plots for RNA data (default: \code{FALSE}).}
 
 \item{seed}{Optional integer. Sets the random seed for reproducibility (default: \code{NULL}).}
-
-\item{modify_size_factor}{Enable (default: \code{FALSE})}
 }
 \value{
 A list with the following components:

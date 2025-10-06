@@ -2,63 +2,45 @@
 % Please edit documentation in R/fitDOT.R
 \name{fitDOT}
 \alias{fitDOT}
-\title{Fit DOTSeq Differential Translation Models}
+\title{Fit DOTSeq Differential ORF Translation Models}
 \usage{
 fitDOT(
   count_table,
   condition_table,
   flattened_gtf,
   bed,
+  formula = ~condition * strategy,
   target = NULL,
   baseline = NULL,
-  formula = ~condition * strategy,
+  min_count = 1,
+  stringent = TRUE,
   dispersion_modeling = "auto",
   dispformula = NULL,
   lrt = FALSE,
   diagnostic = FALSE,
-  batch_col = NULL,
-  pseudocount = 1e-06,
-  min_count = 1,
-  stringent = TRUE,
   parallel = list(n = 4L, autopar = TRUE),
   optimizers = FALSE,
-  verbose = FALSE
+  verbose = TRUE
 )
 }
 \arguments{
-\item{count_table}{Either a path to a count table file or a data frame.
-Must contain columns: Geneid, Chr, Start, End, Strand, Length,
+\item{count_table}{Path to a count table file or a data frame. Must contain columns:
+\code{Geneid}, \code{Chr}, \code{Start}, \code{End}, \code{Strand}, \code{Length},
 plus one column per sample.}
 
-\item{condition_table}{Either a path to a condition metadata file or a data frame.
-Must include columns: run, strategy, condition, replicate.}
+\item{condition_table}{Path to a sample metadata file or a data frame. Must include columns:
+\code{run}, \code{strategy}, \code{condition}, \code{replicate}.}
 
 \item{flattened_gtf}{Optional path to a flattened GFF/GTF file containing exon definitions.}
 
 \item{bed}{Path to a BED file with ORF annotations.}
 
-\item{target}{Character string specifying the non-reference condition level to extract the corresponding interaction term from the model.
-This is contrasted against the baseline condition (default: \code{NULL}).}
-
-\item{baseline}{Character string specifying the desired reference level.}
-
 \item{formula}{A formula object specifying the design, e.g., \code{~ condition * strategy}.}
 
-\item{dispersion_modeling}{Optional string specifying the dispersion modeling approach.
-Used to select between default, constant, or custom dispersion models (default: \code{"auto"}).}
+\item{target}{Character string specifying the non-reference condition level to extract the corresponding interaction term.
+Contrasted against the baseline condition (default: \code{NULL}).}
 
-\item{dispformula}{Optional formula object for custom dispersion modeling.}
-
-\item{lrt}{Logical; if \code{TRUE}, performs a likelihood ratio test to compare the full model (with interaction) against a reduced model
-(without interaction) to assess translation-specific effects (default: \code{FALSE}).}
-
-\item{diagnostic}{Logical; if \code{TRUE}, enables model diagnostics including tests for overdispersion,
-zero inflation, and residual properties (default: \code{FALSE}).}
-
-\item{batch_col}{String; name of the column in \code{condition_table} that specifies batch assignments,
-e.g., \code{"batch"}. If \code{NULL}, batch effects are not modeled (default: \code{NULL}).}
-
-\item{pseudocount}{Numeric pseudo-count to avoid division by zero when computing TE (default: \code{1e-6}).}
+\item{baseline}{Character string specifying the desired reference level (default: \code{NULL}).}
 
 \item{min_count}{Minimum count threshold for filtering ORFs (default: \code{1}).}
 
@@ -69,32 +51,39 @@ e.g., \code{"batch"}. If \code{NULL}, batch effects are not modeled (default: \c
 \item{\code{NULL}}{Keep ORFs where total counts across replicates pass \code{min_count}.}
 }}
 
+\item{dispersion_modeling}{String specifying the dispersion modeling approach.
+Options include \code{"auto"}, \code{"shared"}, or \code{"custom"} (default: \code{"auto"}).}
+
+\item{dispformula}{Optional formula object for custom dispersion modeling.}
+
+\item{lrt}{Logical; if \code{TRUE}, performs a likelihood ratio test comparing full vs reduced models
+to assess translation-specific effects (default: \code{FALSE}).}
+
+\item{diagnostic}{Logical; if \code{TRUE}, enables model diagnostics including tests for overdispersion,
+zero inflation, and residual properties (default: \code{FALSE}).}
+
 \item{parallel}{A list passed to \code{glmmTMBControl} to configure parallel optimization.
-If \code{NULL}, parallelism is disabled (default: \code{list(n = 4L, autopar = TRUE)}).}
+If \code{NULL}, parallelism is disabled. Default: \code{list(n = 4L, autopar = TRUE)}.
+Parallelization provides a noticeable speed-up only when \code{optimizers = TRUE}.
+When using only the default optimizer (\code{nlminb}), parallelism has little impact on speed.}
 
 \item{optimizers}{Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers
 in \code{glmmTMB}: \code{nlminb}, \code{bobyqa}, and \code{optim} (default: \code{FALSE}).}
 
-\item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{FALSE}).}
+\item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{TRUE}).}
 }
 \value{
-A named \code{list} with the following elements:
+A named \code{list} containing:
 \describe{
-\item{raw_counts}{Raw counts matrix for all samples.}
-\item{norm_counts}{Normalized counts matrix for all samples.}
-\item{orfs}{Data frame of ORFs derived from the BED file matched to the DOTSeq object.}
-\item{dds}{DESeq2 object used for modeling differential gene translation.}
-\item{sumExp}{SummarizedExperiment object containing normalized counts and sample metadata.}
-\item{dxd}{DOTSeq object used for modeling exon/ORF-level counts.}
-\item{formula}{Design formula used in \code{DOTSeq::fitDOU}.}
+\item{sumExp}{\code{SummarizedExperiment} object containing pre-filtered normalized counts and sample metadata.}
+\item{dds}{\code{DESeqDataSet} object used for modeling differential ORF translation.}
 }
 }
 \description{
-This function performs the complete DOTSeq analysis pipeline:
-loading count data, aligning with sample metadata, filtering ORFs,
-normalizing counts, calculating translational efficiency (TE), and
-fitting beta-binomial and negative binomial generalized linear models for
-differential ORF translation using \code{DOTSeq::fitDOU} and \code{DESeq2::DESeq}.
+This function performs the complete DOTSeq analysis pipeline for differential ORF translation:
+loading count data, aligning with sample metadata, filtering ORFs, normalizing counts,
+calculating translational efficiency (TE), and fitting beta-binomial and negative binomial
+generalized linear models using \code{DOTSeq::fitDOU} and \code{DESeq2::DESeq}.
 }
 \examples{
 \dontrun{
@@ -103,9 +92,6 @@ result <- fitDOT(
   condition_table = "samples.txt",
   flattened_gtf = "flattened.gff",
   bed = "orfs.bed",
-  rnaSuffix = ".rna",
-  riboSuffix = ".ribo",
-  pseudocount = 1e-6,
   min_count = 1,
   stringent = TRUE,
   verbose = TRUE

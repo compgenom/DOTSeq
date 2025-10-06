@@ -59,7 +59,8 @@ This function assigns baseline coefficients to all ORFs and applies specific log
 changes to multi-cistronic ORFs based on a selected regulatory scenario.
 }
 \examples{
-# Example usage:
+\dontrun{
 # generate_coefficients(orfs_df, scenario = "uORF_up_mORF_down", seed = 123)
-
 }
+}
+\keyword{internal}

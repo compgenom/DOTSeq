@@ -1,21 +1,36 @@
 Package: DOTSeq
-Title: Differential ORF Translation
-Version: 0.28
-Authors: Chun Shen Lim <chunshen.lim@otago.ac.nz> and Gabrielle Chieng <gabrielle.chieng@postgrad.otago.ac.nz>
-Description: DOTSeq is an R package for identifying differentially translated open reading frames (ORFs) from ribosome profiling and matched RNA-seq datasets. Unlike most existing tools that operate at gene level, DOTSeq performs analysis at the ORF level, enabling the detection of differential translation efficiency between conditions, and occupancy shifts of ribosomes on ORFs within a single gene. DOTSeq integrates both ribosome profiling and RNA-seq read counts into quasi-binomial generalised linear model (GLM) using a modified design matrix and model fitting formula inspired by Riborex and satuRn. At present, DOTSeq accepts count data generated with featureCounts. Development is underway to extend support for additional quantification tools, including mmquant and HTseq. The package also provides functions for visualisation and exploration of results.
-License: MIT + file LICENSE
+Type: Package
+Title: Differential analysis of translation efficiency and usage of open reading frames
+Version: 0.31
+Authors@R: c(
+    person(given = "Chun Shen", family = "Lim", email="chunshen.lim@ieee.org", role = c("aut","cre"), comment = c(ORCID = "0000-0001-7015-0125")),
+    person(given = "Gabrielle", family = "Chieng", role = c("aut","ctb")),
+    person("Marsden", role="fnd"))
+Maintainer: Chun Shen Lim <chunshen.lim@ieee.org>
+Description: DOTSeq is a statistical framework for detecting differential translation at the open reading frame (ORF) level using ribosome profiling (Ribo-seq) and matched RNA-seq data. Unlike gene-level tools, DOTSeq models translation dynamics within genes, enabling discovery of differential ORF usage and translation efficiency. It uses a flexible beta-binomial generalized linear model (GLM) framework to capture subtle regulatory signals, such as upstream ORF-mediated control, across diverse biological conditions.
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr
-Imports: DHARMa, eulerr
-Depends:
-    R (>= 4.5.0),
-    biomaRt (>= 2.65.0),
-    IRanges (>= 2.43.0),
-    GenomicRanges (>= 1.61.1),
-    SummarizedExperiment (>= 1.39.1),
-    DEXSeq (>= 1.55.1),
-    glmmTMB (>= 1.1.12),
-    ashr (>= 2.2-63),
-    emmeans (>= 1.11.2-8)
+Suggests: knitr, rmarkdown
+Imports:
+    ashr,
+    DHARMa, 
+    emmeans,
+    glmmTMB,
+    eulerr,
+    methods,
+    stats,
+    utils,
+    graphics,
+    grDevices,
+    pbapply,
+    Bioc.gff,
+    biomaRt,
+    BiocParallel,
+    DESeq2, 
+    GenomicRanges,
+    IRanges,
+    S4Vectors,
+    SummarizedExperiment
+License: MIT + file LICENSE

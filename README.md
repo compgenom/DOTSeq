@@ -35,11 +35,8 @@ BiocManager::install(version = "devel")
 # Install required Bioconductor packages
 BiocManager::install(c(
   "biomaRt",
-  "IRanges",
-  "GenomicRanges",
   "SummarizedExperiment",
-  "rtracklayer",
-  "DEXSeq"), lib = file.path(Sys.getenv("HOME"), "R/4.5"))
+  "Bioc.gff"), lib = file.path(Sys.getenv("HOME"), "R/4.5"))
 
 # Install devtools if not already available
 install.packages("devtools")
