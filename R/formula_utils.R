@@ -64,15 +64,24 @@ reduce_formula <- function(formula_input, data) {
   valid_terms <- c()
   for (term in terms) {
     if (grepl("\\*|:", term)) {
-      components <- trimws(unlist(strsplit(term, "\\*|:")))
-      missing_vars <- setdiff(components, colnames(data))
-      if (length(missing_vars) > 0) {
-        stop(paste0(
-          "Invalid formula: interaction term '", term, "' includes missing variable(s): ",
-          paste(missing_vars, collapse = ", "), "."
-        ))
+      emm_specs <- as.formula(paste0("~",term))
+      
+      if (length(term) == 1) {
+        components <- trimws(unlist(strsplit(term, "\\*|:")))
+        missing_vars <- setdiff(components, colnames(data))
+        if (length(missing_vars) > 0) {
+          stop(paste0(
+            "Invalid formula: interaction term '", term, "' includes missing variable(s): ",
+            paste(missing_vars, collapse = ", "), "."
+          ))
+        }
+        valid_terms <- c(valid_terms, term)
+      } else if (length(term) > 1) {
+        stop("Expect one interaction term (condition * strategy) got: ", term)
+      } else {
+        stop("Please specify condition * strategy as the interaction term.")
       }
-      valid_terms <- c(valid_terms, term)
+
     } else if (term %in% colnames(data)) {
       valid_terms <- c(valid_terms, term)
     }
@@ -93,5 +102,6 @@ reduce_formula <- function(formula_input, data) {
     ))
   }
   
-  return(reduced_formula)
+  return(list(reduced_formula = reduced_formula, 
+              emm_specs = emm_specs))
 }

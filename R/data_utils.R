@@ -31,7 +31,7 @@
 #'   \item{dds}{\code{DESeqDataSet} object for modeling differential ORF translation.}
 #' }
 #'
-#' @importFrom SummarizedExperiment SummarizedExperiment assay rowData rowData<- mcols mcols<-
+#' @importFrom SummarizedExperiment SummarizedExperiment assay colData colData<- rowData rowData<- mcols mcols<-
 #' @importFrom DESeq2 DESeqDataSetFromMatrix 
 #' @importFrom utils read.table tail
 #' @importFrom stats relevel
@@ -50,6 +50,14 @@ DOTSeqDataSet <- function(count_table,
                           verbose = TRUE) {
   
   start_parsing <- Sys.time()
+  
+  # Validate and reduce formula if needed
+  fmla <- reduce_formula(formula, cond)
+  reduced_formula <- fmla$reduced_formula
+  emm_specs <- fmla$emm_specs
+  
+  deseq_fmla <- remove_random_effects(formula)
+  deseq_fmla <- reduce_formula(deseq_fmla, cond)
   
   cntCols <- c("Geneid", "Chr", "Start",  "End", "Strand", "Length")
   
@@ -181,7 +189,7 @@ DOTSeqDataSet <- function(count_table,
   
   # Relevel the factor
   if (isTRUE(verbose)) {
-    message(" - Set condition", baseline, " as baseline")
+    message(" - Setting condition", baseline, " as baseline")
     cond$condition <- relevel(factor(cond$condition), ref = baseline)
   }
   
@@ -212,10 +220,6 @@ DOTSeqDataSet <- function(count_table,
   
   
   if (!is.null(flattened_gtf)) {
-    if (verbose) {
-      message(" - Import flattened GTF")
-    }
-    
     # This automatically returns a GRanges object
     gff_granges <- Bioc.gff::import(flattened_gtf)
     gff_granges <- gff_granges[gff_granges$type=="exon", ]
@@ -243,12 +247,8 @@ DOTSeqDataSet <- function(count_table,
   gr$orf_number <- gr$exon_number
   mcols(gr) <- mcols(gr)[, c("gene_id", "transcripts", "orf_number")]
   
-  if (verbose) {
-    message(" - Creating SummarizedExperiment object for filtering")
-  }
-  
   # Create a temporary SummarizedExperiment object for filtering
-  sumExp_raw <- SummarizedExperiment(
+  sumExp <- SummarizedExperiment(
     assays = list(counts = dcounts),
     colData = cond,
     rowRanges = gr
@@ -280,45 +280,36 @@ DOTSeqDataSet <- function(count_table,
   }
 
   # Add initial filter status to the raw object
-  rowData(sumExp_raw)$count_filter <- keep
+  rowData(sumExp)$count_filter <- keep
   
   # Find singlets based on the *initially filtered* data (dcounts[keep, ])
-  filtered_genes <- rowData(sumExp_raw)$gene_id[keep]
+  filtered_genes <- rowData(sumExp)$gene_id[keep]
   singlets <- names(which(table(filtered_genes) == 1))
   
   # Status for singlet filter
-  rowData(sumExp_raw)$singlet_filter <- !rowData(sumExp_raw)$gene_id %in% singlets
+  rowData(sumExp)$singlet_filter <- !rowData(sumExp)$gene_id %in% singlets
   
   # Create the final filter mask based on count_filter AND non-singlets
-  rowData(sumExp_raw)$is_kept <- rowData(sumExp_raw)$count_filter & rowData(sumExp_raw)$singlet_filter
-  
-  
-  # Validate and reduce formula if needed
-  fmla <- reduce_formula(formula, cond)
-  
-  if (verbose) {
-    message(" - Start differential ORF usage analysis")
-    message(" - Conditional formula: ", deparse(fmla))
-  }
-  
-  deseq_formula <- remove_random_effects(formula)
-  deseq_formula <- reduce_formula(deseq_formula, cond)
-  
-  # if (verbose) {
-  #   message(" - Design formula: ", deparse(deseq_formula))
-  # }
+  rowData(sumExp)$is_kept <- rowData(sumExp)$count_filter & rowData(sumExp)$singlet_filter
+
   
   # Creating DESeqDataSet
-  dds <- DESeqDataSetFromMatrix(countData = assay(sumExp_raw),
-                                        colData = colData(sumExp_raw),
-                                        design = deseq_formula)
+  dds <- DESeqDataSetFromMatrix(countData = assay(sumExp),
+                                        colData = colData(sumExp),
+                                        design = deseq_fmla$reduced_formula)
   
   # Store formulas
-  metadata(sumExp_raw)$formula <- fmla
-  metadata(dds)$formula <- deseq_formula
+  metadata(sumExp)$formula <- reduced_formula
+  metadata(sumExp)$emm_specs <- emm_specs
+  metadata(dds)$formula <- deseq_fmla$reduced_formula
+  metadata(dds)$emm_specs <- emm_specs
   
+  
+  if (verbose) {
+    message(" - SummarizedExperiment objects created successfully")
+  }
 
-  return(list(sumExp_raw = sumExp_raw,
+  return(list(sumExp = sumExp,
               dds = dds))
   
 }

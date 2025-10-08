@@ -8,7 +8,7 @@ extract_results(sumExp, verbose = TRUE)
 }
 \arguments{
 \item{sumExp}{A SummarizedExperiment object containing fitted model objects
-stored in \code{rowData(sumExp)[['fitDOUModels']]}.}
+stored in \code{rowData(sumExp)[['DOUResults']]}.}
 
 \item{verbose}{Logical. If \code{TRUE}, messages will be printed for skipped or failed models.}
 }

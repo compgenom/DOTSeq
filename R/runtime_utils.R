@@ -46,7 +46,7 @@ runtime <- function(end_time, start_time, units = "secs") {
 #' consistent columns across all entries.
 #'
 #' @param sumExp A SummarizedExperiment object containing fitted model objects 
-#' stored in `rowData(sumExp)[['fitDOUModels']]`.
+#' stored in `rowData(sumExp)[['DOUResults']]`.
 #' @param verbose Logical. If \code{TRUE}, messages will be printed for skipped or failed models.
 #'
 #' @return A data frame where each row corresponds to an ORF and its associated model results.
@@ -63,7 +63,7 @@ runtime <- function(end_time, start_time, units = "secs") {
 #' 
 extract_results <- function(sumExp, verbose = TRUE) {
   
-  models_list <- rowData(sumExp)[["fitDOUModels"]]
+  models_list <- rowData(sumExp)[["DOUResults"]]
   # Helper to recursively flatten and extract scalar values
   flatten_scalars <- function(x, prefix = NULL) {
     if (is.atomic(x) && length(x) == 1) {

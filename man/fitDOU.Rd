@@ -4,52 +4,67 @@
 \alias{fitDOU}
 \title{Fit Differential ORF Usage Models}
 \usage{
-fitDOU(object, ...)
+fitDOU(
+  countData,
+  orf2gene,
+  anno,
+  formula,
+  emm_specs,
+  target,
+  dispformula,
+  dispersion_modeling,
+  lrt,
+  diagnostic,
+  parallel,
+  optimizers,
+  seed,
+  verbose
+)
 }
 \arguments{
-\item{object}{A \code{SummarizedExperiment}, \code{RangedSummarizedExperiment}, or \code{SingleCellExperiment} object.
-The assay slot must contain transcript-level expression counts as a \code{matrix}, \code{DataFrame},
-\code{sparseMatrix}, or \code{DelayedMatrix}. The \code{rowData} must include columns \code{orf_id}
-and \code{gene_id}, and \code{colData} must contain sample annotations. The model formula should be
-specified in the metadata or passed directly.}
+\item{countData}{A numeric matrix of ORF-level counts (rows = ORFs, columns = samples).}
 
-\item{...}{A placeholder for further enhancements.}
+\item{orf2gene}{A data frame mapping ORF IDs to gene IDs. Must contain columns \code{orf_id} and \code{gene_id}.}
 
-\item{formula}{A formula object specifying the model design, e.g., \code{~ 0 + group}.}
+\item{anno}{A data frame containing sample annotations. Must include columns such as \code{condition}, \code{strategy}, and \code{replicate}.}
+
+\item{formula}{A formula object specifying the model design, e.g., \code{~ condition * strategy}.}
 
 \item{target}{Character string specifying the non-reference condition level to extract the corresponding interaction term from the model.
 This is contrasted against the baseline condition (default: \code{NULL}).}
 
-\item{dispersion_modeling}{Character string specifying the dispersion modeling strategy.
-Options: \code{"auto"}, \code{"strategy"}, \code{"shared"}, or \code{"custom"}.}
+\item{dispformula}{Optional formula object specifying a custom dispersion model (used when \code{dispersion_modeling = "custom"}).}
 
-\item{dispformula}{Optional formula object for custom dispersion modeling.}
+\item{dispersion_modeling}{Character string specifying the dispersion modeling strategy.
+Options are:
+\describe{
+\item{\code{"auto"}}{Fit both strategy-dependent and shared dispersion models, and select the best via likelihood ratio test.}
+\item{\code{"strategy"}}{Model dispersion as a function of sequencing strategy.}
+\item{\code{"shared"}}{Assume constant dispersion across all predictor levels.}
+\item{\code{"custom"}}{Use a user-specified dispersion formula via \code{dispformula}.}
+}}
 
 \item{lrt}{Logical; if \code{TRUE}, performs a likelihood ratio test to compare the full model (with interaction) against a reduced model
 (without interaction) to assess translation-specific effects (default: \code{FALSE}).}
 
-\item{diagnostic}{Logical; if \code{TRUE}, enables DHARMa diagnostics (default: \code{FALSE}).}
+\item{diagnostic}{Logical; if \code{TRUE}, runs DHARMa diagnostics to assess model fit (default: \code{FALSE}).}
 
 \item{parallel}{A list passed to \code{glmmTMBControl} to configure parallel optimization,
-e.g., \code{list(n = 4L, autopar = TRUE)}.}
+e.g., \code{list(parallel = TRUE, ncpus = 4)}. Default: \code{list(n = 4L, autopar = TRUE)}.}
 
 \item{optimizers}{Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers in \code{glmmTMB} (default: \code{FALSE}).}
 
 \item{seed}{Optional integer to set the random seed for reproducibility (default: \code{NULL}).}
 
-\item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{TRUE}).}
+\item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{FALSE}).}
 }
 \value{
-An updated \code{SummarizedExperiment} object with a new list of models
-stored in \code{rowData(object)[["fitDOUModels"]]}.
+A named \code{list} of \code{PostHoc} objects, one per ORF.
 }
 \description{
-This function fits beta-binomial generalized linear models (GLMs) or generalized linear mixed models (GLMMs) for
-differential ORF usage (DOU) across all genes in a \code{SummarizedExperiment} object.
-It supports multiple dispersion modeling strategies and optional DHARMa diagnostics.
-
-This function is adapted from the \code{satuRn} package to support beta-binomial GLM/GLMMs via \code{glmmTMB}.
+This internal function fits beta-binomial models for differential ORF usage (DOU)
+across all genes. It supports multiple dispersion modeling strategies and optional
+diagnostics using DHARMa. This function is adapted from the \code{satuRn} package
+to support beta-binomial GLM/GLMMs via \code{glmmTMB}.
 }
-\author{
-Jeroen Gilis (original), Chun Shen Lim (modifications)
-}
+\keyword{internal}

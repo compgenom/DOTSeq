@@ -306,7 +306,7 @@ create_read_numbers = function(mu, fit, p0, m=NULL, n=NULL, mod=NULL, beta=NULL,
 #' }
 #'
 #' @importFrom DESeq2 DESeqDataSetFromMatrix vst design<-
-#' @importFrom stats prcomp rgamma runif df
+#' @importFrom stats prcomp rgamma runif df model.matrix
 #' @importFrom SummarizedExperiment SummarizedExperiment assay
 #' @importFrom grDevices dev.cur dev.new dev.size
 #' 

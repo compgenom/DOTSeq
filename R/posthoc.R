@@ -15,8 +15,6 @@
 #' @param workers Integer. Number of parallel workers to use. Default is \code{1}.
 #' @param nullweight Numeric. Prior weight on the null hypothesis for empirical Bayes shrinkage.
 #'   Higher values yield more conservative lfsr estimates. Default is \code{500}.
-#' @param BPPARAM A BiocParallel parameter object for parallel execution.
-#'   Default is \code{BiocParallel::bpparam()}.
 #' @param verbose Logical. If \code{TRUE}, prints progress messages. Default is \code{TRUE}.
 #'
 #' @return A **SummarizedExperiment** object (the input \code{sumExp} or \code{m$sumExp}) 
@@ -43,62 +41,32 @@
 #' @importFrom methods is
 #' @importFrom S4Vectors Rle DataFrame
 #' @importFrom SummarizedExperiment SummarizedExperiment rowData
-#' @importFrom BiocParallel register bplapply bpparam MulticoreParam register
 #' @importFrom pbapply pblapply
-#' 
 #' @importFrom stats AIC aggregate anova as.dendrogram as.formula complete.cases
 #' @importFrom stats p.adjust pnorm
 #' 
 #' @export
 #' 
-contrastDOU <- function(sumExp, emm_specs = ~condition * strategy, 
-                    contrasts_method = "pairwise", 
-                    workers = 1, nullweight = 500,
-                    BPPARAM = bpparam(), 
-                    verbose = TRUE) {
+testDOU <- function(
+    sumExp, 
+    emm_specs = ~condition * strategy, 
+    contrasts_method = "pairwise", 
+    nullweight = 500,
+    BPPARAM = bpparam(), 
+    verbose = TRUE
+    ) {
   
-  fitted_models_list <- rowData(sumExp)[['fitDOUModels']]
-  
-  if (isTRUE(verbose)) {
-    message(" - Perform contrasts")
-    if (workers > 1) {
-      BPPARAM <- MulticoreParam(workers = workers, progressbar = TRUE)
-      register(BPPARAM)
-      emm_list <- bplapply(fitted_models_list, function(m) {
-        if (is(m, "StatModel") && m@type == "glmmTMB") {
-          tryCatch(emmeans(m@model, specs = emm_specs), error = function(e) NULL)
-        } else {
-          NULL
-        }
-      }, BPPARAM = BPPARAM)
-    } else {
-      emm_list <- pblapply(fitted_models_list, function(m) {
-        if (is(m, "StatModel") && m@type == "glmmTMB") {
-          tryCatch(emmeans(m@model, specs = emm_specs), error = function(e) NULL)
-        } else {
-          NULL
-        }
-      })
-    }
-  } else {
-    # No progress bar, default backend
-    emm_list <- lapply(fitted_models_list, function(m) {
-      if (is(m, "StatModel") && m@type == "glmmTMB") {
-        tryCatch(emmeans(m@model, specs = emm_specs), error = function(e) NULL)
-      } else {
-        NULL
-      }
-    })
+  if (verbose) {
+    message(" - Starting post hoc analysis")
   }
   
-  valid_genes <- !sapply(emm_list, is.null)
-  emm_list <- emm_list[valid_genes]
-  gene_ids <- names(emm_list)
+  result_list <- rowData(sumExp)[['DOUResults']]
   
-  if (length(emm_list) == 0) {
-    warning("No valid emmeans objects could be generated.")
-    return(NULL)
-  }
+  valid_indices <- which(vapply(result_list, function(obj) {
+    !is.null(obj@posthoc) && inherits(obj@posthoc, "emmGrid")
+  }, logical(1)))
+  
+  emm_list <- lapply(valid_indices, function(i) result_list[[i]]@posthoc)
   
   all_results <- list()
   all_results[["interaction_specific"]] <- list()
@@ -110,11 +78,11 @@ contrastDOU <- function(sumExp, emm_specs = ~condition * strategy,
   
   for (c_name in all_contrast_names) {
     if (verbose) {
-      message(" - Calculate the effect size and standard error for ", c_name)
+      message(" - Calculating the effect size and standard error for ", c_name)
     }
     
     # Use lapply to iterate through all genes and extract the betas and SEs
-    all_contrasts <- lapply(emm_list, function(emm) {
+    all_contrasts <- pblapply(emm_list, function(emm) {
       contrast_df <- summary(contrast(emm, method = contrasts_method, by = "strategy", adjust = "none"))
       
       # Set baseline
@@ -165,7 +133,7 @@ contrastDOU <- function(sumExp, emm_specs = ~condition * strategy,
     # Run ashr on the full set of data for this contrast
     if (any(!is.na(betas_for_ashr))) {
       if (verbose) {
-        message(" - Perform empirical Bayesian shrinkage on the effect size for ", c_name)
+        message(" - Performing empirical Bayesian shrinkage on the effect size for ", c_name)
       }
       
       ash_result <- ash(betas_for_ashr, ses_for_ashr, nullweight = nullweight, pointmass = TRUE)
@@ -199,7 +167,7 @@ contrastDOU <- function(sumExp, emm_specs = ~condition * strategy,
     by_name <- as.character(strategy_combos$strategy[i])
     
     if (verbose) {
-      message(" - Calculate the effect size and standard error for contrast: ", c_name, ", strategy: ", by_name)
+      message(" - Calculating the effect size and standard error for contrast: ", c_name, ", strategy: ", by_name)
     }
     
     # Check if the list for the current contrast name exists
@@ -220,7 +188,7 @@ contrastDOU <- function(sumExp, emm_specs = ~condition * strategy,
     pvalues <- 2 * (1 - pnorm(abs(betas / ses)))
     
     if (verbose) {
-      message(" - Perform empirical Bayesian shrinkage on the effect size for ", c_name)
+      message(" - Performing empirical Bayesian shrinkage on the effect size for ", c_name)
     }
     
     if (any(!is.na(betas))) {

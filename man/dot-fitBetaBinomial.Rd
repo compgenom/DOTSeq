@@ -9,6 +9,7 @@
   rna_mat,
   anno,
   formula = ~condition * strategy,
+  emm_specs = ~condition * strategy,
   target = NULL,
   dispersion_modeling = c("auto", "shared", "custom"),
   dispformula = NULL,
@@ -57,7 +58,7 @@ e.g., \code{list(parallel = TRUE, ncpus = 4)}. Default: \code{list(n = 4L, autop
 \item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{FALSE}).}
 }
 \value{
-A named \code{list} of \code{StatModel} objects, one for each ORF in the gene.
+A named \code{list} of \code{PostHoc} objects, one for each ORF in the gene.
 }
 \description{
 This internal worker function fits beta-binomial generalized linear models (GLMs) or generalized linear mixed models (GLMMs)

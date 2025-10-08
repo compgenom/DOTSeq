@@ -10,7 +10,7 @@ Maintainer: Chun Shen Lim <chunshen.lim@ieee.org>
 Description: DOTSeq is a statistical framework for detecting differential translation at the open reading frame (ORF) level using ribosome profiling (Ribo-seq) and matched RNA-seq data. Unlike gene-level tools, DOTSeq models translation dynamics within genes, enabling discovery of differential ORF usage and translation efficiency. It uses a flexible beta-binomial generalized linear model (GLM) framework to capture subtle regulatory signals, such as upstream ORF-mediated control, across diverse biological conditions.
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 VignetteBuilder: knitr
 Suggests: knitr, rmarkdown
 Imports:

@@ -129,29 +129,32 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
 #'   e.g., \code{list(parallel = TRUE, ncpus = 4)}. Default: \code{list(n = 4L, autopar = TRUE)}.
 #' @param verbose Logical; if \code{TRUE}, prints progress messages (default: \code{FALSE}).
 #'
-#' @return A named \code{list} of \code{StatModel} objects, one for each ORF in the gene.
+#' @return A named \code{list} of \code{PostHoc} objects, one for each ORF in the gene.
 #' 
 #' @importFrom stats AIC aggregate anova as.formula
 #' @importFrom stats order.dendrogram p.adjust pnorm predict rbinom relevel rgamma
-#' 
+#' @importFrom emmeans emmeans
 #' @importFrom DHARMa simulateResiduals testDispersion testZeroInflation testResiduals
 #' @importFrom glmmTMB glmmTMB glmmTMBControl fixef betabinomial
 #' 
 #' @keywords internal
 #' 
-.fitBetaBinomial <- function(ribo_mat, 
-                             rna_mat, 
-                             anno, 
-                             formula = ~ condition * strategy, 
-                             target = NULL,
-                             dispersion_modeling = c("auto", "shared", "custom"), 
-                             dispformula = NULL, 
-                             lrt = FALSE,
-                             diagnostic = FALSE, 
-                             seed = NULL, 
-                             optimizers = FALSE,
-                             parallel = list(n=4L, autopar=TRUE), 
-                             verbose = FALSE) {
+.fitBetaBinomial <- function(
+    ribo_mat, 
+    rna_mat, 
+    anno, 
+    formula = ~ condition * strategy, 
+    emm_specs = ~ condition * strategy, 
+    target = NULL,
+    dispersion_modeling = c("auto", "shared", "custom"), 
+    dispformula = NULL, 
+    lrt = FALSE,
+    diagnostic = FALSE, 
+    seed = NULL, 
+    optimizers = FALSE,
+    parallel = list(n=4L, autopar=TRUE), 
+    verbose = FALSE
+    ) {
   
   if (!is.null(seed)) set.seed(seed)
   
@@ -161,10 +164,10 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
   num_orfs <- nrow(ribo_mat)
   # Handle single-ORF genes
   if(nrow(ribo_mat) == 1 && nrow(rna_mat) == 1) {
-    .out <- .StatModel(
+    .out <- .PostHoc(
       type = "singleORF",
       results = list(),
-      model = NA
+      posthoc = NA
     )
     names(.out) <- rownames(ribo_mat)
     return(list(.out))
@@ -180,9 +183,11 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
   
   # Define a flexible regex pattern: matches "rna", "RNA", "RNA-seq", and "0"
   rna_pattern <- "(?i)rna|^0$"
+  rna_level <- strategy_levels[1]
+  ribo_level <- strategy_levels[2]
   
   # Find matching values
-  if (isTRUE(grepl(rna_pattern, strategy_levels[1]))) {
+  if (isTRUE(grepl(rna_pattern, rna_level))) {
     # Prepare the data for a single gene dynamically based on the design matrix
     long_data <- data.frame(
       counts = c(as.vector(ribo_mat), as.vector(rna_mat)), # Ribo first
@@ -214,10 +219,10 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
   orfs_to_keep <- as.character(total_counts_by_orf$ORF[total_counts_by_orf$counts > 0])
   
   if (length(orfs_to_keep) < 2) {
-    return(list(.StatModel(
+    return(list(.PostHoc(
       type = "fitError",
       results = list(),
-      model = NA
+      posthoc = NA
     )))
   }
   
@@ -466,13 +471,13 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
       # Check if a valid model was chosen and fitted
       if (is.null(model_to_return) || model_to_return$fit$convergence != 0 || !isTRUE(model_to_return$sdr$pdHess)) {
         warning(paste("Model fit failed for ORF", current_orf, "due to convergence or non-positive-definite Hessian."))
-        return(.StatModel(type = "fitError", 
+        return(.PostHoc(type = "fitError", 
                           results = results, 
-                          model = NA))
+                          posthoc = NA))
       }
       
-      raw_rho_rna <- .calculate_mean_dispersion(model_data_this_orf[model_data_this_orf$strategy == 0, ]$counts, model_data_this_orf[model_data_this_orf$strategy == 0, ]$success + model_data_this_orf[model_data_this_orf$strategy == 0, ]$failure)
-      raw_rho_ribo <- .calculate_mean_dispersion(model_data_this_orf[model_data_this_orf$strategy == 1, ]$counts, model_data_this_orf[model_data_this_orf$strategy == 1, ]$success + model_data_this_orf[model_data_this_orf$strategy == 1, ]$failure)
+      raw_rho_rna <- .calculate_mean_dispersion(model_data_this_orf[model_data_this_orf$strategy == rna_level, ]$counts, model_data_this_orf[model_data_this_orf$strategy == rna_level, ]$success + model_data_this_orf[model_data_this_orf$strategy == rna_level, ]$failure)
+      raw_rho_ribo <- .calculate_mean_dispersion(model_data_this_orf[model_data_this_orf$strategy == ribo_level, ]$counts, model_data_this_orf[model_data_this_orf$strategy == ribo_level, ]$success + model_data_this_orf[model_data_this_orf$strategy == ribo_level, ]$failure)
       
       results$estimates$mean_prop_rna <- raw_rho_rna$mean_prop
       results$estimates$mean_prop_ribo <- raw_rho_ribo$mean_prop
@@ -494,17 +499,19 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
       
       results$dispersion$fittedVsRawDispDiff <- abs(results$dispersion$fitted_disp_rna - results$dispersion$raw_rho_rna) + abs(results$dispersion$fitted_disp_ribo - results$dispersion$raw_rho_ribo)
       
-      return(.StatModel(type = "glmmTMB", 
-                        results = results, 
-                        model = model_to_return))
+      emm <- emmeans(model_to_return, specs = emm_specs)
+      
+      return(.PostHoc(type = "glmmTMB", 
+                           results = results, 
+                           posthoc = emm))
       
     },
     error = function(e) {
       warning(paste("Model fit failed for ORF", current_orf, "with error:", e$message))
-      return(.StatModel(
+      return(.PostHoc(
         type = "fitError",
         results = list(),
-        model = NA
+        posthoc = NA
       ))
     })
     
@@ -542,50 +549,53 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
 #' @param lrt Logical; if \code{TRUE}, performs a likelihood ratio test to compare the full model (with interaction) against a reduced model 
 #' (without interaction) to assess translation-specific effects (default: \code{FALSE}).
 #' @param diagnostic Logical; if \code{TRUE}, runs DHARMa diagnostics to assess model fit (default: \code{FALSE}).
-#' @param parallel Logical; if \code{TRUE}, enables parallel processing using \code{BiocParallel} (default: \code{FALSE}).
+#' @param parallel A list passed to \code{glmmTMBControl} to configure parallel optimization,
+#'   e.g., \code{list(parallel = TRUE, ncpus = 4)}. Default: \code{list(n = 4L, autopar = TRUE)}.
 #' @param optimizers Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers in \code{glmmTMB} (default: \code{FALSE}).
 #' @param seed Optional integer to set the random seed for reproducibility (default: \code{NULL}).
 #' @param verbose Logical; if \code{TRUE}, prints progress messages (default: \code{FALSE}).
 #'
-#' @return A named \code{list} of \code{StatModel} objects, one per ORF.
+#' @return A named \code{list} of \code{PostHoc} objects, one per ORF.
 #' 
 #' @importFrom S4Vectors mcols mcols<-
 #' 
 #' @keywords internal
 #' 
-.fitDOU_internal <- function(countData,
-                             orf2gene,
-                             anno,
-                             formula,
-                             target,
-                             dispformula,
-                             dispersion_modeling,
-                             lrt,
-                             diagnostic, 
-                             parallel,
-                             optimizers,
-                             seed,
-                             verbose) {
-  
+fitDOU <- function(
+    countData,
+    orf2gene,
+    anno,
+    formula,
+    emm_specs,
+    target,
+    dispformula,
+    dispersion_modeling,
+    lrt,
+    diagnostic, 
+    parallel,
+    optimizers,
+    seed,
+    verbose
+) {
   stopifnot(class(countData)[1] %in% c("matrix", "data.frame", "dgCMatrix", "DelayedMatrix"))
   
-  single_orf <- !mcols(orf2gene)$gene_id %in% mcols(orf2gene)$gene_id[duplicated(mcols(orf2gene)$gene_id)]
+  # Identify lonely ORFs  
+  single_orf <- !mcols(orf2gene)$gene_id %in% mcols(orf2gene)$gene_id[duplicated(mcols(orf2gene)$gene_id)]  
+  lonely_orfs <- rownames(orf2gene)[single_orf]  
   if (any(single_orf)) {
-    message("Genes with only one type of transcript/isoform detected. Results of such transcripts will be set to NA and flagged as lonelyTranscript.")
+    message("Genes with only one ORF detected. Results of such ORFs will be set to NA and flagged as lonelyORF.")
   }
   
+  # Match ORFs to genes
   geneForEachOrf <- orf2gene$gene_id[match(rownames(countData), rownames(orf2gene))]
   geneForEachOrf <- as.character(geneForEachOrf)
   stopifnot(length(geneForEachOrf) == nrow(countData))
   
-  # countData_ribo <- countData[, grep("ribo", colnames(countData))]
-  # countData_rna <- countData[, grep("rna", colnames(countData))]
-  
   # Get the logical indices from the 'strategy' column of the sample annotation (anno)
   strategy_levels <- levels(anno$strategy)
-  if (length(strategy_levels) > 2) {
-    warning("Expected two strategy levels got: ", strategy_levels)
-    warning("Use ", strategy_levels[1], " for RNA-seq and ", strategy_levels[2], " for Ribo-seq")
+  if (length(strategy_levels) != 2) {
+    warning("Expected two strategy levels, got: ", paste(strategy_levels, collapse = ", "))
+    warning("Assuming ", strategy_levels[1], " is RNA-seq and ", strategy_levels[2], " is Ribo-seq")
   }
   ribo_idx <- anno$strategy == strategy_levels[2]
   rna_idx <- anno$strategy == strategy_levels[1]
@@ -597,55 +607,61 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
   gene_ids <- levels(factor(geneForEachOrf))
   
   fit_model_for_gene <- function(gene) {
+    is_kept <- unique(orf2gene[orf2gene$gene_id == gene, ]$is_kept)
     idx <- which(geneForEachOrf == gene)
+    orfs <- rownames(countData)[idx]
+    
+    if (!isTRUE(is_kept)) {
+      models_gene <- setNames(
+        lapply(orfs, function(orf) {
+          .PostHoc(type = "NA", results = list(), posthoc = NA)
+        }),
+        orfs
+      )
+      return(models_gene)
+    }
+    
     ribo_mat <- countData_ribo[idx, , drop = FALSE]
     rna_mat <- countData_rna[idx, , drop = FALSE]
     
-    tryCatch({
-      models_gene <- .fitBetaBinomial(ribo_mat = ribo_mat, rna_mat = rna_mat, anno = anno, 
-                                      formula = formula, target = target,
-                                      dispersion_modeling = dispersion_modeling, dispformula = dispformula, lrt = lrt,
-                                      diagnostic = diagnostic, seed = seed, 
-                                      parallel = parallel, optimizers = optimizers,
-                                      verbose = verbose)
-      return(models_gene)
-    },
-    error = function(e) {
-      warning(paste("Model fit failed for gene", gene, "with a critical error:", e$message))
-      # Return a named list with a single fitError model
-      fit_error_model <- setNames(
-        list(.StatModel(type = "fitError", results = list(), model = NA)),
-        gene
+    models_gene <- tryCatch({
+      .fitBetaBinomial(
+        ribo_mat = ribo_mat, rna_mat = rna_mat, anno = anno, 
+        formula = formula, emm_specs = emm_specs, target = target,
+        dispersion_modeling = dispersion_modeling, dispformula = dispformula, lrt = lrt,
+        diagnostic = diagnostic, seed = seed, 
+        parallel = parallel, optimizers = optimizers,
+        verbose = verbose
       )
-      return(list(fit_error_model))
+    }, error = function(e) {
+      warning(paste("Model fit failed for gene", gene, "with a critical error:", e$message))
+      setNames(
+        lapply(orfs, function(orf) {
+          .PostHoc(type = "fitError", results = list(), posthoc = NA)
+        }),
+        orfs
+      )
     })
     
     return(models_gene)
   }
   
-  # if (parallel) {
-  #   models <- BiocParallel::bplapply(gene_ids, fit_model_for_gene, BPPARAM = BPPARAM)
-  # } else if (verbose) {
-  if (verbose) {
-    models <- pbapply::pblapply(gene_ids, fit_model_for_gene)
+  models <- if (verbose) {
+    pbapply::pblapply(gene_ids, fit_model_for_gene)
   } else {
-    models <- lapply(gene_ids, fit_model_for_gene)
+    lapply(gene_ids, fit_model_for_gene)
   }
   
-  # Filter out any NULL elements that might have slipped through
-  all_models <- models[!sapply(models, is.null)]
+  all_models <- do.call(c, models)
   
-  # Unlist to get a single named list of models for all ORFs
-  all_models <- unlist(all_models, recursive = FALSE)
-  
-  # Create a final list with all ORFs from the original countData
   final_models <- setNames(
-    lapply(rownames(countData), function(x) {
-      # Look up the model from the list of fitted models
-      model_obj <- all_models[[x]]
+    lapply(rownames(countData), function(orf) {
+      if (orf %in% lonely_orfs) {
+        return(.PostHoc(type = "lonelyORF", results = list(), posthoc = NA))
+      }
+      model_obj <- all_models[[orf]]
       if (is.null(model_obj)) {
-        # If no model was found, it's a zero-count ORF, create a fitError model
-        return(.StatModel(type = "fitError", results = list(), model = NA))
+        return(.PostHoc(type = "fitError", results = list(), posthoc = NA))
       }
       return(model_obj)
     }),
@@ -656,107 +672,4 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
 }
 
 
-#' @title Fit Differential ORF Usage Models
-#'
-#' @description
-#' This function fits beta-binomial generalized linear models (GLMs) or generalized linear mixed models (GLMMs) for
-#' differential ORF usage (DOU) across all genes in a \code{SummarizedExperiment} object.
-#' It supports multiple dispersion modeling strategies and optional DHARMa diagnostics.
-#'
-#' This function is adapted from the \code{satuRn} package to support beta-binomial GLM/GLMMs via \code{glmmTMB}.
-#'
-#' @param object A \code{SummarizedExperiment}, \code{RangedSummarizedExperiment}, or \code{SingleCellExperiment} object.
-#'   The assay slot must contain transcript-level expression counts as a \code{matrix}, \code{DataFrame},
-#'   \code{sparseMatrix}, or \code{DelayedMatrix}. The \code{rowData} must include columns \code{orf_id}
-#'   and \code{gene_id}, and \code{colData} must contain sample annotations. The model formula should be
-#'   specified in the metadata or passed directly.
-#' @param formula A formula object specifying the model design, e.g., \code{~ 0 + group}.
-#' @param target Character string specifying the non-reference condition level to extract the corresponding interaction term from the model. 
-#' This is contrasted against the baseline condition (default: \code{NULL}).
-#' @param dispersion_modeling Character string specifying the dispersion modeling strategy.
-#'   Options: \code{"auto"}, \code{"strategy"}, \code{"shared"}, or \code{"custom"}.
-#' @param dispformula Optional formula object for custom dispersion modeling.
-#' @param lrt Logical; if \code{TRUE}, performs a likelihood ratio test to compare the full model (with interaction) against a reduced model 
-#' (without interaction) to assess translation-specific effects (default: \code{FALSE}).
-#' @param diagnostic Logical; if \code{TRUE}, enables DHARMa diagnostics (default: \code{FALSE}).
-#' @param parallel A list passed to \code{glmmTMBControl} to configure parallel optimization,
-#'   e.g., \code{list(n = 4L, autopar = TRUE)}.
-#' @param optimizers Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers in \code{glmmTMB} (default: \code{FALSE}).
-#' @param seed Optional integer to set the random seed for reproducibility (default: \code{NULL}).
-#' @param verbose Logical; if \code{TRUE}, prints progress messages (default: \code{TRUE}).
-#' @param ... A placeholder for further enhancements.
-#' 
-#' @return An updated \code{SummarizedExperiment} object with a new list of models
-#'   stored in \code{rowData(object)[["fitDOUModels"]]}.
-#'
-#'
-#' @rdname fitDOU
-#' @author Jeroen Gilis (original), Chun Shen Lim (modifications)
-#'
-#' @importFrom SummarizedExperiment colData rowData assay
-#' @importFrom DHARMa simulateResiduals testDispersion testZeroInflation testResiduals
-#' @importFrom glmmTMB glmmTMB
-#' @importFrom stats model.matrix
-#' @importFrom pbapply pblapply
-#' @importFrom BiocParallel bplapply bpparam
-#' 
-# setGeneric("fitDOU", function(object,
-#                               formula,
-#                               target,
-#                               dispersion_modeling,
-#                               dispformula,
-#                               lrt = FALSE,
-#                               diagnostic = FALSE,
-#                               parallel = list(n=4L, autopar=TRUE),
-#                               optimizers = FALSE,
-#                               seed = NULL,
-#                               verbose = TRUE) {
-#   standardGeneric("fitDOU")
-# })
-setGeneric("fitDOU", function(object, ...) standardGeneric("fitDOU"))
 
-# Wrapper function
-setMethod(
-  f = "fitDOU",
-  signature = "SummarizedExperiment",
-  function(object,
-           formula,
-           target,
-           dispersion_modeling,
-           dispformula,
-           lrt = FALSE,
-           diagnostic = FALSE,
-           parallel = list(n=4L, autopar=TRUE),
-           optimizers = FALSE,
-           seed = NULL,
-           verbose = TRUE) {
-    if (ncol(colData(object)) == 0) 
-      stop("colData is empty")
-    
-    if (!"gene_id" %in% colnames(rowData(object)) && all(grepl("O", names(rowData(object))))) {
-      stop("rowData does not contain columns gene_id and orf_id")
-    }
-    if (!all(rownames(object) == rownames(rowData(object)))) {
-      stop("not all row names of the expression matrix match 
-                 the orf_id column of the object's rowData")
-    }
-    
-    rowData(object)[["fitDOUModels"]] <- .fitDOU_internal(
-      countData = assay(object),
-      orf2gene = rowData(object), 
-      anno = colData(object),
-      formula = formula,
-      target = target,
-      dispersion_modeling = dispersion_modeling, 
-      dispformula = dispformula,
-      lrt = lrt,
-      diagnostic = diagnostic,
-      parallel = parallel,
-      optimizers = optimizers,
-      seed = seed,
-      verbose = verbose
-    )
-    
-    return(object)
-  }
-)

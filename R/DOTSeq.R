@@ -62,59 +62,80 @@
 #' @importFrom SummarizedExperiment rowRanges assay rowData rowData<-
 #' @importFrom S4Vectors metadata metadata<- mcols mcols<-
 #' @importFrom utils capture.output 
+#' @importFrom BiocParallel register bplapply bpparam MulticoreParam register
 #' 
 #' @export
 #' 
-fitDOT <- function(count_table, 
-                   condition_table, 
-                   flattened_gtf, 
-                   bed, 
-                   formula = ~ condition * strategy,
-                   target = NULL,
-                   baseline = NULL,
-                   min_count = 1, 
-                   stringent = TRUE, 
-                   dispersion_modeling = "auto",
-                   dispformula = NULL,
-                   lrt = FALSE,
-                   diagnostic = FALSE,
-                   parallel = list(n=4L, autopar=TRUE),
-                   optimizers = FALSE,
-                   verbose = TRUE) {
-  
-  
-  dot <- DOTSeq::DOTSeqDataSet(count_table, 
-                               condition_table, 
-                               flattened_gtf, 
-                               bed, 
-                               formula = formula,
-                               target = target,
-                               baseline = baseline,
-                               min_count = min_count, 
-                               stringent = stringent, 
-                               verbose = verbose)
-
-  sumExp_filtered <- dot$sumExp_raw[rowRanges(dot$sumExp_raw)$is_kept == TRUE, ]
+# Wrapper function
+DOTSeq <- function(
+    count_table, 
+    condition_table, 
+    flattened_gtf, 
+    bed, 
+    formula = ~ condition * strategy,
+    target = NULL,
+    baseline = NULL,
+    min_count = 1, 
+    stringent = TRUE, 
+    dispersion_modeling = "auto",
+    dispformula = NULL,
+    lrt = FALSE,
+    diagnostic = FALSE,
+    parallel = list(n=4L, autopar=TRUE),
+    optimizers = FALSE,
+    nullweight = 500,
+    contrasts_method = "pairwise",
+    seed = NULL,
+    verbose = TRUE
+    ) {
   
   if (isTRUE(verbose)) {
-    message(" - Fit beta-binomial generalised linear models")
-    message(" - Use ", parallel$n, " threads")
+    message(" - Starting differential ORF usage analysis")
+    message(" - Using ", parallel$n, " threads")
     start_dou <- Sys.time()
   }
   
-  sumExp <- fitDOU(object = sumExp_filtered,
-                           formula = metadata(sumExp_filtered)$formula,
-                           target = target,
-                           dispersion_modeling= dispersion_modeling,
-                           dispformula = dispformula,
-                           lrt = lrt,
-                           diagnostic = diagnostic,
-                           parallel = parallel,
-                           optimizers = optimizers,
-                           verbose = verbose)
+  dot <- DOTSeqDataSet(
+    count_table, 
+    condition_table, 
+    flattened_gtf, 
+    bed, 
+    formula = formula,
+    target = target,
+    baseline = baseline,
+    min_count = min_count, 
+    stringent = stringent, 
+    verbose = verbose
+    )
   
-  # L <- contrastMatrix(sumExp, fmla, baseline = baseline)
+  dot$sumExp <- dot$sumExp[rowRanges(dot$sumExp)$is_kept == TRUE, ]
+
+  rowData(dot$sumExp)[["DOUResults"]] <- fitDOU(
+    countData = assay(dot$sumExp),
+    orf2gene = rowData(dot$sumExp), 
+    anno = colData(dot$sumExp),
+    formula = metadata(dot$sumExp)$formula,
+    emm_specs = metadata(dot$sumExp)$emm_specs,
+    target = target,
+    dispersion_modeling = dispersion_modeling, 
+    dispformula = dispformula,
+    lrt = lrt,
+    diagnostic = diagnostic,
+    parallel = parallel,
+    optimizers = optimizers,
+    seed = seed,
+    verbose = verbose
+  )
   
+  dot$sumExp<- testDOU(
+    dot$sumExp,
+    emm_specs = metadata(dot$sumExp)$emm_specs,
+    contrasts_method = contrasts_method,
+    nullweight = nullweight,
+    BPPARAM = bpparam(),
+    verbose = verbose
+  )
+    
   if (verbose) {
     end_dou <- Sys.time()
     
@@ -126,7 +147,7 @@ fitDOT <- function(count_table,
       message(sprintf(" - DOU runtime: %.3f secs", elapsed_dou$secs))
     }
     
-    message(" - Start differential translation efficiency analysis")
+    message(" - Starting differential translation efficiency analysis")
     start_dte <- Sys.time()
   }
   
@@ -145,24 +166,22 @@ fitDOT <- function(count_table,
       message(sprintf(" - DTE runtime: %.3f secs", elapsed_dte$secs))
     }
     
-    # DOU summary
-    dou_res <- extract_results(sumExp)
-    msg <- capture.output(print(table(dou_res$model_type)))
-    msg <- msg[2:length(msg)]
-    message(paste(" - DOU model fitting summary:\n  ", paste(msg, collapse = "\n")))
-    
-    # DTE summary
-    dte_res <- results(dds)
-    dte_res$model_type <- ifelse(is.na(dte_res$padj), "NA", "nbinom")
-    
-    msg_dte <- capture.output(print(table(dte_res$model_type)))
-    msg_dte <- msg_dte[2:length(msg_dte)]
-    message(paste(" - DTE model fitting summary:\n", paste(msg_dte, collapse = "\n")))
+    # # DOU summary
+    # dou_res <- extract_results(dot$sumExp)
+    # msg <- capture.output(print(table(dou_res$model_type)))
+    # msg <- msg[2:length(msg)]
+    # message(paste(" - DOU model fitting summary:\n  ", paste(msg, collapse = "\n")))
+    # 
+    # # DTE summary
+    # dte_res <- results(dot$dds)
+    # dte_res$model_type <- ifelse(is.na(dte_res$padj), "NA", "nbinom")
+    # 
+    # msg_dte <- capture.output(print(table(dte_res$model_type)))
+    # msg_dte <- msg_dte[2:length(msg_dte)]
+    # message(paste(" - DTE model fitting summary:\n", paste(msg_dte, collapse = "\n")))
   }
   
-  return(list(sumExp = sumExp,
-              dds = dds))
+  return(dot)
 }
-
 
 
