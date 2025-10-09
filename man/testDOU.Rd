@@ -9,7 +9,6 @@ testDOU(
   emm_specs = ~condition * strategy,
   contrasts_method = "pairwise",
   nullweight = 500,
-  BPPARAM = bpparam(),
   verbose = TRUE
 )
 }
@@ -27,8 +26,6 @@ Default is \code{"pairwise"}.}
 Higher values yield more conservative lfsr estimates. Default is \code{500}.}
 
 \item{verbose}{Logical. If \code{TRUE}, prints progress messages. Default is \code{TRUE}.}
-
-\item{workers}{Integer. Number of parallel workers to use. Default is \code{1}.}
 }
 \value{
 A \strong{SummarizedExperiment} object (the input \code{sumExp} or \code{m$sumExp})

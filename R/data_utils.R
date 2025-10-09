@@ -27,14 +27,16 @@
 #'
 #' @return A named \code{list} containing:
 #' \describe{
-#'   \item{sumExp}{\code{SummarizedExperiment} object containing pre-filtered normalized counts and sample metadata.}
-#'   \item{dds}{\code{DESeqDataSet} object for modeling differential ORF translation.}
+#'   \item{sumExp}{A \code{SummarizedExperiment} object containing pre-filtered raw counts and sample metadata, 
+#'   used for modeling Differential ORF Usage (DOU) within the DOTSeq framework.}
+#'   \item{dds}{A \code{DESeqDataSet} object used for modeling Differential Translation Efficiency (DTE) within the DOTSeq framework via DESeq2.}
 #' }
-#'
+#' 
 #' @importFrom SummarizedExperiment SummarizedExperiment assay colData colData<- rowData rowData<- mcols mcols<-
 #' @importFrom DESeq2 DESeqDataSetFromMatrix 
 #' @importFrom utils read.table tail
 #' @importFrom stats relevel
+#' @importFrom apeglm apeglm
 #' 
 #' @export
 #' 
@@ -189,7 +191,7 @@ DOTSeqDataSet <- function(count_table,
   
   # Relevel the factor
   if (isTRUE(verbose)) {
-    message(" - Setting condition", baseline, " as baseline")
+    message("setting condition", baseline, " as baseline")
     cond$condition <- relevel(factor(cond$condition), ref = baseline)
   }
   
@@ -239,7 +241,7 @@ DOTSeqDataSet <- function(count_table,
     stopifnot(identical(colnames(dcounts), rownames(cond)))
     
     if (verbose) {
-      message(" - GTF parsing and count alignment successful")
+      message("GTF parsing and count alignment successful")
     }
   }
   
@@ -262,7 +264,7 @@ DOTSeqDataSet <- function(count_table,
       samples <- rownames(cond[cond$condition == cond_name, ]) 
       rowSums(dcounts[, samples, drop = FALSE] >= min_count) == length(samples)
     })
-    # if (verbose) message(" - Filtering: All replicates in at least one condition >= ", min_count)
+    # if (verbose) message("filtering: All replicates in at least one condition >= ", min_count)
     keep <- Reduce("|", keep_list)
   } else if (stringent == FALSE) {
     # FALSE: Keep ORFs where all replicates in at least one condition-strategy group pass min_count
@@ -271,11 +273,11 @@ DOTSeqDataSet <- function(count_table,
       samples <- rownames(cond[cond$group == group_name, ])
       rowSums(dcounts[, samples, drop = FALSE] >= min_count) == length(samples)
     })
-    # if (verbose) message(" - Filtering: All replicates in at least one condition-strategy group >= ", min_count)
+    # if (verbose) message("filtering: All replicates in at least one condition-strategy group >= ", min_count)
     keep <- Reduce("|", keep_list)
   } else { # is.null(stringent)
     # NULL: Keep ORFs where total counts across all samples pass min_count
-    # if (verbose) message(" - Filtering: Total counts across all samples >= ", min_count)
+    # if (verbose) message("filtering: Total counts across all samples >= ", min_count)
     keep <- rowSums(dcounts) >= min_count
   }
 
@@ -306,7 +308,7 @@ DOTSeqDataSet <- function(count_table,
   
   
   if (verbose) {
-    message(" - SummarizedExperiment objects created successfully")
+    message("SummarizedExperiment objects created successfully")
   }
 
   return(list(sumExp = sumExp,

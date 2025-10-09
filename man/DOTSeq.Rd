@@ -2,14 +2,16 @@
 % Please edit documentation in R/DOTSeq.R
 \name{DOTSeq}
 \alias{DOTSeq}
-\title{Fit DOTSeq Differential ORF Translation Models}
+\title{Perform Differential ORF Translation Analysis with DOTSeq}
 \usage{
 DOTSeq(
-  count_table,
-  condition_table,
-  flattened_gtf,
-  bed,
+  dotseq_dataset = NULL,
+  count_table = NULL,
+  condition_table = NULL,
+  flattened_gtf = NULL,
+  bed = NULL,
   formula = ~condition * strategy,
+  modules = c("DOU", "DTE"),
   target = NULL,
   baseline = NULL,
   min_count = 1,
@@ -20,13 +22,27 @@ DOTSeq(
   diagnostic = FALSE,
   parallel = list(n = 4L, autopar = TRUE),
   optimizers = FALSE,
-  nullweight = 500,
+  dou_nullweight = 500,
+  dte_lfc_shrinkage = "apeglm",
   contrasts_method = "pairwise",
   seed = NULL,
   verbose = TRUE
 )
 }
 \arguments{
+\item{dotseq_dataset}{A named \code{list} containing pre-constructed DOTSeq input objects.
+This list must include:
+\describe{
+\item{\code{sumExp}}{A \code{RangedSummarizedExperiment} object containing pre-filtered raw counts,
+sample metadata, and ORF-level annotations. This object is used for modeling Differential ORF Usage (DOU)
+within the DOTSeq framework.}
+\item{\code{dds}}{A \code{DESeqDataSet} object used for modeling Differential Translation Efficiency (DTE)
+within the DOTSeq framework via DESeq2.}
+}
+If \code{dotseq_dataset} is provided, the function will skip raw input parsing and use these objects directly.
+Otherwise, all of \code{count_table}, \code{condition_table}, \code{flattened_gtf}, and \code{bed} must be supplied
+to construct the dataset from scratch.}
+
 \item{count_table}{Path to a count table file or a data frame. Must contain columns:
 \code{Geneid}, \code{Chr}, \code{Start}, \code{End}, \code{Strand}, \code{Length},
 plus one column per sample.}
@@ -39,6 +55,10 @@ plus one column per sample.}
 \item{bed}{Path to a BED file with ORF annotations.}
 
 \item{formula}{A formula object specifying the design, e.g., \code{~ condition * strategy}.}
+
+\item{modules}{Character vector specifying which DOTSeq modules to run.
+Options include \code{"DOU"} (Differential ORF Usage) and \code{"DTE"} (Differential Translation Efficiency).
+Both are components of the DOTSeq framework. Default is \code{c("DOU", "DTE")}, which runs both.}
 
 \item{target}{Character string specifying the non-reference condition level to extract the corresponding interaction term.
 Contrasted against the baseline condition (default: \code{NULL}).}
@@ -54,18 +74,18 @@ Contrasted against the baseline condition (default: \code{NULL}).}
 \item{\code{NULL}}{Keep ORFs where total counts across replicates pass \code{min_count}.}
 }}
 
-\item{dispersion_modeling}{String specifying the dispersion modeling approach.
+\item{dispersion_modeling}{String specifying the dispersion modeling approach for DOU.
 Options include \code{"auto"}, \code{"shared"}, or \code{"custom"} (default: \code{"auto"}).}
 
-\item{dispformula}{Optional formula object for custom dispersion modeling.}
+\item{dispformula}{Optional formula object for custom dispersion modeling in DOU.}
 
 \item{lrt}{Logical; if \code{TRUE}, performs a likelihood ratio test comparing full vs reduced models
-to assess translation-specific effects (default: \code{FALSE}).}
+to assess translation-specific effects in DOU (default: \code{FALSE}).}
 
-\item{diagnostic}{Logical; if \code{TRUE}, enables model diagnostics including tests for overdispersion,
+\item{diagnostic}{Logical; if \code{TRUE}, enables model diagnostics in DOU, including tests for overdispersion,
 zero inflation, and residual properties (default: \code{FALSE}).}
 
-\item{parallel}{A list passed to \code{glmmTMBControl} to configure parallel optimization.
+\item{parallel}{A list passed to \code{glmmTMBControl} to configure parallel optimization in DOU.
 If \code{NULL}, parallelism is disabled. Default: \code{list(n = 4L, autopar = TRUE)}.
 Parallelization provides a noticeable speed-up only when \code{optimizers = TRUE}.
 When using only the default optimizer (\code{nlminb}), parallelism has little impact on speed.}
@@ -73,30 +93,44 @@ When using only the default optimizer (\code{nlminb}), parallelism has little im
 \item{optimizers}{Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers
 in \code{glmmTMB}: \code{nlminb}, \code{bobyqa}, and \code{optim} (default: \code{FALSE}).}
 
-\item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{TRUE}).}
+\item{dou_nullweight}{Numeric. Prior weight on the null hypothesis for empirical Bayes shrinkage in DOU.
+Higher values yield more conservative lfsr estimates. Default is \code{500}.}
+
+\item{dte_lfc_shrinkage}{Character string specifying the shrinkage method used in DTE analysis
+via \code{DESeq2::lfcShrink}. Options include \code{"apeglm"}, \code{"ashr"}, and \code{"normal"}.}
+
+\item{contrasts_method}{Character string specifying the method for post hoc contrasts in DOU.
+Default is \code{"pairwise"}; other methods supported by \code{emmeans} may be used.}
+
+\item{seed}{Optional integer to set the random seed for reproducibility in model fitting (default: \code{NULL}).}
+
+\item{verbose}{Logical; if \code{TRUE}, prints progress messages and runtime summaries (default: \code{TRUE}).}
 }
 \value{
 A named \code{list} containing:
 \describe{
-\item{sumExp}{\code{SummarizedExperiment} object containing pre-filtered normalized counts and sample metadata.}
-\item{dds}{\code{DESeqDataSet} object used for modeling differential ORF translation.}
+\item{sumExp}{A \code{SummarizedExperiment} object containing filtered raw counts, sample metadata, and DOU results.
+Used for modeling Differential ORF Usage within the DOTSeq framework.}
+\item{dds}{A \code{DESeqDataSet} object containing normalized counts and metadata,
+used for modeling Differential Translation Efficiency within the DOTSeq framework via DESeq2.}
 }
 }
 \description{
-This function performs the complete DOTSeq analysis pipeline for differential ORF translation:
-loading count data, aligning with sample metadata, filtering ORFs, normalizing counts,
-calculating translational efficiency (TE), and fitting beta-binomial and negative binomial
-generalized linear models using \code{DOTSeq::fitDOU} and \code{DESeq2::DESeq}.
+DOTSeq is a unified framework for modeling differential ORF translation using ribosome profiling and RNA-seq data.
+It includes a novel beta-binomial modeling approach for Differential ORF Usage (DOU), and integrates DESeq2-based
+modeling for Differential Translation Efficiency (DTE). This wrapper function runs the full DOTSeq workflow,
+including data loading, ORF filtering, normalization, and model fitting for one or both modules.
 }
 \examples{
 \dontrun{
-result <- fitDOT(
+result <- DOTSeq(
   count_table = "counts.txt",
   condition_table = "samples.txt",
   flattened_gtf = "flattened.gff",
   bed = "orfs.bed",
   min_count = 1,
   stringent = TRUE,
+  seed = 42,
   verbose = TRUE
 )
 head(result$sumExp)

@@ -50,8 +50,9 @@ Contrasted against the baseline condition (default: \code{NULL}).}
 \value{
 A named \code{list} containing:
 \describe{
-\item{sumExp}{\code{SummarizedExperiment} object containing pre-filtered normalized counts and sample metadata.}
-\item{dds}{\code{DESeqDataSet} object for modeling differential ORF translation.}
+\item{sumExp}{A \code{SummarizedExperiment} object containing pre-filtered raw counts and sample metadata,
+used for modeling Differential ORF Usage (DOU) within the DOTSeq framework.}
+\item{dds}{A \code{DESeqDataSet} object used for modeling Differential Translation Efficiency (DTE) within the DOTSeq framework via DESeq2.}
 }
 }
 \description{

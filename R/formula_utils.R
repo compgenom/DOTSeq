@@ -60,28 +60,30 @@ reduce_formula <- function(formula_input, data) {
   terms <- strsplit(rhs, "\\+")[[1]]
   terms <- trimws(terms)
   
+  matched_terms <- terms[grepl("\\*|:", terms)]
+  
+  if (length(matched_terms) > 1) {
+    stop("Expected one interaction term (e.g., condition * strategy), but got multiple: ", 
+         paste(matched_terms, collapse = ", "))
+  } else if (length(matched_terms) == 0) {
+    stop("Please specify an interaction term using '*' or ':' (e.g., condition * strategy).")
+  }
+  
   # Identify valid terms
   valid_terms <- c()
+
   for (term in terms) {
     if (grepl("\\*|:", term)) {
       emm_specs <- as.formula(paste0("~",term))
-      
-      if (length(term) == 1) {
-        components <- trimws(unlist(strsplit(term, "\\*|:")))
-        missing_vars <- setdiff(components, colnames(data))
-        if (length(missing_vars) > 0) {
-          stop(paste0(
-            "Invalid formula: interaction term '", term, "' includes missing variable(s): ",
-            paste(missing_vars, collapse = ", "), "."
-          ))
-        }
-        valid_terms <- c(valid_terms, term)
-      } else if (length(term) > 1) {
-        stop("Expect one interaction term (condition * strategy) got: ", term)
-      } else {
-        stop("Please specify condition * strategy as the interaction term.")
+      components <- trimws(unlist(strsplit(term, "\\*|:")))
+      missing_vars <- setdiff(components, colnames(data))
+      if (length(missing_vars) > 0) {
+        stop(paste0(
+          "Invalid formula: interaction term '", term, "' includes missing variable(s): ",
+          paste(missing_vars, collapse = ", "), "."
+        ))
       }
-
+      valid_terms <- c(valid_terms, term)
     } else if (term %in% colnames(data)) {
       valid_terms <- c(valid_terms, term)
     }

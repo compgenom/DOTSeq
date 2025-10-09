@@ -1,10 +1,22 @@
-#' Fit DOTSeq Differential ORF Translation Models
+#' Perform Differential ORF Translation Analysis with DOTSeq
 #'
-#' This function performs the complete DOTSeq analysis pipeline for differential ORF translation:
-#' loading count data, aligning with sample metadata, filtering ORFs, normalizing counts,
-#' calculating translational efficiency (TE), and fitting beta-binomial and negative binomial
-#' generalized linear models using \code{DOTSeq::fitDOU} and \code{DESeq2::DESeq}.
-#'
+#' DOTSeq is a unified framework for modeling differential ORF translation using ribosome profiling and RNA-seq data.
+#' It includes a novel beta-binomial modeling approach for Differential ORF Usage (DOU), and integrates DESeq2-based
+#' modeling for Differential Translation Efficiency (DTE). This wrapper function runs the full DOTSeq workflow,
+#' including data loading, ORF filtering, normalization, and model fitting for one or both modules.
+#' 
+#' @param dotseq_dataset A named \code{list} containing pre-constructed DOTSeq input objects.
+#' This list must include:
+#' \describe{
+#'   \item{\code{sumExp}}{A \code{RangedSummarizedExperiment} object containing pre-filtered raw counts, 
+#'   sample metadata, and ORF-level annotations. This object is used for modeling Differential ORF Usage (DOU) 
+#'   within the DOTSeq framework.}
+#'   \item{\code{dds}}{A \code{DESeqDataSet} object used for modeling Differential Translation Efficiency (DTE) 
+#'   within the DOTSeq framework via DESeq2.}
+#' }
+#' If \code{dotseq_dataset} is provided, the function will skip raw input parsing and use these objects directly. 
+#' Otherwise, all of \code{count_table}, \code{condition_table}, \code{flattened_gtf}, and \code{bed} must be supplied 
+#' to construct the dataset from scratch.
 #' @param count_table Path to a count table file or a data frame. Must contain columns:
 #'   \code{Geneid}, \code{Chr}, \code{Start}, \code{End}, \code{Strand}, \code{Length},
 #'   plus one column per sample.
@@ -13,6 +25,9 @@
 #' @param flattened_gtf Optional path to a flattened GFF/GTF file containing exon definitions.
 #' @param bed Path to a BED file with ORF annotations.
 #' @param formula A formula object specifying the design, e.g., \code{~ condition * strategy}.
+#' @param modules Character vector specifying which DOTSeq modules to run.
+#'   Options include \code{"DOU"} (Differential ORF Usage) and \code{"DTE"} (Differential Translation Efficiency).
+#'   Both are components of the DOTSeq framework. Default is \code{c("DOU", "DTE")}, which runs both.
 #' @param target Character string specifying the non-reference condition level to extract the corresponding interaction term.
 #'   Contrasted against the baseline condition (default: \code{NULL}).
 #' @param baseline Character string specifying the desired reference level (default: \code{NULL}).
@@ -23,56 +38,65 @@
 #'     \item{\code{FALSE}}{Keep ORFs where all replicates in at least one condition-strategy group pass \code{min_count}.}
 #'     \item{\code{NULL}}{Keep ORFs where total counts across replicates pass \code{min_count}.}
 #'   }
-#' @param dispersion_modeling String specifying the dispersion modeling approach.
+#' @param dispersion_modeling String specifying the dispersion modeling approach for DOU.
 #'   Options include \code{"auto"}, \code{"shared"}, or \code{"custom"} (default: \code{"auto"}).
-#' @param dispformula Optional formula object for custom dispersion modeling.
+#' @param dispformula Optional formula object for custom dispersion modeling in DOU.
 #' @param lrt Logical; if \code{TRUE}, performs a likelihood ratio test comparing full vs reduced models
-#'   to assess translation-specific effects (default: \code{FALSE}).
-#' @param diagnostic Logical; if \code{TRUE}, enables model diagnostics including tests for overdispersion,
+#'   to assess translation-specific effects in DOU (default: \code{FALSE}).
+#' @param diagnostic Logical; if \code{TRUE}, enables model diagnostics in DOU, including tests for overdispersion,
 #'   zero inflation, and residual properties (default: \code{FALSE}).
-#' @param parallel A list passed to \code{glmmTMBControl} to configure parallel optimization.
+#' @param parallel A list passed to \code{glmmTMBControl} to configure parallel optimization in DOU.
 #'   If \code{NULL}, parallelism is disabled. Default: \code{list(n = 4L, autopar = TRUE)}.
 #'   Parallelization provides a noticeable speed-up only when \code{optimizers = TRUE}. 
 #'   When using only the default optimizer (\code{nlminb}), parallelism has little impact on speed.
 #' @param optimizers Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers
 #'   in \code{glmmTMB}: \code{nlminb}, \code{bobyqa}, and \code{optim} (default: \code{FALSE}).
-#' @param verbose Logical; if \code{TRUE}, prints progress messages (default: \code{TRUE}).
+#' @param dou_nullweight Numeric. Prior weight on the null hypothesis for empirical Bayes shrinkage in DOU.
+#'   Higher values yield more conservative lfsr estimates. Default is \code{500}.
+#' @param dte_lfc_shrinkage Character string specifying the shrinkage method used in DTE analysis
+#'   via \code{DESeq2::lfcShrink}. Options include \code{"apeglm"}, \code{"ashr"}, and \code{"normal"}.
+#' @param contrasts_method Character string specifying the method for post hoc contrasts in DOU.
+#'   Default is \code{"pairwise"}; other methods supported by \code{emmeans} may be used.
+#' @param seed Optional integer to set the random seed for reproducibility in model fitting (default: \code{NULL}).
+#' @param verbose Logical; if \code{TRUE}, prints progress messages and runtime summaries (default: \code{TRUE}).
 #'
 #' @return A named \code{list} containing:
 #' \describe{
-#'   \item{sumExp}{\code{SummarizedExperiment} object containing pre-filtered normalized counts and sample metadata.}
-#'   \item{dds}{\code{DESeqDataSet} object used for modeling differential ORF translation.}
+#'   \item{sumExp}{A \code{SummarizedExperiment} object containing filtered raw counts, sample metadata, and DOU results. 
+#'   Used for modeling Differential ORF Usage within the DOTSeq framework.}
+#'   \item{dds}{A \code{DESeqDataSet} object containing normalized counts and metadata, 
+#'   used for modeling Differential Translation Efficiency within the DOTSeq framework via DESeq2.}
 #' }
 #'
 #' @examples
 #' \dontrun{
-#' result <- fitDOT(
+#' result <- DOTSeq(
 #'   count_table = "counts.txt",
 #'   condition_table = "samples.txt",
 #'   flattened_gtf = "flattened.gff",
 #'   bed = "orfs.bed",
 #'   min_count = 1,
 #'   stringent = TRUE,
+#'   seed = 42,
 #'   verbose = TRUE
 #' )
 #' head(result$sumExp)
 #' }
 #'
-#' @importFrom DESeq2 DESeq results design
+#' @importFrom DESeq2 DESeq design resultsNames lfcShrink
 #' @importFrom SummarizedExperiment rowRanges assay rowData rowData<-
 #' @importFrom S4Vectors metadata metadata<- mcols mcols<-
-#' @importFrom utils capture.output 
-#' @importFrom BiocParallel register bplapply bpparam MulticoreParam register
 #' 
 #' @export
 #' 
-# Wrapper function
 DOTSeq <- function(
-    count_table, 
-    condition_table, 
-    flattened_gtf, 
-    bed, 
+    dotseq_dataset = NULL,
+    count_table = NULL, 
+    condition_table = NULL, 
+    flattened_gtf = NULL, 
+    bed = NULL, 
     formula = ~ condition * strategy,
+    modules = c("DOU", "DTE"),
     target = NULL,
     baseline = NULL,
     min_count = 1, 
@@ -83,104 +107,168 @@ DOTSeq <- function(
     diagnostic = FALSE,
     parallel = list(n=4L, autopar=TRUE),
     optimizers = FALSE,
-    nullweight = 500,
+    dou_nullweight = 500,
+    dte_lfc_shrinkage = "apeglm",
     contrasts_method = "pairwise",
     seed = NULL,
     verbose = TRUE
     ) {
   
-  if (isTRUE(verbose)) {
-    message(" - Starting differential ORF usage analysis")
-    message(" - Using ", parallel$n, " threads")
+  if (!("DOU" %in% modules) && !("DTE" %in% modules)) {
+    stop("Please specify at least one module: 'DOU' and/or 'DTE'.")
+  }
+  
+  if (verbose) {
     start_dou <- Sys.time()
   }
   
-  dot <- DOTSeqDataSet(
-    count_table, 
-    condition_table, 
-    flattened_gtf, 
-    bed, 
-    formula = formula,
-    target = target,
-    baseline = baseline,
-    min_count = min_count, 
-    stringent = stringent, 
-    verbose = verbose
+  if (!is.null(dotseq_dataset)) {
+    if (!is.list(dotseq_dataset) || !"sumExp" %in% names(dotseq_dataset)) {
+      stop("'dotseq_dataset' must be a list containing at least a 'sumExp' RangedSummarizedExperiment.")
+    }
+    dot <- dotseq_dataset
+  } else {
+    # Check that all required raw inputs are provided
+    if (any(sapply(list(count_table, condition_table, flattened_gtf, bed), is.null))) {
+      stop("Either provide a 'dotseq_dataset' object or all of 'count_table', 'condition_table', 'flattened_gtf', and 'bed'.")
+    }
+    dot <- DOTSeqDataSet(
+      count_table, 
+      condition_table, 
+      flattened_gtf, 
+      bed, 
+      formula = formula,
+      target = target,
+      baseline = baseline,
+      min_count = min_count, 
+      stringent = stringent, 
+      verbose = verbose
     )
+  }
   
-  dot$sumExp <- dot$sumExp[rowRanges(dot$sumExp)$is_kept == TRUE, ]
+  if ("DOU" %in% modules) {
+    if ("DOUResults" %in% names(rowData(dot$sumExp)) || "interaction_results" %in% names(metadata(dot$sumExp))) {
+      message("skipping Differential ORF Usage (DOU) analysis: model fitting has already been performed on this object. To re-run DOU, please provide a fresh DOTSeqDataSet without fitted results")
+    } else {
+      # Total input ORFs
+      nrow_input <- nrow(rowData(dot$sumExp))
+      
+      dot$sumExp <- dot$sumExp[rowRanges(dot$sumExp)$is_kept == TRUE, ]
+      
+      # Kept ORFs
+      nrow_kept <- nrow(rowData(dot$sumExp))
+      
+      if (verbose) {
+        message("starting Differential ORF Usage (DOU) analysis")
+      }
+      
+      rowData(dot$sumExp)[["DOUResults"]] <- fitDOU(
+        countData = assay(dot$sumExp),
+        orf2gene = rowData(dot$sumExp), 
+        anno = colData(dot$sumExp),
+        formula = metadata(dot$sumExp)$formula,
+        emm_specs = metadata(dot$sumExp)$emm_specs,
+        target = target,
+        dispersion_modeling = dispersion_modeling, 
+        dispformula = dispformula,
+        lrt = lrt,
+        diagnostic = diagnostic,
+        parallel = parallel,
+        optimizers = optimizers,
+        seed = seed,
+        verbose = verbose
+      )
+      
+      dot$sumExp <- testDOU(
+        dot$sumExp,
+        emm_specs = metadata(dot$sumExp)$emm_specs,
+        contrasts_method = contrasts_method,
+        nullweight = dou_nullweight,
+        verbose = verbose
+      )
+      
+      interaction_results <- metadata(dot$sumExp)$interaction_results
+      first_contrast <- unique(interaction_results$contrast)[1]
+      nrow_fitted <- nrow(interaction_results[interaction_results$contrast == first_contrast, ])
+      
+      if (verbose) {
+        end_dou <- Sys.time()
+        
+        elapsed_dou <- runtime(end_dou, start_dou)
+        
+        if (!is.null(elapsed_dou$mins)) {
+          message(sprintf("DOU runtime: %d mins %.3f secs", elapsed_dou$mins, elapsed_dou$secs))
+        } else {
+          message(sprintf("DOU runtime: %.3f secs", elapsed_dou$secs))
+        }
+        
+        # DOU summary
+        message("DOU model fitting summary: ")
+        message("  models fitted: ", paste0(nrow_fitted))
+        message("  fit errors (non-convergence or invalid Hessian): ", paste0(nrow_kept - nrow_fitted))
+        message("  not fitted (filtered out): ", paste0(nrow_input - nrow_kept))
+      }
+    }
+    
+  } else {
+    if (verbose) {
+      message("DOU module not selected; returning SummarizedExperiment object without model fitting. This object can still be used as input for DOTSeq() to run the DOU module later")
+    }
+  }
+  
+  if ("DTE" %in% modules) {
+    if ("interaction_results" %in% names(metadata(dot$dds))) {
+      message("skipping Differential Translation Efficiency (DTE) analysis: model fitting has already been performed on this object. To re-run DTE, please provide a fresh DOTSeqDataSet without fitted results")
+    } else {
+      if (verbose) {
+        message("starting Differential Translation Efficiency (DTE) analysis")
+        start_dte <- Sys.time()
+      }
+      
+      # Run the DESeq2 analysis
+      dot$dds <- DESeq(dot$dds)
+      
+      terms <- resultsNames(dot$dds)
+      
+      matched_term <- terms[grepl("\\.", terms)]
+      
+      if (length(matched_term) > 1) {
+        stop("Expected one interaction term (e.g., condition * strategy), but got multiple: ", 
+             paste(matched_term, collapse = ", "))
+      } else if (length(matched_term) == 0) {
+        stop("Please specify an interaction term using '*' or ':' (e.g., condition * strategy).")
+      }
+      
+      metadata(dot$dds)$interaction_results <- lfcShrink(dot$dds, coef = matched_term, type = dte_lfc_shrinkage)
+      
+      if (verbose) {
+        end_dte <- Sys.time()
+        
+        elapsed_dte <- runtime(end_dte, start_dte)
+        
+        if (!is.null(elapsed_dte$mins)) {
+          message(sprintf("DTE runtime: %d mins %.3f secs", elapsed_dte$mins, elapsed_dte$secs))
+        } else {
+          message(sprintf("DTE runtime: %.3f secs", elapsed_dte$secs))
+        }
+        
+        # DTE summary
+        dte_res <- metadata(dot$dds)$interaction_results
+        nrow_input <- nrow(dte_res)
+        nrow_fitted <- nrow(dte_res[!is.na(dte_res$padj), ])
+        
+        message("DTE model fitting summary: ")
+        message("  models fitted: ", paste0(nrow_fitted))
+        message("  padj = NA (filtered or flagged): ", paste0(nrow_input - nrow_fitted))
+      }
+    }
+    
+  } else {
+    if (verbose) {
+      message("DTE module not selected; returning DESeqDataSet object without model fitting. This object can still be used as input for DOTSeq() to run the DTE module later")
+    }
+  }
 
-  rowData(dot$sumExp)[["DOUResults"]] <- fitDOU(
-    countData = assay(dot$sumExp),
-    orf2gene = rowData(dot$sumExp), 
-    anno = colData(dot$sumExp),
-    formula = metadata(dot$sumExp)$formula,
-    emm_specs = metadata(dot$sumExp)$emm_specs,
-    target = target,
-    dispersion_modeling = dispersion_modeling, 
-    dispformula = dispformula,
-    lrt = lrt,
-    diagnostic = diagnostic,
-    parallel = parallel,
-    optimizers = optimizers,
-    seed = seed,
-    verbose = verbose
-  )
-  
-  dot$sumExp<- testDOU(
-    dot$sumExp,
-    emm_specs = metadata(dot$sumExp)$emm_specs,
-    contrasts_method = contrasts_method,
-    nullweight = nullweight,
-    BPPARAM = bpparam(),
-    verbose = verbose
-  )
-    
-  if (verbose) {
-    end_dou <- Sys.time()
-    
-    elapsed_dou <- runtime(end_dou, start_dou)
-    
-    if (!is.null(elapsed_dou$mins)) {
-      message(sprintf(" - DOU runtime: %d mins %.3f secs", elapsed_dou$mins, elapsed_dou$secs))
-    } else {
-      message(sprintf(" - DOU runtime: %.3f secs", elapsed_dou$secs))
-    }
-    
-    message(" - Starting differential translation efficiency analysis")
-    start_dte <- Sys.time()
-  }
-  
-  
-  # Run the DESeq2 analysis
-  dds <- DESeq(dot$dds)
-  
-  if (verbose) {
-    end_dte <- Sys.time()
-    
-    elapsed_dte <- runtime(end_dte, start_dte)
-    
-    if (!is.null(elapsed_dte$mins)) {
-      message(sprintf(" - DTE runtime: %d mins %.3f secs", elapsed_dte$mins, elapsed_dte$secs))
-    } else {
-      message(sprintf(" - DTE runtime: %.3f secs", elapsed_dte$secs))
-    }
-    
-    # # DOU summary
-    # dou_res <- extract_results(dot$sumExp)
-    # msg <- capture.output(print(table(dou_res$model_type)))
-    # msg <- msg[2:length(msg)]
-    # message(paste(" - DOU model fitting summary:\n  ", paste(msg, collapse = "\n")))
-    # 
-    # # DTE summary
-    # dte_res <- results(dot$dds)
-    # dte_res$model_type <- ifelse(is.na(dte_res$padj), "NA", "nbinom")
-    # 
-    # msg_dte <- capture.output(print(table(dte_res$model_type)))
-    # msg_dte <- msg_dte[2:length(msg_dte)]
-    # message(paste(" - DTE model fitting summary:\n", paste(msg_dte, collapse = "\n")))
-  }
-  
   return(dot)
 }
 

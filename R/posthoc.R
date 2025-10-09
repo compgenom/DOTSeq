@@ -12,7 +12,6 @@
 #'   Default is \code{~condition * strategy}.
 #' @param contrasts_method Character string specifying the method for computing contrasts.
 #'   Default is \code{"pairwise"}.
-#' @param workers Integer. Number of parallel workers to use. Default is \code{1}.
 #' @param nullweight Numeric. Prior weight on the null hypothesis for empirical Bayes shrinkage.
 #'   Higher values yield more conservative lfsr estimates. Default is \code{500}.
 #' @param verbose Logical. If \code{TRUE}, prints progress messages. Default is \code{TRUE}.
@@ -52,12 +51,11 @@ testDOU <- function(
     emm_specs = ~condition * strategy, 
     contrasts_method = "pairwise", 
     nullweight = 500,
-    BPPARAM = bpparam(), 
     verbose = TRUE
     ) {
   
   if (verbose) {
-    message(" - Starting post hoc analysis")
+    message("starting post hoc analysis")
   }
   
   result_list <- rowData(sumExp)[['DOUResults']]
@@ -78,7 +76,7 @@ testDOU <- function(
   
   for (c_name in all_contrast_names) {
     if (verbose) {
-      message(" - Calculating the effect size and standard error for ", c_name)
+      message("calculating the effect size and standard error for ", c_name)
     }
     
     # Use lapply to iterate through all genes and extract the betas and SEs
@@ -133,7 +131,7 @@ testDOU <- function(
     # Run ashr on the full set of data for this contrast
     if (any(!is.na(betas_for_ashr))) {
       if (verbose) {
-        message(" - Performing empirical Bayesian shrinkage on the effect size for ", c_name)
+        message("performing empirical Bayesian shrinkage on the effect size for ", c_name)
       }
       
       ash_result <- ash(betas_for_ashr, ses_for_ashr, nullweight = nullweight, pointmass = TRUE)
@@ -167,7 +165,7 @@ testDOU <- function(
     by_name <- as.character(strategy_combos$strategy[i])
     
     if (verbose) {
-      message(" - Calculating the effect size and standard error for contrast: ", c_name, ", strategy: ", by_name)
+      message("calculating the effect size and standard error for contrast: ", c_name, ", strategy: ", by_name)
     }
     
     # Check if the list for the current contrast name exists
@@ -188,7 +186,7 @@ testDOU <- function(
     pvalues <- 2 * (1 - pnorm(abs(betas / ses)))
     
     if (verbose) {
-      message(" - Performing empirical Bayesian shrinkage on the effect size for ", c_name)
+      message("performing empirical Bayesian shrinkage on the effect size for ", c_name)
     }
     
     if (any(!is.na(betas))) {
