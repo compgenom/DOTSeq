@@ -22,8 +22,7 @@ DOTSeq(
   diagnostic = FALSE,
   parallel = list(n = 4L, autopar = TRUE),
   optimizers = FALSE,
-  dou_nullweight = 500,
-  dte_lfc_shrinkage = "apeglm",
+  nullweight = 500,
   contrasts_method = "pairwise",
   seed = NULL,
   verbose = TRUE
@@ -93,11 +92,8 @@ When using only the default optimizer (\code{nlminb}), parallelism has little im
 \item{optimizers}{Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers
 in \code{glmmTMB}: \code{nlminb}, \code{bobyqa}, and \code{optim} (default: \code{FALSE}).}
 
-\item{dou_nullweight}{Numeric. Prior weight on the null hypothesis for empirical Bayes shrinkage in DOU.
+\item{nullweight}{Numeric. Prior weight on the null hypothesis for empirical Bayes shrinkage in DOU.
 Higher values yield more conservative lfsr estimates. Default is \code{500}.}
-
-\item{dte_lfc_shrinkage}{Character string specifying the shrinkage method used in DTE analysis
-via \code{DESeq2::lfcShrink}. Options include \code{"apeglm"}, \code{"ashr"}, and \code{"normal"}.}
 
 \item{contrasts_method}{Character string specifying the method for post hoc contrasts in DOU.
 Default is \code{"pairwise"}; other methods supported by \code{emmeans} may be used.}

@@ -51,10 +51,8 @@
 #'   When using only the default optimizer (\code{nlminb}), parallelism has little impact on speed.
 #' @param optimizers Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers
 #'   in \code{glmmTMB}: \code{nlminb}, \code{bobyqa}, and \code{optim} (default: \code{FALSE}).
-#' @param dou_nullweight Numeric. Prior weight on the null hypothesis for empirical Bayes shrinkage in DOU.
+#' @param nullweight Numeric. Prior weight on the null hypothesis for empirical Bayes shrinkage in DOU.
 #'   Higher values yield more conservative lfsr estimates. Default is \code{500}.
-#' @param dte_lfc_shrinkage Character string specifying the shrinkage method used in DTE analysis
-#'   via \code{DESeq2::lfcShrink}. Options include \code{"apeglm"}, \code{"ashr"}, and \code{"normal"}.
 #' @param contrasts_method Character string specifying the method for post hoc contrasts in DOU.
 #'   Default is \code{"pairwise"}; other methods supported by \code{emmeans} may be used.
 #' @param seed Optional integer to set the random seed for reproducibility in model fitting (default: \code{NULL}).
@@ -107,8 +105,7 @@ DOTSeq <- function(
     diagnostic = FALSE,
     parallel = list(n=4L, autopar=TRUE),
     optimizers = FALSE,
-    dou_nullweight = 500,
-    dte_lfc_shrinkage = "apeglm",
+    nullweight = 500,
     contrasts_method = "pairwise",
     seed = NULL,
     verbose = TRUE
@@ -183,7 +180,7 @@ DOTSeq <- function(
         dot$sumExp,
         emm_specs = metadata(dot$sumExp)$emm_specs,
         contrasts_method = contrasts_method,
-        nullweight = dou_nullweight,
+        nullweight = nullweight,
         verbose = verbose
       )
       
@@ -229,17 +226,27 @@ DOTSeq <- function(
       dot$dds <- DESeq(dot$dds)
       
       terms <- resultsNames(dot$dds)
-      
       matched_term <- terms[grepl("\\.", terms)]
       
-      if (length(matched_term) > 1) {
-        stop("Expected one interaction term (e.g., condition * strategy), but got multiple: ", 
-             paste(matched_term, collapse = ", "))
-      } else if (length(matched_term) == 0) {
-        stop("Please specify an interaction term using '*' or ':' (e.g., condition * strategy).")
+      if (verbose) {
+        message("starting post hoc analysis")
       }
       
-      metadata(dot$dds)$interaction_results <- lfcShrink(dot$dds, coef = matched_term, type = dte_lfc_shrinkage)
+      contrast_vectors_list <- contrast_vectors(dot$dds)
+      
+      contrast_results <- list()
+      for (c_name in names(contrast_vectors_list)) {
+        if (verbose) {
+          message("performing empirical Bayesian shrinkage on the effect size for ", c_name)
+        }
+        
+        contrast_results_df <- lfcShrink(dot$dds, contrast = contrast_vectors_list[[c_name]], type = "ashr", quiet = TRUE)
+        contrast_results_df$contrast <- c_name
+        contrast_results <- c(contrast_results, contrast_results_df)
+      }
+      contrast_results <- do.call(rbind, contrast_results)
+      
+      metadata(dot$dds)$interaction_results <- contrast_results
       
       if (verbose) {
         end_dte <- Sys.time()
@@ -253,9 +260,8 @@ DOTSeq <- function(
         }
         
         # DTE summary
-        dte_res <- metadata(dot$dds)$interaction_results
-        nrow_input <- nrow(dte_res)
-        nrow_fitted <- nrow(dte_res[!is.na(dte_res$padj), ])
+        nrow_input <- nrow(contrast_results_df)
+        nrow_fitted <- nrow(contrast_results_df[!is.na(contrast_results_df$padj), ])
         
         message("DTE model fitting summary: ")
         message("  models fitted: ", paste0(nrow_fitted))

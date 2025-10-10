@@ -36,7 +36,6 @@
 #' @importFrom DESeq2 DESeqDataSetFromMatrix 
 #' @importFrom utils read.table tail
 #' @importFrom stats relevel
-#' @importFrom apeglm apeglm
 #' 
 #' @export
 #' 
@@ -241,7 +240,7 @@ DOTSeqDataSet <- function(count_table,
     stopifnot(identical(colnames(dcounts), rownames(cond)))
     
     if (verbose) {
-      message("GTF parsing and count alignment successful")
+      message("GTF and data parsing successful")
     }
   }
   

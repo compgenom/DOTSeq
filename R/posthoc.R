@@ -212,6 +212,8 @@ testDOU <- function(
   # Flatten interaction_specific
   interaction_list <- lapply(names(all_results$interaction_specific), function(c_name) {
     df <- all_results$interaction_specific[[c_name]]
+    df$orf_id <- rownames(df)
+    rownames(df) <- NULL
     df$contrast <- c_name
     return(df)
   })
@@ -225,6 +227,8 @@ testDOU <- function(
   strategy_list <- lapply(names(all_results$strategy_specific), function(c_name) {
     lapply(names(all_results$strategy_specific[[c_name]]), function(by_name) {
       df <- all_results$strategy_specific[[c_name]][[by_name]]
+      df$orf_id <- rownames(df)
+      rownames(df) <- NULL
       df$contrast <- c_name
       df$strategy <- by_name
       return(df)
@@ -244,3 +248,101 @@ testDOU <- function(
 
 
 
+#' Generate Contrast Vectors for Pairwise and Baseline Comparisons
+#'
+#' Constructs a named list of contrast vectors for differential analysis using a DESeq2 `DESeqDataSet` object.
+#' It identifies interaction terms (e.g., condition:strategy) from the model design and builds pairwise contrasts
+#' between them, as well as contrasts against a specified baseline condition.
+#'
+#' This is useful for extracting custom contrasts not directly available via `resultsNames(dds)` and for
+#' post hoc comparisons in complex designs involving interaction terms.
+#'
+#' @param dds A `DESeqDataSet` object containing count data and sample annotations.
+#' @param formula Optional. A model formula used to generate the design matrix (e.g., `~ condition * strategy`).
+#'   If not provided, the function will attempt to extract it from `metadata(dds)$formula`.
+#' @param baseline Optional. A character string specifying the baseline condition for comparisons.
+#'   If NULL, the first level of `condition` in `colData(dds)` is used.
+#' @param delim A character string used to identify interaction terms in coefficient names (default: ".").
+#'
+#' @return A named list of numeric contrast vectors, where each vector corresponds to a pairwise or baseline comparison.
+#'   These vectors can be used with `results(dds, contrast = ...)` for custom differential testing.
+#'
+#' @importFrom SummarizedExperiment colData
+#' @importFrom stats model.matrix
+#' @importFrom utils combn
+#' @importFrom DESeq2 resultsNames
+#' 
+#' @examples
+#' \dontrun{
+#' # Generate contrast vectors from a DESeqDataSet
+#' contrast_list <- contrast_vectors(dds, formula = ~ condition * strategy)
+#'
+#' # Use a contrast vector with DESeq2
+#' res <- lfcShrink(dot$dds, contrast = contrast_list[[1]], type = "ashr")
+#' }
+#'
+contrast_vectors <- function(dds, formula = NULL, baseline = NULL, delim = ".") {
+  # Build design matrix
+  anno <- colData(dds)
+  if (is.null(baseline)) {
+    baseline <- levels(anno$condition)[1]
+  }
+  
+  strategy_levels <- levels(anno$strategy)
+  if (length(strategy_levels) > 2) {
+    stop("Expect two strategy levels got: ", paste(strategy_levels, collapse = ", "))
+  } else if (length(strategy_levels) == 1) {
+    stop("Expect two strategy levels got: ", strategy_levels)
+  } else {
+    ribo_level <- strategy_levels[2]
+  }
+  
+  # Get the names of all coefficients in the model matrix
+  all_terms <- resultsNames(dds)
+  num_terms <- length(all_terms)
+  contrast_factors <- grep(paste0("\\", delim), all_terms, value = TRUE)
+  
+  if (!is.null(formula)) {
+    design <- model.matrix(formula, data = anno)
+  } else if ("formula" %in% names(metadata(dds))) {
+    design <- model.matrix(metadata(dds)$formula, data = anno)
+  } else {
+    stop("Please provide design formula.")
+  }
+  
+  attrs <- names(attr(design, "contrasts"))
+  comparison_pairs <- combn(contrast_factors, 2, simplify = FALSE)
+  
+  contrast_vectors_list <- list()
+  for (pairs in comparison_pairs) {
+    contrast_vector <- numeric(num_terms)
+    index1 <- which(all_terms == pairs[1])
+    index2 <- which(all_terms == pairs[2])
+    contrast_vector[index1] <- -1
+    contrast_vector[index2] <- 1
+    
+    target1 <- sub(attrs[1], "", pairs[1])
+    target1 <- sub(paste0(delim, attrs[2], ribo_level), "", target1)
+    target2 <- sub(attrs[1], "", pairs[2])
+    target2 <- sub(paste0(delim, attrs[2], ribo_level), "", target2)
+    
+    contrast_name <- paste0(target2, " - ", target1)
+    contrast_vectors_list[[contrast_name]] <- contrast_vector
+  }
+  
+  for (term in all_terms) {
+    if (any(grep(paste0("\\", delim), term))) {
+      contrast_vector <- numeric(num_terms)
+      idx <- which(all_terms == term)
+      contrast_vector[idx] <- 1
+      
+      target <- sub(attrs[1], "", term)
+      target <- sub(paste0(delim, attrs[2], ribo_level), "", target)
+      contrast_name <- paste0(target, " - ", baseline)
+      
+      contrast_vectors_list[[contrast_name]] <- contrast_vector
+    }
+  }
+  
+  return(contrast_vectors_list)
+}
