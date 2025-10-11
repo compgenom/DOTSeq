@@ -61,3 +61,4 @@ within genes. It uses empirical Bayes shrinkage via the \code{ashr} package to c
 and filters ORFs with lfsr below the specified threshold. Gene annotations are retrieved from
 Ensembl using the \code{biomaRt} package.
 }
+\keyword{internal}

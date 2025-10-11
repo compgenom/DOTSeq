@@ -178,6 +178,9 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
   num_orfs <- length(orf_names)
   num_samples <- ncol(ribo_mat)
   
+  # Extract the condition levels from anno
+  condition_levels <- levels(anno$condition)
+  
   # Extract the strategy levels from anno
   strategy_levels <- levels(anno$strategy)
   
@@ -190,13 +193,13 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
   if (isTRUE(grepl(rna_pattern, rna_level))) {
     # Prepare the data for a single gene dynamically based on the design matrix
     long_data <- data.frame(
-      counts = c(as.vector(ribo_mat), as.vector(rna_mat)), # Ribo first
+      counts = c(as.vector(rna_mat), as.vector(ribo_mat)),
       ORF = factor(rep(orf_names, times = num_samples * 2)),
       row.names = NULL
     )
   } else {
     long_data <- data.frame(
-      counts = c(as.vector(rna_mat), as.vector(ribo_mat)),
+      counts = c(as.vector(ribo_mat), as.vector(rna_mat)),
       ORF = factor(rep(orf_names, times = num_samples * 2)),
       row.names = NULL
     )
@@ -234,13 +237,22 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
     
     # Get the total gene counts for each sample
     if (isTRUE(grepl(rna_pattern, strategy_levels[1]))) {
-      total_gene_counts <- c(colSums(ribo_mat), colSums(rna_mat))
-    } else {
       total_gene_counts <- c(colSums(rna_mat), colSums(ribo_mat))
+      model_data_this_orf$strategy <- relevel(factor(model_data_this_orf$strategy), ref = rna_level)
+    } else {
+      total_gene_counts <- c(colSums(ribo_mat), colSums(rna_mat))
+      model_data_this_orf$strategy <- relevel(factor(model_data_this_orf$strategy), ref = ribo_level)
     }
     
     model_data_this_orf$success <- model_data_this_orf$counts
     model_data_this_orf$failure <- total_gene_counts - model_data_this_orf$success
+    
+    model_data_this_orf$condition <- relevel(factor(model_data_this_orf$condition), ref = condition_levels[1])
+    
+    if (current_orf == "ENSG00000000003.16:O034") {
+      print(levels(model_data_this_orf$strategy))
+      print(levels(model_data_this_orf$condition))
+    }
     
     # # Construct random effects string
     # fixed_part <- as.character(formula)[2]

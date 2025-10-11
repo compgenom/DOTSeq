@@ -2,7 +2,7 @@
 % Please edit documentation in R/analysis_utils.R
 \name{plotDOT}
 \alias{plotDOT}
-\title{Plot DTE vs DOU Comparison with Marginal Histograms}
+\title{Generate DOU Heatmap from Results}
 \usage{
 plotDOT(
   results,
@@ -10,49 +10,46 @@ plotDOT(
   dou_padj_col = "lfsr",
   dte_estimates_col = "log2FoldChange",
   dte_padj_col = "padj",
+  dou_estimates_threshold = 1,
+  dou_padj_threshold = 0.05,
   flip_sign = TRUE,
-  lhist = 20
+  orf_type = "uORF",
+  species_dataset = "hsapiens_gene_ensembl",
+  symbol_col = "hgnc_symbol"
 )
 }
 \arguments{
-\item{results}{A data frame containing results from DTE and DOU post hoc contrasts.
-Must include columns for DTE and DOU posterior estimates, and adjusted p-values
-(e.g., \code{padj} for DTE and \code{lfsr} for DOU).}
+\item{results}{A data frame containing DOU estimates, ORF labels, and group IDs.
+Must include columns for DOU effect sizes and lfsr values.}
 
-\item{dou_estimates_col}{Character string specifying the column name for DOU estimates.
+\item{dou_estimates_col}{Character string specifying the column name for DOU effect size estimates.
 Default is \code{"PosteriorMean"}.}
 
 \item{dou_padj_col}{Character string specifying the column name for DOU significance values.
 Should correspond to local false sign rate (lfsr). Default is \code{"lfsr"}.}
 
-\item{dte_estimates_col}{Character string specifying the column name for DTE estimates.
-Default is \code{"log2FoldChange"}.}
+\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU estimates to align directionality
+with translation efficiency. Default is \code{TRUE}.}
 
-\item{dte_padj_col}{Character string specifying the column name for DTE adjusted p-values.
-Default is \code{"padj"}.}
+\item{orf_type}{Character string specifying the ORF type to compare with mORFs.
+Accepts \code{"uORF"} or \code{"dORF"}.}
 
-\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of the DOU estimates.
-Useful for aligning directionality with DTE. Default is \code{TRUE}.}
+\item{species_dataset}{Ensembl dataset name, e.g., \code{"hsapiens_gene_ensembl"}.}
 
-\item{lhist}{Integer; number of bins to use for the marginal histograms.
-Default is \code{20}.}
+\item{symbol_col}{Column name for gene symbols in Ensembl, e.g., \code{"hgnc_symbol"} or \code{"mgi_symbol"}.}
 }
 \value{
-Generates a composite plot with:
-\describe{
-\item{Scatter plot}{Displays DTE (log2 fold-change) vs DOU (log-odds change) estimates,
-with points colored by significance category: DTE-only, DOU-only, both, or neither.}
-\item{Marginal histograms}{Show the distribution of DTE and DOU estimates along the top and right margins.}
-}
+A data frame containing full gene annotation data retrieved from Ensembl.
 }
 \description{
-Visualizes the relationship between differential translation efficiency (DTE)
-and differential ORF usage (DOU) using a scatter plot with marginal histograms.
-ORFs are colored based on significance in DTE, DOU, or both tests.
-This plot helps assess the overlap and divergence between DTE and DOU signals.
+This wrapper function prepares data and plots a heatmap of differential ORF usage (DOU),
+comparing mORFs with either uORFs or dORFs. It highlights significant ORFs based on
+local false sign rate (lfsr) from empirical Bayes shrinkage (via the \code{ashr} package),
+and retrieves gene annotations from Ensembl for labeling.
 }
 \details{
-The function uses base R graphics and a custom layout to combine scatter and histogram plots.
-Significant ORFs are determined using a threshold of 0.05 on adjusted p-values.
-The color scheme is designed to be accessible to color-blind viewers.
+The function filters and reshapes DOU results for heatmap visualization, highlighting ORFs
+with lfsr < 0.05 as significant. It uses Ensembl BioMart to annotate genes and supports
+comparison of mORFs with upstream (uORFs) or downstream (dORFs) ORFs. The heatmap helps
+visualize differential ribosome loading across ORFs within genes.
 }

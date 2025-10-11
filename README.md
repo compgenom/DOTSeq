@@ -13,21 +13,30 @@ Post hoc contrasts are computed using [`emmeans`](https://cran.r-project.org/web
 ## DEPENDENCIES
 * R (>= 4.5.0)
 * biomaRt (>=2.65.0)
-* DEXSeq (>= 1.55.1)
-* IRanges (>= 2.43.0)
-* GenomicRanges (>= 1.61.1)
 * SummarizedExperiment (>= 1.39.1)
-* rtracklayer (>= 1.69.1)
+* Bioc.gff (>= 0.99.17)
+* DESeq2 (>=1.49.4)
+* GenomicRanges (>=1.61.5)
+* IRanges (>=2.43.5)
+* S4Vectors (0.47.4)
+* ashr (>=2.2-63)
+* DHARMa (>=0.4.7)
+* emmeans (>=1.11.2-8)
+* glmmTMB (>=1.1.12)
+* eulerr (>=7.0.4)
+* pbapply (>=1.7-4)
 
 ## INSTALLATION
 Please ensure the dependencies listed above are installed using the following steps before installing `DOTSeq`:
 ```r
 # Create a directory for R packages if not already
-dir.create(file.path(Sys.getenv("HOME"), "R/4.5"), showWarnings = TRUE, recursive = TRUE)
+package_dir <- file.path(Sys.getenv("HOME"), "R/4.5")
+dir.create(package_dir, showWarnings = TRUE, recursive = TRUE)
+.libPaths(c(package_dir, .libPaths()))
 
 # Install BiocManager if not already available
 if (!require("BiocManager", quietly = TRUE))
-  install.packages("BiocManager", lib = file.path(Sys.getenv("HOME"), "R/4.5"))
+  install.packages("BiocManager", lib = package_dir)
 
 # Initialise usage of Bioconductor devel version
 BiocManager::install(version = "devel")
@@ -36,7 +45,8 @@ BiocManager::install(version = "devel")
 BiocManager::install(c(
   "biomaRt",
   "SummarizedExperiment",
-  "Bioc.gff"), lib = file.path(Sys.getenv("HOME"), "R/4.5"))
+  "Bioc.gff", 
+  "DESeq2"), lib = package_dir)
 
 # Install devtools if not already available
 install.packages("devtools")

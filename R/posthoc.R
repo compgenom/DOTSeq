@@ -71,7 +71,7 @@ testDOU <- function(
   
   ### Manual Interaction contrasts
   first_emm <- emm_list[[1]]
-  contrast_df_template <- as.data.frame(summary(contrast(first_emm, method = contrasts_method, by = "strategy", adjust = "none")))
+  contrast_df_template <- as.data.frame(summary(contrast(first_emm, method = contrasts_method, by = "strategy", enhance.levels = FALSE, adjust = "none")))
   all_contrast_names <- unique(as.character(contrast_df_template$contrast))
   
   for (c_name in all_contrast_names) {
@@ -81,7 +81,7 @@ testDOU <- function(
     
     # Use lapply to iterate through all genes and extract the betas and SEs
     all_contrasts <- pblapply(emm_list, function(emm) {
-      contrast_df <- summary(contrast(emm, method = contrasts_method, by = "strategy", adjust = "none"))
+      contrast_df <- summary(contrast(emm, method = contrasts_method, by = "strategy", enhance.levels = FALSE, adjust = "none"))
       
       # Set baseline
       strategy_vals <- as.character(contrast_df$strategy)
@@ -174,12 +174,12 @@ testDOU <- function(
     }
     
     betas <- vapply(emm_list, function(emm) {
-      res <- summary(contrast(emm, method = contrasts_method, by = "strategy", adjust = "none"))
+      res <- summary(contrast(emm, method = contrasts_method, by = "strategy", enhance.levels = FALSE, adjust = "none"))
       res$estimate[res$contrast == c_name & res$strategy == by_name]
     }, FUN.VALUE = numeric(1))
     
     ses <- vapply(emm_list, function(emm) {
-      res <- summary(contrast(emm, method = contrasts_method, by = "strategy", adjust = "none"))
+      res <- summary(contrast(emm, method = contrasts_method, by = "strategy", enhance.levels = FALSE, adjust = "none"))
       res$SE[res$contrast == c_name & res$strategy == by_name]
     }, FUN.VALUE = numeric(1))
     
@@ -311,36 +311,55 @@ contrast_vectors <- function(dds, formula = NULL, baseline = NULL, delim = ".") 
   }
   
   attrs <- names(attr(design, "contrasts"))
-  comparison_pairs <- combn(contrast_factors, 2, simplify = FALSE)
   
   contrast_vectors_list <- list()
-  for (pairs in comparison_pairs) {
-    contrast_vector <- numeric(num_terms)
-    index1 <- which(all_terms == pairs[1])
-    index2 <- which(all_terms == pairs[2])
-    contrast_vector[index1] <- -1
-    contrast_vector[index2] <- 1
-    
-    target1 <- sub(attrs[1], "", pairs[1])
-    target1 <- sub(paste0(delim, attrs[2], ribo_level), "", target1)
-    target2 <- sub(attrs[1], "", pairs[2])
-    target2 <- sub(paste0(delim, attrs[2], ribo_level), "", target2)
-    
-    contrast_name <- paste0(target2, " - ", target1)
-    contrast_vectors_list[[contrast_name]] <- contrast_vector
-  }
   
-  for (term in all_terms) {
-    if (any(grep(paste0("\\", delim), term))) {
+  if (length(contrast_factors) > 1) {
+    comparison_pairs <- combn(contrast_factors, 2, simplify = FALSE)
+    
+    for (pairs in comparison_pairs) {
       contrast_vector <- numeric(num_terms)
-      idx <- which(all_terms == term)
-      contrast_vector[idx] <- 1
+      index1 <- which(all_terms == pairs[1])
+      index2 <- which(all_terms == pairs[2])
+      contrast_vector[index1] <- -1
+      contrast_vector[index2] <- 1
       
-      target <- sub(attrs[1], "", term)
-      target <- sub(paste0(delim, attrs[2], ribo_level), "", target)
-      contrast_name <- paste0(target, " - ", baseline)
+      target1 <- sub(attrs[1], "", pairs[1])
+      target1 <- sub(paste0(delim, attrs[2], ribo_level), "", target1)
+      target2 <- sub(attrs[1], "", pairs[2])
+      target2 <- sub(paste0(delim, attrs[2], ribo_level), "", target2)
       
+      contrast_name <- paste0(target2, " - ", target1)
       contrast_vectors_list[[contrast_name]] <- contrast_vector
+    }
+    
+    for (term in all_terms) {
+      if (any(grep(paste0("\\", delim), term))) {
+        contrast_vector <- numeric(num_terms)
+        idx <- which(all_terms == term)
+        contrast_vector[idx] <- 1
+        
+        target <- sub(attrs[1], "", term)
+        target <- sub(paste0(delim, attrs[2], ribo_level), "", target)
+        contrast_name <- paste0(target, " - ", baseline)
+        
+        contrast_vectors_list[[contrast_name]] <- contrast_vector
+      }
+    }
+    
+  } else {
+    for (term in all_terms) {
+      if (any(grep(paste0("\\", delim), term))) {
+        contrast_vector <- numeric(num_terms)
+        idx <- which(all_terms == term)
+        contrast_vector[idx] <- 1
+        
+        target <- sub(attrs[1], "", term)
+        target <- sub(paste0(delim, attrs[2], ribo_level), "", target)
+        contrast_name <- paste0(target, " - ", baseline)
+        
+        contrast_vectors_list[[contrast_name]] <- contrast_vector
+      }
     }
   }
   

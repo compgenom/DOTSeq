@@ -145,7 +145,7 @@ DOTSeq <- function(
   
   if ("DOU" %in% modules) {
     if ("DOUResults" %in% names(rowData(dot$sumExp)) || "interaction_results" %in% names(metadata(dot$sumExp))) {
-      message("skipping Differential ORF Usage (DOU) analysis: model fitting has already been performed on this object. To re-run DOU, please provide a fresh DOTSeqDataSet without fitted results")
+      message("skipping Differential ORF Usage (DOU) analysis; model fitting has already been performed on this object. To re-run DOU, please provide a fresh DOTSeqDataSet without fitted results.")
     } else {
       # Total input ORFs
       nrow_input <- nrow(rowData(dot$sumExp))
@@ -185,8 +185,7 @@ DOTSeq <- function(
       )
       
       interaction_results <- metadata(dot$sumExp)$interaction_results
-      first_contrast <- unique(interaction_results$contrast)[1]
-      nrow_fitted <- nrow(interaction_results[interaction_results$contrast == first_contrast, ])
+      all_contrasts <- unique(interaction_results$contrast)
       
       if (verbose) {
         end_dou <- Sys.time()
@@ -200,16 +199,19 @@ DOTSeq <- function(
         }
         
         # DOU summary
-        message("DOU model fitting summary: ")
-        message("  models fitted: ", paste0(nrow_fitted))
-        message("  fit errors (non-convergence or invalid Hessian): ", paste0(nrow_kept - nrow_fitted))
-        message("  not fitted (filtered out): ", paste0(nrow_input - nrow_kept))
+        for (c_name in all_contrasts) {
+          nrow_fitted <- nrow(interaction_results[interaction_results$contrast == c_name, ])
+          message("DOU model fitting summary: ", c_name)
+          message("  models fitted: ", paste0(nrow_fitted))
+          message("  fit errors (non-convergence or invalid Hessian): ", paste0(nrow_kept - nrow_fitted))
+          message("  not fitted (filtered out): ", paste0(nrow_input - nrow_kept))
+        }
       }
     }
     
   } else {
     if (verbose) {
-      message("DOU module not selected; returning SummarizedExperiment object without model fitting. This object can still be used as input for DOTSeq() to run the DOU module later")
+      message("DOU module not selected; returning SummarizedExperiment object without model fitting. This object can still be used as input for DOTSeq() to run the DOU module later.")
     }
   }
   
@@ -231,47 +233,53 @@ DOTSeq <- function(
       if (verbose) {
         message("starting post hoc analysis")
       }
-      
+
       contrast_vectors_list <- contrast_vectors(dot$dds)
-      
+
       contrast_results <- list()
       for (c_name in names(contrast_vectors_list)) {
         if (verbose) {
           message("performing empirical Bayesian shrinkage on the effect size for ", c_name)
         }
-        
+
         contrast_results_df <- lfcShrink(dot$dds, contrast = contrast_vectors_list[[c_name]], type = "ashr", quiet = TRUE)
+        contrast_results_df$orf_id <- rownames(contrast_results_df)
+        rownames(contrast_results_df) <- NULL
         contrast_results_df$contrast <- c_name
         contrast_results <- c(contrast_results, contrast_results_df)
       }
       contrast_results <- do.call(rbind, contrast_results)
-      
+
       metadata(dot$dds)$interaction_results <- contrast_results
+      
+      all_contrasts <- unique(contrast_results$contrast)
       
       if (verbose) {
         end_dte <- Sys.time()
-        
+
         elapsed_dte <- runtime(end_dte, start_dte)
-        
+
         if (!is.null(elapsed_dte$mins)) {
           message(sprintf("DTE runtime: %d mins %.3f secs", elapsed_dte$mins, elapsed_dte$secs))
         } else {
           message(sprintf("DTE runtime: %.3f secs", elapsed_dte$secs))
         }
-        
+
         # DTE summary
-        nrow_input <- nrow(contrast_results_df)
-        nrow_fitted <- nrow(contrast_results_df[!is.na(contrast_results_df$padj), ])
-        
-        message("DTE model fitting summary: ")
-        message("  models fitted: ", paste0(nrow_fitted))
-        message("  padj = NA (filtered or flagged): ", paste0(nrow_input - nrow_fitted))
+        for (c_name in all_contrasts) {
+          nrow_input <- nrow(contrast_results[contrast_results$contrast == c_name, ])
+          nrow_fitted <- nrow(contrast_results[!is.na(contrast_results$padj) & contrast_results$contrast == c_name, ])
+          
+          message("DTE model fitting summary: ", c_name)
+          message("  models fitted: ", paste0(nrow_fitted))
+          message("  padj = NA (filtered or flagged): ", paste0(nrow_input - nrow_fitted))
+        }
       }
     }
     
   } else {
     if (verbose) {
-      message("DTE module not selected; returning DESeqDataSet object without model fitting. This object can still be used as input for DOTSeq() to run the DTE module later")
+      message("DTE module not selected; returning DESeqDataSet object without model fitting. This object can still be used as input for DOTSeq() to run the DTE module later.")
     }
   }
 
