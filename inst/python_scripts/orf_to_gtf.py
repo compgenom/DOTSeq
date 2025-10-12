@@ -56,6 +56,11 @@ def main():
         sys.exit(1)
 
     orf_df, gt_map = flatten_orfs(df, args.gtf)
+    
+    # Drop overlapping genes with opposite strandness
+    morfs = orf_df[orf_df.Score == "mORF"].drop_duplicates("Name", keep = False)
+    orf_df = pd.merge(orf_df, morfs[["Name"]])
+
     bed12_df = bed6_to_bed12(orf_df)
     dotseq_gtf = bed12_to_gtf(bed12_df, gt_map)
 

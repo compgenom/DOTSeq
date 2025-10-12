@@ -2,7 +2,7 @@
 % Please edit documentation in R/analysis_utils.R
 \name{plot_composite}
 \alias{plot_composite}
-\title{Plot DTE vs DOU Comparison with Marginal Histograms}
+\title{Plot Composite Scatter and Marginal Histograms for DTE vs DOU}
 \usage{
 plot_composite(
   results,
@@ -44,6 +44,7 @@ A composite plot with:
 with points colored by significance category: DTE-only, DOU-only, both, or neither.}
 \item{Marginal histograms}{Show the distribution of DTE and DOU estimates along the top and right margins.}
 }
+Additionally, the function prints the Spearman correlation between DTE and DOU estimates to the console.
 }
 \description{
 Visualizes the relationship between differential translation efficiency (DTE)
@@ -54,6 +55,5 @@ This plot helps assess the overlap and divergence between DTE and DOU signals.
 \details{
 The function uses base R graphics and a custom layout to combine scatter and histogram plots.
 Significant ORFs are determined using a threshold of 0.05 on adjusted p-values.
-The color scheme is designed to be accessible to color-blind viewers.
 }
 \keyword{internal}

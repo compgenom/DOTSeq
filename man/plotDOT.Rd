@@ -2,54 +2,50 @@
 % Please edit documentation in R/analysis_utils.R
 \name{plotDOT}
 \alias{plotDOT}
-\title{Generate DOU Heatmap from Results}
+\title{Generate Differential ORF Translation (DOT) Visualization Suite}
 \usage{
 plotDOT(
   results,
+  dou_rowdata,
   dou_estimates_col = "PosteriorMean",
   dou_padj_col = "lfsr",
   dte_estimates_col = "log2FoldChange",
   dte_padj_col = "padj",
   dou_estimates_threshold = 1,
   dou_padj_threshold = 0.05,
+  extreme_threshold = NULL,
   flip_sign = TRUE,
-  orf_type = "uORF",
+  sorf_type = "uORF",
   species_dataset = "hsapiens_gene_ensembl",
   symbol_col = "hgnc_symbol"
 )
 }
 \arguments{
-\item{results}{A data frame containing DOU estimates, ORF labels, and group IDs.
-Must include columns for DOU effect sizes and lfsr values.}
+\item{results}{Data frame with DOU and DTE estimates and significance values.}
 
-\item{dou_estimates_col}{Character string specifying the column name for DOU effect size estimates.
-Default is \code{"PosteriorMean"}.}
+\item{dou_rowdata}{Data frame containing ORF-level metadata (e.g., gene IDs, ORF class).}
 
-\item{dou_padj_col}{Character string specifying the column name for DOU significance values.
-Should correspond to local false sign rate (lfsr). Default is \code{"lfsr"}.}
+\item{dou_estimates_col, }{dou_padj_col Column names for DOU estimate and significance (default: \code{"PosteriorMean"}, \code{"lfsr"}).}
 
-\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU estimates to align directionality
-with translation efficiency. Default is \code{TRUE}.}
+\item{dte_estimates_col, }{dte_padj_col Column names for DTE estimate and significance (default: \code{"log2FoldChange"}, \code{"padj"}).}
 
-\item{orf_type}{Character string specifying the ORF type to compare with mORFs.
-Accepts \code{"uORF"} or \code{"dORF"}.}
+\item{dou_estimates_threshold}{Numeric threshold for effect size significance. Default is \code{1}.}
 
-\item{species_dataset}{Ensembl dataset name, e.g., \code{"hsapiens_gene_ensembl"}.}
+\item{dou_padj_threshold}{Numeric threshold for lfsr significance. Default is \code{0.05}.}
 
-\item{symbol_col}{Column name for gene symbols in Ensembl, e.g., \code{"hgnc_symbol"} or \code{"mgi_symbol"}.}
+\item{extreme_threshold}{Numeric. Threshold for labeling extreme points (in -log10 LFSR). Default is \code{NULL}.}
+
+\item{flip_sign}{Logical; if TRUE, flips the sign of DOU estimates for consistency with TE (default: TRUE).}
+
+\item{sorf_type}{Character; \code{"uORF"} or \code{"dORF"}, specifying comparison type.}
+
+\item{species_dataset, symbol_col}{Ensembl dataset and symbol column for annotation.}
 }
 \value{
-A data frame containing full gene annotation data retrieved from Ensembl.
+Data frame of annotated gene–ORF pairs used in the heatmap visualization.
 }
 \description{
-This wrapper function prepares data and plots a heatmap of differential ORF usage (DOU),
-comparing mORFs with either uORFs or dORFs. It highlights significant ORFs based on
-local false sign rate (lfsr) from empirical Bayes shrinkage (via the \code{ashr} package),
-and retrieves gene annotations from Ensembl for labeling.
-}
-\details{
-The function filters and reshapes DOU results for heatmap visualization, highlighting ORFs
-with lfsr < 0.05 as significant. It uses Ensembl BioMart to annotate genes and supports
-comparison of mORFs with upstream (uORFs) or downstream (dORFs) ORFs. The heatmap helps
-visualize differential ribosome loading across ORFs within genes.
+A high-level wrapper that visualizes differential ORF usage (DOU) and translation efficiency (DTE)
+relationships through Venn, volcano, composite, and heatmap plots. It integrates Ensembl gene
+annotations and highlights significant ORFs based on empirical Bayes shrinkage (via \code{ashr}).
 }

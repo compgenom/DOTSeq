@@ -2,35 +2,29 @@
 % Please edit documentation in R/analysis_utils.R
 \name{plot_heatmap}
 \alias{plot_heatmap}
-\title{An Internal Function for Plotting DOU Heatmap with Dendrogram and Highlights}
+\title{Plot DOU Heatmap with Dendrogram and Highlights}
 \usage{
-plot_heatmap(
-  orderedMatrix,
-  rowDendClean,
-  highlight_df,
-  gene_labels,
-  color_palette,
-  color_breaks,
-  abs_max
-)
+plot_heatmap(paired_data)
 }
 \arguments{
-\item{orderedMatrix}{Matrix of DOU estimates to plot.}
-
-\item{rowDendClean}{Dendrogram object for row ordering.}
-
-\item{highlight_df}{Data frame specifying tiles to highlight (with \code{row}, \code{col}, and \code{color}).}
-
-\item{gene_labels}{Vector of gene symbols for row labels.}
-
-\item{color_palette}{Vector of colors for heatmap.}
-
+\item{paired_data}{Output from cistronic_data. A named list containing the following elements:
+\describe{
+\item{ordered_matrix}{Matrix of DOU estimates to plot.}
+\item{row_dend_clean}{Dendrogram object for row ordering.}
+\item{highlight_df}{Data frame specifying tiles to highlight, with columns \code{row}, \code{col}, and \code{color}.}
+\item{genes}{Full gene annotation data retrieved from Ensembl.}
+\item{gene_labels}{Character vector of gene symbols for row labels.}
+\item{color_palette}{Vector of colors for the heatmap.}
 \item{color_breaks}{Numeric vector of breaks for color scaling.}
-
-\item{abs_max}{Maximum absolute value for color scale.}
+\item{abs_max}{Maximum absolute value for the color scale.}
+}}
+}
+\value{
+No return value; used for plotting.
 }
 \description{
-This function plots a heatmap of differential ORF usage (DOU) estimates,
+This internal function generates a heatmap of differential ORF usage (DOU) estimates,
 with hierarchical clustering and optional tile highlighting for significant ORFs.
+All required inputs are passed via a named list (\code{paired_data}).
 }
 \keyword{internal}

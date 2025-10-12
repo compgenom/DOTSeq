@@ -218,6 +218,10 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
   }
   
   # Check for zero-count ORFs and remove them
+  # DEBUGGING
+  # if (grepl('ENSG00000000003.16', long_data$ORF)[1]) {
+  #   print(long_data)
+  # }
   total_counts_by_orf <- aggregate(counts ~ ORF, data = long_data, sum)
   orfs_to_keep <- as.character(total_counts_by_orf$ORF[total_counts_by_orf$counts > 0])
   
@@ -249,10 +253,11 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
     
     model_data_this_orf$condition <- relevel(factor(model_data_this_orf$condition), ref = condition_levels[1])
     
-    if (current_orf == "ENSG00000000003.16:O034") {
-      print(levels(model_data_this_orf$strategy))
-      print(levels(model_data_this_orf$condition))
-    }
+    # DEBUGGING
+    # if (current_orf == "ENSG00000000003.16:O034") {
+    #   print(levels(model_data_this_orf$strategy))
+    #   print(levels(model_data_this_orf$condition))
+    # }
     
     # # Construct random effects string
     # fixed_part <- as.character(formula)[2]
@@ -590,6 +595,9 @@ fitDOU <- function(
     verbose
 ) {
   stopifnot(class(countData)[1] %in% c("matrix", "data.frame", "dgCMatrix", "DelayedMatrix"))
+  
+  countData <- as.matrix(countData)
+  storage.mode(countData) <- "integer"
   
   # Identify lonely ORFs  
   single_orf <- !mcols(orf2gene)$gene_id %in% mcols(orf2gene)$gene_id[duplicated(mcols(orf2gene)$gene_id)]  

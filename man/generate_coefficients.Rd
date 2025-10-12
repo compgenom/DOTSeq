@@ -15,7 +15,7 @@ generate_coefficients(
 }
 \arguments{
 \item{orfs}{A data frame containing ORF annotations. Row names must align with the
-filtered count matrices. Must include columns \code{groupID} and \code{labels}.}
+filtered count matrices. Must include columns \code{gene_id} and \code{orf_type}.}
 
 \item{scenario}{A character string specifying the regulatory scenario to simulate.
 Must be one of:

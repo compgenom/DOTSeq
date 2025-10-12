@@ -128,7 +128,7 @@ calculateTE <- function(counts,
 #' @keywords internal
 #' 
 plot_venn <- function(results, dou_padj_col = "lfsr", dte_padj_col = "padj") {
-
+  
   padj_sig <- !is.na(results[[dte_padj_col]]) & results[[dte_padj_col]] < 0.05
   fdr_sig <- !is.na(results[[dou_padj_col]]) & results[[dou_padj_col]] < 0.05
   
@@ -146,16 +146,18 @@ plot_venn <- function(results, dou_padj_col = "lfsr", dte_padj_col = "padj") {
   venn_colors <- c("DTE" = "#0072B2", "DOU" = "#E69F00", "DTE&DOU" = "#CC79A7")
   
   # pdf("dte_dot_venn_cycling_arrest.pdf", 2.5, 2)
-  venn <- plot(
+  plot(
     fit,
     fills = list(fill = venn_colors, alpha = 0.6),
     labels = list(font = 2),
     quantities = TRUE,
-    main = "Differentially translated ORFs")
+    main = "Differentially translated ORFs"
+    )
+  
 }
 
 
-#' Plot DTE vs DOU Comparison with Marginal Histograms
+#' Plot Composite Scatter and Marginal Histograms for DTE vs DOU
 #'
 #' @description
 #' Visualizes the relationship between differential translation efficiency (DTE)
@@ -185,70 +187,85 @@ plot_venn <- function(results, dou_padj_col = "lfsr", dte_padj_col = "padj") {
 #'     with points colored by significance category: DTE-only, DOU-only, both, or neither.}
 #'   \item{Marginal histograms}{Show the distribution of DTE and DOU estimates along the top and right margins.}
 #' }
-#'
+#' Additionally, the function prints the Spearman correlation between DTE and DOU estimates to the console.
+#' 
 #' @details
 #' The function uses base R graphics and a custom layout to combine scatter and histogram plots.
 #' Significant ORFs are determined using a threshold of 0.05 on adjusted p-values.
-#' The color scheme is designed to be accessible to color-blind viewers.
+
 #'
-#' @importFrom graphics plot points legend par layout barplot plot.new hist
+#' @importFrom graphics plot points legend par layout barplot plot.new hist text
 #' @importFrom grDevices adjustcolor
 #' @importFrom stats cor.test density
 #' 
 #' @keywords internal
 #' 
-plot_composite <- function(results, dou_estimates_col = "PosteriorMean", dou_padj_col = "lfsr", dte_estimates_col = "log2FoldChange", dte_padj_col = "padj", flip_sign = TRUE, lhist=20) {
-  if (isTRUE(flip_sign)) {
-    results[[dou_estimates_col]] <- -results[[dou_estimates_col]]
-  }
-
-  results <- na.omit(results)
-  padj_sig <- !is.na(results[[dte_padj_col]]) & results[[dte_padj_col]] < 0.05
-  fdr_sig <- !is.na(results[[dou_padj_col]]) & results[[dou_padj_col]] < 0.05
-  both_sig <- padj_sig & fdr_sig
-  padj_only <- padj_sig & !fdr_sig
-  fdr_only <- fdr_sig & !padj_sig
-  
-  col_dte <- adjustcolor("#0072B2", alpha.f = 0.6)
-  col_dou <- adjustcolor("#E69F00", alpha.f = 0.6)
-  col_both <- adjustcolor("#CC79A7", alpha.f = 0.6)
-  col_none <- adjustcolor("grey80", alpha.f = 0.6)
-  
-  old_par <- par(no.readonly = TRUE) 
-  
-  withCallingHandlers({
-    # https://stackoverflow.com/a/31750636
-    ## set up layout and graphical parameters
-    layMat <- matrix(c(1,4,3,2), ncol=2)
-    layout(layMat, widths=c(6/7, 1/7), heights=c(1/7, 6/7))
-    ospc <- 0.5                                                  # outer space
-    pext <- 4                                                    # par extension down and to the left
-    bspc <- 1                                                    # space between scatter plot and bar plots
-    par. <- par(mar=c(pext, pext, bspc, bspc), oma=rep(ospc, 4)) # plot parameters
+plot_composite <- function(
+    results,
+    dou_estimates_col = "PosteriorMean",
+    dou_padj_col = "lfsr",
+    dte_estimates_col = "log2FoldChange",
+    dte_padj_col = "padj",
+    flip_sign = TRUE,
+    lhist = 20
+) {
+  local({
+    old_par <- par(no.readonly = TRUE)
+    on.exit({
+      par(old_par)
+      layout(1)  # Reset layout to default
+    }, add = TRUE)
+    
+    if (isTRUE(flip_sign)) {
+      correlation_results <- cor.test(results[[dte_estimates_col]], results[[dou_estimates_col]]  * -1, method = "spearman")
+      results[[dou_estimates_col]] <- results[[dou_estimates_col]] * -1
+    } else {
+      correlation_results <- cor.test(results[[dte_estimates_col]], results[[dou_estimates_col]], method = "spearman")
+    }
+    
+    print(correlation_results)
+    
+    results <- na.omit(results)
+    padj_sig <- !is.na(results[[dte_padj_col]]) & results[[dte_padj_col]] < 0.05
+    fdr_sig <- !is.na(results[[dou_padj_col]]) & results[[dou_padj_col]] < 0.05
+    both_sig <- padj_sig & fdr_sig
+    padj_only <- padj_sig & !fdr_sig
+    fdr_only <- fdr_sig & !padj_sig
+    
+    col_dte <- adjustcolor("#0072B2", alpha.f = 0.6)
+    col_dou <- adjustcolor("#E69F00", alpha.f = 0.6)
+    col_both <- adjustcolor("#CC79A7", alpha.f = 0.6)
+    col_none <- adjustcolor("grey80", alpha.f = 0.6)
+    
+    # Layout setup
+    layMat <- matrix(c(1, 4, 3, 2), ncol = 2)
+    layout(layMat, widths = c(6/7, 1/7), heights = c(1/7, 6/7))
+    ospc <- 0.5
+    pext <- 4
+    bspc <- 1
+    par(mar = c(pext, pext, bspc, bspc), oma = rep(ospc, 4))
     
     xlim <- range(results[[dte_estimates_col]])
     ylim <- range(results[[dou_estimates_col]])
     
     # Top histogram
-    xhist <- hist(results[[dte_estimates_col]], breaks=seq(xlim[1], xlim[2], length.out=lhist), plot=FALSE)
-    par(mar=c(0, pext, 0, 0))
-    barplot(xhist$density, axes = FALSE, ylim=c(0, max(xhist$density)), space=0,
+    xhist <- hist(results[[dte_estimates_col]], breaks = seq(xlim[1], xlim[2], length.out = lhist), plot = FALSE)
+    par(mar = c(0, pext, 0, 0))
+    barplot(xhist$density, axes = FALSE, ylim = c(0, max(xhist$density)), space = 0,
             col = "gray", border = "black")
     
-    # Right histogram (y-axis)
-    yhist <- hist(results[[dou_estimates_col]], breaks=seq(ylim[1], ylim[2], length.out=lhist), plot=FALSE)
-    par(mar=c(pext, 0, 0, 0))
-    barplot(yhist$density, axes = FALSE, xlim=c(0, max(yhist$density)), space=0,
+    # Right histogram
+    yhist <- hist(results[[dou_estimates_col]], breaks = seq(ylim[1], ylim[2], length.out = lhist), plot = FALSE)
+    par(mar = c(pext, 0, 0, 0))
+    barplot(yhist$density, axes = FALSE, xlim = c(0, max(yhist$density)), space = 0,
             col = "gray", border = "black", horiz = TRUE)
     
-    # placeholder
-    dx <- density(results[[dte_estimates_col]])
-    dy <- density(results[[dou_estimates_col]])
-    par(mar=c(0, 0, 0, 0))
+    # Placeholder
+    par(mar = c(0, 0, 0, 0))
     plot.new()
     
     # Main scatter plot
-    par(mar=c(pext, pext, 0, 0))
+    par(mar = c(pext, pext, 0, 0))
     plot(results[[dte_estimates_col]], results[[dou_estimates_col]],
          col = col_none, pch = 16,
          xlab = "log2 fold-change in ORF TE",
@@ -258,16 +275,10 @@ plot_composite <- function(results, dou_estimates_col = "PosteriorMean", dou_pad
     points(results[[dte_estimates_col]][fdr_only], results[[dou_estimates_col]][fdr_only], col = col_dou)
     points(results[[dte_estimates_col]][both_sig], results[[dou_estimates_col]][both_sig], col = col_both)
     
-    legend("bottomright", legend = c("DTE", "DOU", "Both"), col = c(col_dte, col_dou, col_both), pch = 1, bty = "n", inset = 0.05)
-    
-  }, error = function(e) {
-    par(old_par)
-    stop(e)
+    legend("bottomright", legend = c("DTE", "DOU", "Both"),
+           col = c(col_dte, col_dou, col_both), pch = 1, bty = "n", inset = 0.05)
   })
   
-  par(old_par)
-  
-  cor.test(results[[dte_estimates_col]], results[[dou_estimates_col]], method = "spearman")
 }
 
 
@@ -294,8 +305,8 @@ plot_composite <- function(results, dou_estimates_col = "PosteriorMean", dou_pad
 #'
 #' @return A list containing:
 #' \describe{
-#'   \item{orderedMatrix}{Matrix of DOU estimates for significant ORFs.}
-#'   \item{rowDendClean}{Dendrogram object for row clustering.}
+#'   \item{ordered_matrix}{Matrix of DOU estimates for significant ORFs.}
+#'   \item{row_dend_clean}{Dendrogram object for row clustering.}
 #'   \item{highlight_df}{Data frame indicating significant tiles to highlight.}
 #'   \item{genes}{Full gene annotation data retrieved from Ensembl.}
 #'   \item{gene_labels}{Vector of gene symbols for heatmap rows.}
@@ -316,111 +327,131 @@ plot_composite <- function(results, dou_estimates_col = "PosteriorMean", dou_pad
 #' 
 #' @keywords internal
 #' 
-citronicData <- function(results, dou_estimates_col = "PosteriorMean", dou_padj_col = "lfsr", flip_sign = TRUE, orf_type = "uORF", 
+cistronic_data <- function(results, dou_rowdata, dou_estimates_col = "PosteriorMean", dou_padj_col = "lfsr", flip_sign = TRUE, sorf_type = "uORF", 
                        species_dataset = "hsapiens_gene_ensembl", symbol_col = "hgnc_symbol", threshold = 0.05) {
-  sigRes <- results[results[[dou_padj_col]]<threshold,]
   
-  orfSig <- sigRes[sigRes$labels==orf_type, ][, c("groupID", dou_estimates_col)]
-  mORFRes <- results[results$labels=="mORF", ][, c("groupID", dou_estimates_col)]
-  sigMat <- merge(orfSig, mORFRes, by = "groupID")
-  names(sigMat) <- c("groupID", orf_type, "mORF")
-  sigMat$delta <- abs(sigMat$mORF - sigMat[[orf_type]])
-  sigMat <- sigMat[order(sigMat$groupID, -sigMat$delta), ]
-  sigMat <- sigMat[!duplicated(sigMat$groupID), ]
+  results$gene_id <- sub("\\..*", "", results$orf_id)
   
-  sigMat <- sigMat[!is.na(sigMat$groupID), ]
-  rownames(sigMat) <- sigMat$groupID
+  sig_genes <- results[results[[dou_padj_col]]<threshold,]$gene_id
+  sig_res <- results[results$gene_id %in% sig_genes, ]
   
-  sigMat <- sigMat[ , !(names(sigMat) %in% c("groupID", "delta"))]
+  rowdata <- dou_rowdata
+  rowdata$DOUResults <- NULL
+  rowdata$orf_id <- rownames(rowdata)
+  rowdata <- as.data.frame(rowdata)[, c("orf_id", "orf_type")]
   
-  sigMat[] <- lapply(sigMat, as.numeric)
-  sigMat <- as.matrix(sigMat)
-  sigMatClean <- sigMat[complete.cases(sigMat), ]
+  sig_res <- merge(sig_res, rowdata, by.x = "orf_id")[, c("gene_id", "orf_type", dou_estimates_col, dou_padj_col)]
   
-  rowClusterClean <- hclust(dist(sigMatClean))
-  rowDendClean <- as.dendrogram(rowClusterClean)
+  sorf_res <- sig_res[sig_res$orf_type == sorf_type, ][, c("gene_id", dou_estimates_col)]
+  morf_res <- sig_res[sig_res$orf_type == "mORF", ][, c("gene_id", dou_estimates_col)]
+  sig_mat <- merge(sorf_res, morf_res, by = "gene_id")
+  names(sig_mat) <- c("gene_id", sorf_type, "mORF")
+  sig_mat$delta <- abs(sig_mat$mORF - sig_mat[[sorf_type]])
+  sig_mat <- sig_mat[order(sig_mat$gene_id, -sig_mat$delta), ]
+  sig_mat <- sig_mat[!duplicated(sig_mat$gene_id), ]
   
-  minVal <- min(sigMatClean, na.rm = TRUE)
-  maxVal <- max(sigMatClean, na.rm = TRUE)
-  absMax <- max(abs(minVal), abs(maxVal))
+  sig_mat <- sig_mat[!is.na(sig_mat$gene_id), ]
+  rownames(sig_mat) <- sig_mat$gene_id
   
-  colorBreaks <- seq(-absMax, absMax, length.out = 101)
-  colorPalette <- colorRampPalette(c("blue", "white", "red"))(100)
+  sig_mat <- sig_mat[ , !(names(sig_mat) %in% c("gene_id", "delta"))]
   
-  row_order <- order.dendrogram(rowDendClean)
-  orderedMatrix <- sigMatClean[row_order, ]
-  sigResFiltered <- sigRes[
-    sigRes$labels %in% colnames(orderedMatrix) &
-      sigRes$groupID %in% rownames(orderedMatrix),
+  sig_mat[] <- lapply(sig_mat, as.numeric)
+  sig_mat <- as.matrix(sig_mat)
+  sig_mat_clean <- sig_mat[complete.cases(sig_mat), ]
+  
+  row_cluster_clean <- hclust(dist(sig_mat_clean))
+  row_dend_clean <- as.dendrogram(row_cluster_clean)
+  
+  min_val <- min(sig_mat_clean, na.rm = TRUE)
+  max_val <- max(sig_mat_clean, na.rm = TRUE)
+  abs_max <- max(abs(min_val), abs(max_val))
+  
+  color_breaks <- seq(-abs_max, abs_max, length.out = 101)
+  color_palette <- colorRampPalette(c("blue", "white", "red"))(100)
+  
+  row_order <- order.dendrogram(row_dend_clean)
+  ordered_matrix <- sig_mat_clean[row_order, ]
+  sig_res_filtered <- sig_res[
+    sig_res$orf_type %in% colnames(ordered_matrix) &
+      sig_res$gene_id %in% rownames(ordered_matrix),
   ]
-  group_to_row <- setNames(seq_len(nrow(orderedMatrix)), rownames(orderedMatrix))
-  label_to_col <- setNames(seq_len(ncol(orderedMatrix)), colnames(orderedMatrix))
+  group_to_row <- setNames(seq_len(nrow(ordered_matrix)), rownames(ordered_matrix))
+  label_to_col <- setNames(seq_len(ncol(ordered_matrix)), colnames(ordered_matrix))
   highlight_df <- data.frame(
-    row = group_to_row[sigResFiltered$groupID],
-    col = label_to_col[sigResFiltered$labels],
+    row = group_to_row[sig_res_filtered$gene_id],
+    col = label_to_col[sig_res_filtered$orf_type],
     color = "black"
   )
   highlight_df <- highlight_df[complete.cases(highlight_df), ]
   
-  ensembIds <- sub("\\..*", "", rownames(orderedMatrix))
+  ensembl_ids <- sub("\\..*", "", rownames(ordered_matrix))
   ensembl <- useEnsembl(biomart = "genes", dataset = species_dataset)
   genes <- getBM(
-    attributes = c("ensembl_gene_id", symbol_col, "go_id", "name_1006", "namespace_1003"),
+    attributes = c("ensembl_gene_id", symbol_col), #, "go_id", "name_1006", "namespace_1003"
     filters = "ensembl_gene_id",
-    values = ensembIds,
+    values = ensembl_ids,
     mart = ensembl
   )
   
-  genesUnique <- genes[!duplicated(genes[c("ensembl_gene_id", symbol_col)]), ]
-  genesUniqueSorted <- genesUnique[match(ensembIds, genesUnique$ensembl_gene_id), ]
+  genes_unique <- genes[!duplicated(genes[c("ensembl_gene_id", symbol_col)]), ]
+  genes_unique_sorted <- genes_unique[match(ensembl_ids, genes_unique$ensembl_gene_id), ]
   
   if (isTRUE(flip_sign)) {
-    orderedMatrix <- orderedMatrix * -1
+    ordered_matrix <- ordered_matrix * -1
   }
   
   return(list(
-    orderedMatrix = orderedMatrix,
-    rowDendClean = rowDendClean,
+    ordered_matrix = ordered_matrix,
+    row_dend_clean = row_dend_clean,
     highlight_df = highlight_df,
     genes = genes,
-    gene_labels = genesUniqueSorted[[symbol_col]],
-    color_palette = colorPalette,
-    color_breaks = colorBreaks,
-    abs_max = absMax
+    gene_labels = genes_unique_sorted[[symbol_col]],
+    color_palette = color_palette,
+    color_breaks = color_breaks,
+    abs_max = abs_max
   ))
 }
 
 
-#' An Internal Function for Plotting DOU Heatmap with Dendrogram and Highlights
+#' Plot DOU Heatmap with Dendrogram and Highlights
 #'
-#' This function plots a heatmap of differential ORF usage (DOU) estimates,
+#' This internal function generates a heatmap of differential ORF usage (DOU) estimates,
 #' with hierarchical clustering and optional tile highlighting for significant ORFs.
+#' All required inputs are passed via a named list (`paired_data`).
 #'
-#' @param orderedMatrix Matrix of DOU estimates to plot.
-#' @param rowDendClean Dendrogram object for row ordering.
-#' @param highlight_df Data frame specifying tiles to highlight (with \code{row}, \code{col}, and \code{color}).
-#' @param gene_labels Vector of gene symbols for row labels.
-#' @param color_palette Vector of colors for heatmap.
-#' @param color_breaks Numeric vector of breaks for color scaling.
-#' @param abs_max Maximum absolute value for color scale.
-#' 
-#' @importFrom graphics axis image mtext rect
-#' 
+#' @param paired_data Output from cistronic_data. A named list containing the following elements:
+#' \describe{
+#'   \item{ordered_matrix}{Matrix of DOU estimates to plot.}
+#'   \item{row_dend_clean}{Dendrogram object for row ordering.}
+#'   \item{highlight_df}{Data frame specifying tiles to highlight, with columns \code{row}, \code{col}, and \code{color}.}
+#'   \item{genes}{Full gene annotation data retrieved from Ensembl.}
+#'   \item{gene_labels}{Character vector of gene symbols for row labels.}
+#'   \item{color_palette}{Vector of colors for the heatmap.}
+#'   \item{color_breaks}{Numeric vector of breaks for color scaling.}
+#'   \item{abs_max}{Maximum absolute value for the color scale.}
+#' }
+#'
+#' @importFrom graphics axis image mtext rect par layout plot
+#'
 #' @keywords internal
+#'
+#' @return No return value; used for plotting.
 #' 
-plot_heatmap <- function(orderedMatrix,
-                                  rowDendClean,
-                                  highlight_df,
-                                  gene_labels,
-                                  color_palette,
-                                  color_breaks,
-                                  abs_max) { # width = NULL, height = NULL, output_file = "dou.pdf"
+plot_heatmap <- function(paired_data) { # width = NULL, height = NULL, output_file = "dou.pdf"
+  
+  ordered_matrix <- paired_data$ordered_matrix
+  row_dend_clean <- paired_data$row_dend_clean
+  highlight_df <- paired_data$highlight_df
+  gene_labels <- paired_data$gene_labels
+  color_palette <- paired_data$color_palette
+  color_breaks <- paired_data$color_breaks
+  abs_max <- paired_data$abs_max
   
   old_par <- par(no.readonly = TRUE)
   on.exit(par(old_par), add = TRUE)
   
-  n_rows <- nrow(orderedMatrix)
-  n_cols <- ncol(orderedMatrix)
+  n_rows <- nrow(ordered_matrix)
+  n_cols <- ncol(ordered_matrix)
   
   # Dynamic scaling
   cex_row <- ifelse(n_rows > 50, 0.5, 0.8)
@@ -435,13 +466,13 @@ plot_heatmap <- function(orderedMatrix,
   
   ## Panel 1: Dendrogram
   par(mar = c(5, 1.5, 4, 0))
-  plot(rowDendClean, horiz = TRUE, axes = FALSE, yaxs = "i")
+  plot(row_dend_clean, horiz = TRUE, axes = FALSE, yaxs = "i")
   
   ## Panel 2: Heatmap
   par(mar = c(5, 0.5, 4, right_margin))
-  image(x = 1:ncol(orderedMatrix),
-        y = 1:nrow(orderedMatrix),
-        z = t(orderedMatrix),
+  image(x = 1:ncol(ordered_matrix),
+        y = 1:nrow(ordered_matrix),
+        z = t(ordered_matrix),
         col = color_palette,
         breaks = color_breaks,
         axes = FALSE,
@@ -458,8 +489,8 @@ plot_heatmap <- function(orderedMatrix,
     )
   }
   
-  axis(1, at = 1:ncol(orderedMatrix), labels = colnames(orderedMatrix), las = 2, cex.axis = cex_col)
-  axis(4, at = 1:nrow(orderedMatrix), labels = gene_labels, las = 2, cex.axis = cex_row)
+  axis(1, at = 1:ncol(ordered_matrix), labels = colnames(ordered_matrix), las = 2, cex.axis = cex_col)
+  axis(4, at = 1:nrow(ordered_matrix), labels = gene_labels, las = 2, cex.axis = cex_row)
   
   mtext("Differential ORF usage", side = 3, line = 1.5, cex = 1.2, adj = 0.5, font = 2)
   
@@ -486,8 +517,20 @@ plot_heatmap <- function(orderedMatrix,
 #' log10-transformed local false sign rate (lfsr) on the y-axis. Points are colored
 #' based on significance in DTE, DOU, or both.
 #'
-#' @param res A data frame containing DOU and DTE results. Must include columns for
+#' @param results A data frame containing DOU and DTE results. Must include columns for
 #'   DOU estimates and lfsr, and optionally DTE significance indicators.
+#' @param paired_data Output from cistronic_data. A named list containing the following elements:
+#' \describe{
+#'   \item{ordered_matrix}{Matrix of DOU estimates to plot.}
+#'   \item{row_dend_clean}{Dendrogram object for row ordering.}
+#'   \item{highlight_df}{Data frame specifying tiles to highlight, with columns \code{row}, \code{col}, and \code{color}.}
+#'   \item{genes}{Full gene annotation data retrieved from Ensembl.}
+#'   \item{gene_labels}{Character vector of gene symbols for row labels.}
+#'   \item{color_palette}{Vector of colors for the heatmap.}
+#'   \item{color_breaks}{Numeric vector of breaks for color scaling.}
+#'   \item{abs_max}{Maximum absolute value for the color scale.}
+#' }
+#' @param symbol_col Column name for gene symbols in Ensembl, e.g., \code{"hgnc_symbol"} or \code{"mgi_symbol"}.
 #' @param dou_estimates_col Character string specifying the column name for DOU estimates.
 #'   Default is \code{"PosteriorMean"}.
 #' @param dou_padj_col Character string specifying the column name for DOU significance values.
@@ -498,7 +541,9 @@ plot_heatmap <- function(orderedMatrix,
 #'   Default is \code{"padj"}.
 #' @param dou_estimates_threshold Numeric threshold for effect size significance. Default is \code{1}.
 #' @param dou_padj_threshold Numeric threshold for lfsr significance. Default is \code{0.05}.
-#'
+#' @param dou_estimates_threshold Numeric. Threshold for DOU effect size significance. Default is \code{NULL}.
+#' @param extreme_threshold Numeric. Threshold for labeling extreme points (in -log10 LFSR). Default is \code{NULL}.
+#' 
 #' @return A volcano plot is displayed in a new graphics device.
 #'
 #' @importFrom graphics plot points abline legend
@@ -507,13 +552,21 @@ plot_heatmap <- function(orderedMatrix,
 #'
 plot_volcano <- function(
     results,
+    paired_data,
+    symbol_col = "hgnc_symbol",
     dou_estimates_col = "PosteriorMean",
     dou_padj_col = "lfsr",
     dte_estimates_col = "log2FoldChange",
     dte_padj_col = "padj",
+    flip_sign = TRUE,
     dou_estimates_threshold = 1,
-    dou_padj_threshold = 0.05
+    dou_padj_threshold = 0.05,
+    extreme_threshold = NULL
     ) {
+  
+  genes_unique <- paired_data$genes[!duplicated(paired_data$genes[c("ensembl_gene_id", symbol_col)]), ]
+  results$ensembl_gene_id <- sub("\\..*", "", results$orf_id)
+  results <- merge(results, genes_unique, by = "ensembl_gene_id", all.x = TRUE)
   
   # results <- na.omit(results)
   padj_sig <- !is.na(results[[dte_padj_col]]) & results[[dte_padj_col]] < 0.05
@@ -527,18 +580,33 @@ plot_volcano <- function(
   col_both = "#CC79A7"
   col_none = "grey80"
   
-  estimates <- results[[dou_estimates_col]]
+  if (isTRUE(flip_sign)) {
+    estimates <- results[[dou_estimates_col]] * -1
+  } else {
+    estimates <- results[[dou_estimates_col]]
+  }
+  
   lfsr <- results[[dou_padj_col]]
   loglfsr <- -log10(lfsr)
   
   plot(estimates, loglfsr, pch = 20, col = col_none,
-                 main = "Volcano Plot for Differential ORF Usage",
-                 xlab = "Log-odds change",
-                 ylab = "-log10(LFSR)")
+                 main = NULL, #"Volcano Plot for Differential ORF Usage",
+                 xlab = "Log-odds change in ORF usage",
+       ylab = expression(paste("-log"[10], "(LFSR)")))
   
-  points(estimates[padj_only], loglfsr[padj_only], pch = 16, col = col_dte)
-  points(estimates[fdr_only], loglfsr[fdr_only], pch = 16, col = col_dou)
-  points(estimates[both_sig], loglfsr[both_sig], pch = 16, col = col_both)
+  if (!is.null(extreme_threshold)) {
+    extreme_idx <- which(loglfsr > extreme_threshold)
+    text(
+      x = estimates[extreme_idx],
+      y = loglfsr[extreme_idx],
+      labels = results$hgnc_symbol[extreme_idx],
+      pos = 3, cex = 0.7
+    )
+  }
+  
+  points(estimates[padj_only], loglfsr[padj_only], col = col_dte)
+  points(estimates[fdr_only], loglfsr[fdr_only], col = col_dou)
+  points(estimates[both_sig], loglfsr[both_sig], col = col_both)
   
   abline(h = -log10(dou_padj_threshold), col = "black", lty = 2)
   abline(v = c(-dou_estimates_threshold, dou_estimates_threshold), col = "black", lty = 2)
@@ -549,103 +617,101 @@ plot_volcano <- function(
 }
 
 
-#' Generate DOU Heatmap from Results
+#' Generate Differential ORF Translation (DOT) Visualization Suite
 #'
 #' @description
-#' This wrapper function prepares data and plots a heatmap of differential ORF usage (DOU),
-#' comparing mORFs with either uORFs or dORFs. It highlights significant ORFs based on
-#' local false sign rate (lfsr) from empirical Bayes shrinkage (via the `ashr` package),
-#' and retrieves gene annotations from Ensembl for labeling.
+#' A high-level wrapper that visualizes differential ORF usage (DOU) and translation efficiency (DTE)
+#' relationships through Venn, volcano, composite, and heatmap plots. It integrates Ensembl gene
+#' annotations and highlights significant ORFs based on empirical Bayes shrinkage (via `ashr`).
 #'
-#' @param results A data frame containing DOU estimates, ORF labels, and group IDs.
-#'   Must include columns for DOU effect sizes and lfsr values.
-#' @param dou_estimates_col Character string specifying the column name for DOU effect size estimates.
-#'   Default is \code{"PosteriorMean"}.
-#' @param dou_padj_col Character string specifying the column name for DOU significance values.
-#'   Should correspond to local false sign rate (lfsr). Default is \code{"lfsr"}.
-#' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates to align directionality
-#'   with translation efficiency. Default is \code{TRUE}.
-#' @param orf_type Character string specifying the ORF type to compare with mORFs.
-#'   Accepts \code{"uORF"} or \code{"dORF"}.
-#' @param species_dataset Ensembl dataset name, e.g., \code{"hsapiens_gene_ensembl"}.
-#' @param symbol_col Column name for gene symbols in Ensembl, e.g., \code{"hgnc_symbol"} or \code{"mgi_symbol"}.
+#' @param results Data frame with DOU and DTE estimates and significance values.
+#' @param dou_rowdata Data frame containing ORF-level metadata (e.g., gene IDs, ORF class).
+#' @param dou_estimates_col, dou_padj_col Column names for DOU estimate and significance (default: `"PosteriorMean"`, `"lfsr"`).
+#' @param dte_estimates_col, dte_padj_col Column names for DTE estimate and significance (default: `"log2FoldChange"`, `"padj"`).
+#' @param dou_estimates_threshold Numeric threshold for effect size significance. Default is \code{1}.
+#' @param dou_padj_threshold Numeric threshold for lfsr significance. Default is \code{0.05}.
+#' @param extreme_threshold Numeric. Threshold for labeling extreme points (in -log10 LFSR). Default is \code{NULL}.
+#' @param flip_sign Logical; if TRUE, flips the sign of DOU estimates for consistency with TE (default: TRUE).
+#' @param sorf_type Character; `"uORF"` or `"dORF"`, specifying comparison type.
+#' @param species_dataset,symbol_col Ensembl dataset and symbol column for annotation.
 #'
-#' @return A data frame containing full gene annotation data retrieved from Ensembl.
-#'
-#' @details
-#' The function filters and reshapes DOU results for heatmap visualization, highlighting ORFs
-#' with lfsr < 0.05 as significant. It uses Ensembl BioMart to annotate genes and supports
-#' comparison of mORFs with upstream (uORFs) or downstream (dORFs) ORFs. The heatmap helps
-#' visualize differential ribosome loading across ORFs within genes.
-#'
-#' @importFrom biomaRt useMart getBM
-#' @importFrom stats setNames
-#' @importFrom stats heatmap
+#' @return Data frame of annotated gene–ORF pairs used in the heatmap visualization.
 #' 
 #' @export
 #' 
 plotDOT <- function(
     results, 
+    dou_rowdata,
     dou_estimates_col = "PosteriorMean", 
     dou_padj_col = "lfsr", 
     dte_estimates_col = "log2FoldChange", 
     dte_padj_col = "padj", 
     dou_estimates_threshold = 1,
     dou_padj_threshold = 0.05,
+    extreme_threshold = NULL,
     flip_sign = TRUE, 
-    orf_type = "uORF", 
+    sorf_type = "uORF", 
     species_dataset = "hsapiens_gene_ensembl", 
     symbol_col = "hgnc_symbol"
     ) {
   
-  paired_data <- citronicData(
-    results = results,
-    dou_estimates_col = dou_estimates_col,
-    dou_padj_col = dou_padj_col,
-    flip_sign = flip_sign,
-    orf_type = orf_type,
-    species_dataset = species_dataset,
-    symbol_col = symbol_col
-  )
+  old_par <- par(no.readonly = TRUE) 
+  on.exit(par(old_par), add = TRUE)
   
-  tryCatch({
-    plot_heatmap(
-      orderedMatrix = paired_data$orderedMatrix,
-      rowDendClean = paired_data$rowDendClean,
-      highlight_df = paired_data$highlight_df,
-      gene_labels = paired_data$gene_labels,
-      color_palette = paired_data$color_palette,
-      color_breaks = paired_data$color_breaks,
-      abs_max = paired_data$abs_max
-    )
-  }, error = function(e) {
-    message("Try enlarging the plot area: ", e$message)
-  })
-  
-  plot_volcano(
-    results,
-    dou_estimates_col = dou_estimates_col,
-    dou_padj_col = dou_padj_col,
-    dte_estimates_col = dte_estimates_col, 
-    dte_padj_col = dte_padj_col, 
-    dou_estimates_threshold = 1,
-    dou_padj_threshold = 0.05,
+  venn <- plot_venn(
+    results = results, 
+    dou_padj_col = dou_padj_col, 
+    dte_padj_col = dte_padj_col
   )
-    
-  plot_composite(
-    results, 
+  grid::grid.draw(venn)
+  
+  composite <- plot_composite(
+    results = results, 
     dou_estimates_col = dou_estimates_col, 
     dou_padj_col = dou_padj_col, 
     dte_estimates_col = dte_estimates_col, 
     dte_padj_col = dte_padj_col, 
     flip_sign = flip_sign, 
-    lhist=20)
+    lhist=20
+  )
   
-  plot_venn(
-    results, 
-    dou_padj_col = dou_padj_col, 
-    dte_padj_col = dte_padj_col)
+  paired_data <- cistronic_data(
+    results = results,
+    dou_rowdata = dou_rowdata,
+    dou_estimates_col = dou_estimates_col,
+    dou_padj_col = dou_padj_col,
+    flip_sign = flip_sign,
+    sorf_type = sorf_type,
+    species_dataset = species_dataset,
+    symbol_col = symbol_col
+    )
+
+  volcano <- plot_volcano(
+    results = results,
+    paired_data = paired_data,
+    dou_estimates_col = dou_estimates_col,
+    dou_padj_col = dou_padj_col,
+    dte_estimates_col = dte_estimates_col, 
+    dte_padj_col = dte_padj_col, 
+    dou_estimates_threshold = dou_estimates_threshold,
+    dou_padj_threshold = dou_padj_threshold,
+    extreme_threshold = extreme_threshold
+  )
   
-  return(paired_data$genes)
+  tryCatch({
+    heatmap <- plot_heatmap(paired_data)
+  }, error = function(e) {
+    message("Try enlarging the plot area: ", e$message)
+  })
+  
+  par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
+  
+  return(list(
+    venn = venn,
+    volcano = volcano,
+    composite = composite,
+    heatmap = heatmap,
+    heatmap_data = paired_data$genes
+  ))
 }
 

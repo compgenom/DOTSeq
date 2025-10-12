@@ -6,7 +6,7 @@
 #' changes to multi-cistronic ORFs based on a selected regulatory scenario.
 #'
 #' @param orfs A data frame containing ORF annotations. Row names must align with the
-#'   filtered count matrices. Must include columns `groupID` and `labels`.
+#'   filtered count matrices. Must include columns `gene_id` and `orf_type`.
 #' @param scenario A character string specifying the regulatory scenario to simulate.
 #'   Must be one of:
 #'   \itemize{
@@ -56,7 +56,7 @@ generate_coefficients <- function(orfs,
   df <- orfs
   
   # Identify multi-cistronic genes
-  gene_counts <- table(df$groupID)
+  gene_counts <- table(df$gene_id)
   multi_cistronic_genes <- names(gene_counts[gene_counts > 1])
   
   # Define the log-fold change for each ORF type per scenario
@@ -99,7 +99,7 @@ generate_coefficients <- function(orfs,
     lfc <- current_scenario_lfc[orf_type]
     
     if (lfc != 0) {
-      orf_ids <- rownames(df)[df$groupID %in% multi_cistronic_genes & df$orf_type == orf_type]
+      orf_ids <- rownames(df)[df$gene_id %in% multi_cistronic_genes & df$orf_type == orf_type]
       gcoeffs_ribo[orf_ids] <- gcoeffs_ribo[orf_ids] + lfc
       regulated_orfs <- c(regulated_orfs, orf_ids)
     }
@@ -261,7 +261,7 @@ create_read_numbers = function(mu, fit, p0, m=NULL, n=NULL, mod=NULL, beta=NULL,
 #' @param rna A matrix or data frame of RNA-seq counts (genes x samples).
 #' @param regulation_type Character. Specifies the type of DOT effect to simulate.
 #'   Passed to the `scenario` argument of `generate_coefficients`.
-#' @param orfs A data frame of ORF annotations. Must include `groupID` and `labels` columns.
+#' @param orfs A data frame of ORF annotations. Must include `gene_id` and `orf_type` columns.
 #' @param te_genes Numeric. Percentage of genes to be assigned as differentially translated (default: 10).
 #' @param bgenes Numeric. Percentage of genes to carry a batch effect (default: 10).
 #' @param num_samples Integer. Number of biological replicates per condition (default: 2).

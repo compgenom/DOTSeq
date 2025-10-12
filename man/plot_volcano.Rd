@@ -6,15 +6,36 @@
 \usage{
 plot_volcano(
   results,
+  paired_data,
+  symbol_col = "hgnc_symbol",
   dou_estimates_col = "PosteriorMean",
   dou_padj_col = "lfsr",
   dte_estimates_col = "log2FoldChange",
   dte_padj_col = "padj",
+  flip_sign = TRUE,
   dou_estimates_threshold = 1,
-  dou_padj_threshold = 0.05
+  dou_padj_threshold = 0.05,
+  extreme_threshold = NULL
 )
 }
 \arguments{
+\item{results}{A data frame containing DOU and DTE results. Must include columns for
+DOU estimates and lfsr, and optionally DTE significance indicators.}
+
+\item{paired_data}{Output from cistronic_data. A named list containing the following elements:
+\describe{
+\item{ordered_matrix}{Matrix of DOU estimates to plot.}
+\item{row_dend_clean}{Dendrogram object for row ordering.}
+\item{highlight_df}{Data frame specifying tiles to highlight, with columns \code{row}, \code{col}, and \code{color}.}
+\item{genes}{Full gene annotation data retrieved from Ensembl.}
+\item{gene_labels}{Character vector of gene symbols for row labels.}
+\item{color_palette}{Vector of colors for the heatmap.}
+\item{color_breaks}{Numeric vector of breaks for color scaling.}
+\item{abs_max}{Maximum absolute value for the color scale.}
+}}
+
+\item{symbol_col}{Column name for gene symbols in Ensembl, e.g., \code{"hgnc_symbol"} or \code{"mgi_symbol"}.}
+
 \item{dou_estimates_col}{Character string specifying the column name for DOU estimates.
 Default is \code{"PosteriorMean"}.}
 
@@ -27,12 +48,11 @@ Default is \code{"log2FoldChange"}.}
 \item{dte_padj_col}{Character string specifying the column name for DTE adjusted p-values.
 Default is \code{"padj"}.}
 
-\item{dou_estimates_threshold}{Numeric threshold for effect size significance. Default is \code{1}.}
+\item{dou_estimates_threshold}{Numeric. Threshold for DOU effect size significance. Default is \code{NULL}.}
 
 \item{dou_padj_threshold}{Numeric threshold for lfsr significance. Default is \code{0.05}.}
 
-\item{res}{A data frame containing DOU and DTE results. Must include columns for
-DOU estimates and lfsr, and optionally DTE significance indicators.}
+\item{extreme_threshold}{Numeric. Threshold for labeling extreme points (in -log10 LFSR). Default is \code{NULL}.}
 }
 \value{
 A volcano plot is displayed in a new graphics device.

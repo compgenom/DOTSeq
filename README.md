@@ -41,12 +41,9 @@ if (!require("BiocManager", quietly = TRUE))
 # Initialise usage of Bioconductor devel version
 BiocManager::install(version = "devel")
 
-# Install required Bioconductor packages
-BiocManager::install(c(
-  "biomaRt",
-  "SummarizedExperiment",
-  "Bioc.gff", 
-  "DESeq2"), lib = package_dir)
+# Install required Bioconductor packages with automatic update confirmation
+bioc_packages <- c("biomaRt", "SummarizedExperiment", "Bioc.gff", "DESeq2")
+BiocManager::install(bioc_packages, lib = package_dir, ask = FALSE)
 
 # Install devtools if not already available
 install.packages("devtools")

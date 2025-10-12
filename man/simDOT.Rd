@@ -35,7 +35,7 @@ simDOT(
 \item{regulation_type}{Character. Specifies the type of DOT effect to simulate.
 Passed to the \code{scenario} argument of \code{generate_coefficients}.}
 
-\item{orfs}{A data frame of ORF annotations. Must include \code{groupID} and \code{labels} columns.}
+\item{orfs}{A data frame of ORF annotations. Must include \code{gene_id} and \code{orf_type} columns.}
 
 \item{te_genes}{Numeric. Percentage of genes to be assigned as differentially translated (default: 10).}
 
