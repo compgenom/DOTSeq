@@ -55,12 +55,12 @@ DOTSeqDataSet <- function(
   start_parsing <- Sys.time()
   
   # Validate and reduce formula if needed
-  fmla <- reduce_formula(formula, cond)
+  fmla <- reduce_formula(formula, condition_table)
   reduced_formula <- fmla$reduced_formula
   emm_specs <- fmla$emm_specs
   
   deseq_fmla <- remove_random_effects(formula)
-  deseq_fmla <- reduce_formula(deseq_fmla, cond)
+  deseq_fmla <- reduce_formula(deseq_fmla, condition_table)
   
   cntCols <- c("Geneid", "Chr", "Start",  "End", "Strand", "Length")
   
@@ -126,7 +126,7 @@ DOTSeqDataSet <- function(
 
   cond <- cond[common, , drop = FALSE]
   cond <- cond[order(cond$strategy, cond$replicate), ]
-  
+
   # Combine with metadata columns
   cnt <- cnt[, c(cntCols, rownames(cond))]
   
@@ -211,7 +211,7 @@ DOTSeqDataSet <- function(
   gr <- annotate_orf_type(bed, gff_granges)
   gr$orf_number <- gr$exon_number
   mcols(gr) <- mcols(gr)[, c("gene_id", "transcripts", "orf_number", "orf_type")]
-  
+
   # combined_cond$sample <- rownames(combined_cond)
   sumExp <- SummarizedExperiment::SummarizedExperiment(assays = list(counts = dcounts), 
                                                        colData = combined_cond, 

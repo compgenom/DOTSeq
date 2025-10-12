@@ -355,10 +355,10 @@ simDOT <- function(
   ribo_subset <- ribo[common_genes_all, , drop = FALSE]
   rna_subset <- rna[common_genes_all, , drop = FALSE]
   if (!is.null(regulation_type) & !is.null(orfs)) {
-    message(" - Simulate differential ORF usage")
+    message("simulating Differential ORF Usage (DOU)")
     orfs_filtered <- orfs[common_genes_all, , drop = FALSE]
   } else {
-    message(" - Simulate differential translation efficiency")
+    message("simulating Differential Translation Efficiency (DTE)")
   }
   
   # Perform the filtering based on count thresholds
@@ -388,7 +388,7 @@ simDOT <- function(
   
   # Batch assignment logic
   if (batch_scenario == "balanced") {
-    message(" - Use batch_scenario: ", batch_scenario)
+    message("using batch_scenario: ", batch_scenario)
     batch <- rep(seq(1, num_batches), each = num_samples * conditions)
     batch <- as.factor(batch)
     if (num_batches == 1) {
@@ -398,7 +398,7 @@ simDOT <- function(
     }
     
   } else if (batch_scenario == "confounded") {
-    message(" - Use batch_scenario: ", batch_scenario)
+    message("using batch_scenario: ", batch_scenario)
     if (num_batches > 1) {
       # In a confounded design, batch and group are the same factor
       batch <- group
@@ -409,7 +409,7 @@ simDOT <- function(
     
   } else if (batch_scenario == "random") {
     if (num_batches > 1) {
-      message(" - Use batch_scenario: ", batch_scenario)
+      message("using batch_scenario: ", batch_scenario)
       batch <- sample(seq(1, num_batches), total_samples, replace = TRUE)
       batch <- as.factor(batch)
       mod <- model.matrix(~ -1 + batch + group)
@@ -419,7 +419,7 @@ simDOT <- function(
     
   } else if (batch_scenario == "unbalanced") {
     if (num_batches > 1) {
-      message(" - Use batch_scenario: ", batch_scenario)
+      message("using batch_scenario: ", batch_scenario)
       major <- rep(1, round(0.6 * total_samples))
       minor <- sample(seq(2, num_batches), total_samples - length(major), replace = TRUE)
       batch <- c(major, minor)
@@ -430,7 +430,7 @@ simDOT <- function(
     }
     
   } else if (batch_scenario == "nested") {
-    message(" - Use batch_scenario: ", batch_scenario)
+    message("using batch_scenario: ", batch_scenario)
     # Create a single factor representing the nested structure
     nested_factor <- as.factor(paste0("C", rep(seq(0, conditions - 1), each = num_samples * num_batches),
                                       "_B", rep(rep(seq(1, num_batches), each = num_samples), conditions)))
@@ -441,7 +441,7 @@ simDOT <- function(
     
   } else if (batch_scenario == "modality_specific") {
     if (num_batches > 1) {
-      message(" - Use batch_scenario: ", batch_scenario)
+      message("using batch_scenario: ", batch_scenario)
       # Create a consistent batch vector for both modalities
       batch <- rep(seq_len(num_batches), each = num_samples * conditions)
       batch <- as.factor(batch)

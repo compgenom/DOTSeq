@@ -130,10 +130,10 @@ DOTSeq <- function(
       stop("Either provide a 'dotseq_dataset' object or all of 'count_table', 'condition_table', 'flattened_gtf', and 'bed'.")
     }
     dot <- DOTSeqDataSet(
-      count_table, 
-      condition_table, 
-      flattened_gtf, 
-      bed, 
+      count_table = count_table, 
+      condition_table = condition_table, 
+      flattened_gtf = flattened_gtf, 
+      bed = bed, 
       formula = formula,
       target = target,
       baseline = baseline,
