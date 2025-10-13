@@ -196,7 +196,7 @@ plot_venn <- function(results, dou_padj_col = "lfsr", dte_padj_col = "padj") {
 #'
 #' @importFrom graphics plot points legend par layout barplot plot.new hist text
 #' @importFrom grDevices adjustcolor
-#' @importFrom stats cor.test density
+#' @importFrom stats cor.test density na.omit
 #' 
 #' @keywords internal
 #' 
@@ -568,7 +568,6 @@ plot_volcano <- function(
   results$ensembl_gene_id <- sub("\\..*", "", results$orf_id)
   results <- merge(results, genes_unique, by = "ensembl_gene_id", all.x = TRUE)
   
-  # results <- na.omit(results)
   padj_sig <- !is.na(results[[dte_padj_col]]) & results[[dte_padj_col]] < 0.05
   fdr_sig <- !is.na(results[[dou_padj_col]]) & results[[dou_padj_col]] < 0.05
   both_sig <- padj_sig & fdr_sig
