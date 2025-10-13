@@ -2,12 +2,11 @@
 % Please edit documentation in R/analysis.R
 \name{plot_volcano}
 \alias{plot_volcano}
-\title{Plot Volcano Plot for Differential ORF Usage (DOU)}
+\title{Volcano Plot for Differential ORF Usage (DOU)}
 \usage{
 plot_volcano(
   results,
-  paired_data,
-  symbol_col = "hgnc_symbol",
+  gene_annotation = NULL,
   dou_estimates_col = "PosteriorMean",
   dou_padj_col = "lfsr",
   dte_estimates_col = "log2FoldChange",
@@ -15,52 +14,48 @@ plot_volcano(
   flip_sign = TRUE,
   dou_estimates_threshold = 1,
   dou_padj_threshold = 0.05,
-  extreme_threshold = NULL
+  dte_padj_threshold = 0.05,
+  extreme_threshold = NULL,
+  label_topn = NULL,
+  legend_position = "right"
 )
 }
 \arguments{
-\item{results}{A data frame containing DOU and DTE results. Must include columns for
-DOU estimates and lfsr, and optionally DTE significance indicators.}
+\item{results}{A data frame containing DOU and optionally DTE results. Must include columns
+for DOU estimates and LFSR, and optionally DTE significance indicators.}
 
-\item{paired_data}{Output from cistronic_data. A named list containing the following elements:
-\describe{
-\item{ordered_matrix}{Matrix of DOU estimates to plot.}
-\item{row_dend_clean}{Dendrogram object for row ordering.}
-\item{highlight_df}{Data frame specifying tiles to highlight, with columns \code{row}, \code{col}, and \code{color}.}
-\item{genes}{Full gene annotation data retrieved from Ensembl.}
-\item{gene_labels}{Character vector of gene symbols for row labels.}
-\item{color_palette}{Vector of colors for the heatmap.}
-\item{color_breaks}{Numeric vector of breaks for color scaling.}
-\item{abs_max}{Maximum absolute value for the color scale.}
-}}
+\item{gene_annotation}{Optional data frame with gene annotations. Used to label points with gene symbols.}
 
-\item{symbol_col}{Column name for gene symbols in Ensembl, e.g., \code{"hgnc_symbol"} or \code{"mgi_symbol"}.}
+\item{dou_estimates_col}{Column name for DOU effect size estimates. Default is \code{"PosteriorMean"}.}
 
-\item{dou_estimates_col}{Character string specifying the column name for DOU estimates.
-Default is \code{"PosteriorMean"}.}
+\item{dou_padj_col}{Column name for DOU significance values (LFSR). Default is \code{"lfsr"}.}
 
-\item{dou_padj_col}{Character string specifying the column name for DOU significance values.
-Should correspond to local false sign rate (lfsr). Default is \code{"lfsr"}.}
+\item{dte_estimates_col}{Column name for DTE effect size estimates. Default is \code{"log2FoldChange"}.}
 
-\item{dte_estimates_col}{Character string specifying the column name for DTE estimates.
-Default is \code{"log2FoldChange"}.}
+\item{dte_padj_col}{Column name for DTE adjusted p-values. Default is \code{"padj"}.}
 
-\item{dte_padj_col}{Character string specifying the column name for DTE adjusted p-values.
-Default is \code{"padj"}.}
+\item{flip_sign}{Logical. If \code{TRUE}, flips the sign of DOU estimates for plotting. Default is \code{TRUE}.}
 
-\item{dou_estimates_threshold}{Numeric. Threshold for DOU effect size significance. Default is \code{NULL}.}
+\item{dou_estimates_threshold}{Numeric threshold for DOU effect size significance. Default is \code{1}.}
 
-\item{dou_padj_threshold}{Numeric threshold for lfsr significance. Default is \code{0.05}.}
+\item{dou_padj_threshold}{Numeric threshold for DOU LFSR significance. Default is \code{0.05}.}
 
-\item{extreme_threshold}{Numeric. Threshold for labeling extreme points (in -log10 LFSR). Default is \code{NULL}.}
+\item{dte_padj_threshold}{Numeric threshold for DTE adjusted p-value significance. Default is \code{0.05}.}
+
+\item{extreme_threshold}{Optional numeric threshold for labeling extreme points based on -log10(LFSR).}
+
+\item{label_topn}{Optional numeric. If provided, labels the top N most significant points.}
+
+\item{legend_position}{Position of the legend. Options include \code{"bottomright"}, \code{"bottom"},
+\code{"bottomleft"}, \code{"left"}, \code{"topleft"}, \code{"top"}, \code{"topright"}, \code{"right"}, \code{"center"}.}
 }
 \value{
 A volcano plot is displayed in a new graphics device.
 }
 \description{
-Generates a volcano plot for visualizing differential ORF usage (DOU) results.
-The plot displays log-odds changes (effect sizes) on the x-axis and the negative
-log10-transformed local false sign rate (lfsr) on the y-axis. Points are colored
-based on significance in DTE, DOU, or both.
+Generates a volcano plot to visualize differential ORF usage (DOU) results.
+The x-axis represents log-odds changes in ORF usage (effect sizes), and the y-axis
+shows the negative log10-transformed local false sign rate (LFSR). Points are colored
+based on significance in differential translation efficiency (DTE), DOU, or both.
 }
 \keyword{internal}

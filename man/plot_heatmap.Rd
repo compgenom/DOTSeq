@@ -7,24 +7,29 @@
 plot_heatmap(paired_data)
 }
 \arguments{
-\item{paired_data}{Output from cistronic_data. A named list containing the following elements:
+\item{paired_data}{A named list containing heatmap data and metadata, typically the output from \code{cistronic_data()}.
+Must include the following elements:
 \describe{
-\item{ordered_matrix}{Matrix of DOU estimates to plot.}
-\item{row_dend_clean}{Dendrogram object for row ordering.}
-\item{highlight_df}{Data frame specifying tiles to highlight, with columns \code{row}, \code{col}, and \code{color}.}
-\item{genes}{Full gene annotation data retrieved from Ensembl.}
-\item{gene_labels}{Character vector of gene symbols for row labels.}
-\item{color_palette}{Vector of colors for the heatmap.}
-\item{color_breaks}{Numeric vector of breaks for color scaling.}
-\item{abs_max}{Maximum absolute value for the color scale.}
+\item{ordered_matrix}{Matrix of DOU estimates for significant genes, ordered by hierarchical clustering.}
+\item{row_dend_clean}{Dendrogram object for clustered gene rows.}
+\item{highlight_df}{Data frame indicating which ORF-gene tiles to highlight in the heatmap.}
+\item{gene_labels}{Vector of gene symbols or Ensembl IDs for heatmap row labeling.}
+\item{color_palette}{Color palette used for heatmap visualization.}
+\item{color_breaks}{Breaks used for color scaling in the heatmap.}
+\item{abs_max}{Maximum absolute value used for symmetric color scaling.}
 }}
 }
 \value{
-No return value; used for plotting.
+A heatmap with a dendrogram and color key.
 }
 \description{
-This internal function generates a heatmap of differential ORF usage (DOU) estimates,
-with hierarchical clustering and optional tile highlighting for significant ORFs.
-All required inputs are passed via a named list (\code{paired_data}).
+Generates a heatmap of differential ORF usage (DOU) estimates with hierarchical clustering
+and optional tile highlighting for significant ORFs. The function uses base R graphics and
+expects all required inputs to be passed via a named list produced by \code{cistronic_data()}.
+}
+\details{
+The heatmap displays log-odds changes in ORF usage across genes, comparing mORFs with short ORFs (e.g., uORFs or dORFs).
+Significant ORFs are highlighted using rectangles. The color scale is symmetric and centered at zero.
+The function uses base R plotting functions and is intended for interactive or scripted visualization.
 }
 \keyword{internal}

@@ -4,7 +4,13 @@
 \alias{plot_venn}
 \title{Plot Venn Diagram of DTE and DOU Significance Overlap}
 \usage{
-plot_venn(results, dou_padj_col = "lfsr", dte_padj_col = "padj")
+plot_venn(
+  results,
+  dou_padj_col = "lfsr",
+  dte_padj_col = "padj",
+  dou_padj_threshold = 0.05,
+  dte_padj_threshold = 0.05
+)
 }
 \arguments{
 \item{results}{A data frame containing DTE and DOU results. Must include row names
@@ -15,6 +21,10 @@ Should correspond to local false sign rate (lfsr). Default is \code{"lfsr"}.}
 
 \item{dte_padj_col}{Character string specifying the column name for DTE adjusted p-values.
 Default is \code{"padj"}.}
+
+\item{dou_padj_threshold}{Numeric threshold for DOU LFSR significance. Default is \code{0.05}.}
+
+\item{dte_padj_threshold}{Numeric threshold for DTE adjusted p-value significance. Default is \code{0.05}.}
 }
 \value{
 A Venn diagram (Euler plot) showing the number of ORFs significant in DTE only,

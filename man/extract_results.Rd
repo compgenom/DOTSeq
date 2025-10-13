@@ -28,3 +28,4 @@ and gracefully handles \code{NULL} or unsupported model types by returning minim
 
 Missing columns across models are filled with \code{NA} to ensure a consistent structure.
 }
+\keyword{internal}

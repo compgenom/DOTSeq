@@ -6,7 +6,7 @@
 \usage{
 plotDOT(
   results,
-  dou_rowdata,
+  rowdata,
   dou_estimates_col = "PosteriorMean",
   dou_padj_col = "lfsr",
   dte_estimates_col = "log2FoldChange",
@@ -14,38 +14,68 @@ plotDOT(
   dou_estimates_threshold = 1,
   dou_padj_threshold = 0.05,
   extreme_threshold = NULL,
+  label_topn = NULL,
+  top_genes = NULL,
   flip_sign = TRUE,
   sorf_type = "uORF",
-  species_dataset = "hsapiens_gene_ensembl",
-  symbol_col = "hgnc_symbol"
+  dataset = "hsapiens_gene_ensembl",
+  symbol_col = "hgnc_symbol",
+  mart_source = "ensembl"
 )
 }
 \arguments{
-\item{results}{Data frame with DOU and DTE estimates and significance values.}
+\item{results}{A data frame containing DOU and DTE estimates and significance values. Must include
+ORF-level identifiers and columns specified by \code{dou_estimates_col}, \code{dou_padj_col},
+\code{dte_estimates_col}, and \code{dte_padj_col}.}
 
-\item{dou_rowdata}{Data frame containing ORF-level metadata (e.g., gene IDs, ORF class).}
+\item{rowdata}{A data frame containing ORF-level metadata, including ORF type (e.g., mORF, uORF).}
 
-\item{dou_estimates_col, }{dou_padj_col Column names for DOU estimate and significance (default: \code{"PosteriorMean"}, \code{"lfsr"}).}
+\item{dou_estimates_col}{Character string specifying the column name for DOU effect size estimates.
+Default is \code{"PosteriorMean"}.}
 
-\item{dte_estimates_col, }{dte_padj_col Column names for DTE estimate and significance (default: \code{"log2FoldChange"}, \code{"padj"}).}
+\item{dou_padj_col}{Character string specifying the column name for DOU significance values (LFSR).
+Default is \code{"lfsr"}.}
 
-\item{dou_estimates_threshold}{Numeric threshold for effect size significance. Default is \code{1}.}
+\item{dte_estimates_col}{Character string specifying the column name for DTE effect size estimates.
+Default is \code{"log2FoldChange"}.}
 
-\item{dou_padj_threshold}{Numeric threshold for lfsr significance. Default is \code{0.05}.}
+\item{dte_padj_col}{Character string specifying the column name for DTE adjusted p-values.
+Default is \code{"padj"}.}
 
-\item{extreme_threshold}{Numeric. Threshold for labeling extreme points (in -log10 LFSR). Default is \code{NULL}.}
+\item{dou_estimates_threshold}{Numeric threshold for DOU effect size significance. Default is \code{1}.}
 
-\item{flip_sign}{Logical; if TRUE, flips the sign of DOU estimates for consistency with TE (default: TRUE).}
+\item{dou_padj_threshold}{Numeric threshold for DOU LFSR significance. Default is \code{0.05}.}
 
-\item{sorf_type}{Character; \code{"uORF"} or \code{"dORF"}, specifying comparison type.}
+\item{extreme_threshold}{Optional numeric threshold for labeling extreme points in the volcano plot
+(based on -log10 LFSR).}
 
-\item{species_dataset, symbol_col}{Ensembl dataset and symbol column for annotation.}
+\item{label_topn}{Optional numeric. If specified, labels the top N most significant points in the volcano plot.}
+
+\item{top_genes}{Optional numeric. If specified, limits the heatmap to the top N genes ranked by DOU magnitude and significance.}
+
+\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU estimates to align directionality with DTE. Default is \code{TRUE}.}
+
+\item{sorf_type}{Character string specifying the short ORF type to compare with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.}
+
+\item{dataset}{Character string specifying the Ensembl dataset name (e.g., \code{"hsapiens_gene_ensembl"}).}
+
+\item{symbol_col}{Character string specifying the column name for gene symbols in the annotation data. Default is \code{"hgnc_symbol"}.}
+
+\item{mart_source}{Character string specifying the BioMart source. One of \code{"ensembl"}, \code{"plants"}, \code{"fungi"},
+\code{"protists"}, \code{"metazoa"}, or \code{"bacteria"}.}
 }
 \value{
-Data frame of annotated gene–ORF pairs used in the heatmap visualization.
+A data frame containing gene annotations retrieved from Ensembl, used for labeling and heatmap visualization.
 }
 \description{
 A high-level wrapper that visualizes differential ORF usage (DOU) and translation efficiency (DTE)
-relationships through Venn, volcano, composite, and heatmap plots. It integrates Ensembl gene
-annotations and highlights significant ORFs based on empirical Bayes shrinkage (via \code{ashr}).
+relationships through a suite of plots including Venn diagrams, volcano plots, composite plots,
+and heatmaps. It integrates Ensembl gene annotations and highlights significant ORFs based on
+empirical Bayes shrinkage (via the \code{ashr} package).
+}
+\details{
+This function orchestrates multiple visualization components to explore differential translation across ORFs.
+It uses empirical Bayes shrinkage to identify significant ORFs, retrieves gene annotations via \code{biomaRt},
+and generates plots to summarize DOU and DTE relationships. The function is designed for exploratory analysis
+and figure generation in translational profiling studies.
 }

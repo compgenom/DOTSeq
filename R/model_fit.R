@@ -575,6 +575,7 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
 #' @return A named \code{list} of \code{PostHoc} objects, one per ORF.
 #' 
 #' @importFrom S4Vectors mcols mcols<-
+#' @importFrom stats setNames
 #' 
 #' @keywords internal
 #' 

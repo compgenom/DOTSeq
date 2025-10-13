@@ -10,6 +10,8 @@ plot_composite(
   dou_padj_col = "lfsr",
   dte_estimates_col = "log2FoldChange",
   dte_padj_col = "padj",
+  dou_padj_threshold = 0.05,
+  dte_padj_threshold = 0.05,
   flip_sign = TRUE,
   lhist = 20
 )
@@ -30,6 +32,10 @@ Default is \code{"log2FoldChange"}.}
 
 \item{dte_padj_col}{Character string specifying the column name for DTE adjusted p-values.
 Default is \code{"padj"}.}
+
+\item{dou_padj_threshold}{Numeric threshold for DOU LFSR significance. Default is \code{0.05}.}
+
+\item{dte_padj_threshold}{Numeric threshold for DTE adjusted p-value significance. Default is \code{0.05}.}
 
 \item{flip_sign}{Logical; if \code{TRUE}, flips the sign of the DOU estimates.
 Useful for aligning directionality with DTE. Default is \code{TRUE}.}
