@@ -521,45 +521,48 @@ cistronic_data <- function(
     sorf_type = "uORF"
     ) {
   
+  results <- na.omit(results)
   results$gene_id <- sub("\\..*", "", results$orf_id)
   
   sig_genes <- results[results[[padj_col]] < padj_threshold, ]$gene_id
   sig_res <- results[results$gene_id %in% sig_genes, ]
   
-  rowdata <- rowdata
   rowdata$DOUResults <- NULL
   rowdata$orf_id <- rownames(rowdata)
   rowdata <- as.data.frame(rowdata)[, c("orf_id", "orf_type")]
   
   sig_res <- merge(sig_res, rowdata, by.x = "orf_id")[, c("gene_id", "orf_type", estimates_col, padj_col)]
+  sig_res <- sig_res[sig_res$orf_type %in% c("mORF", sorf_type), ]
   
+  gene_scores <- aggregate(
+    abs(sig_res[[estimates_col]]) * (1 - sig_res[[padj_col]]) ~ sig_res$gene_id,
+    FUN = median
+  )
+  names(gene_scores) <- c("gene_id", "score")
+  
+  sig_res <- merge(gene_scores, sig_res, by = "gene_id")
   sorf_res <- sig_res[sig_res$orf_type == sorf_type, ][, c("gene_id", estimates_col)]
-  morf_res <- sig_res[sig_res$orf_type == "mORF", ][, c("gene_id", estimates_col)]
+  sorf_res <- aggregate(
+    sorf_res[[estimates_col]] ~ sorf_res$gene_id,
+    FUN = median
+  )
+  names(sorf_res) <- c("gene_id", estimates_col)
+  
+  morf_res <- sig_res[sig_res$orf_type == "mORF", ][, c("gene_id", estimates_col, "score")]
   sig_mat <- merge(sorf_res, morf_res, by = "gene_id")
-  names(sig_mat) <- c("gene_id", sorf_type, "mORF")
-  sig_mat$delta <- abs(sig_mat$mORF - sig_mat[[sorf_type]])
-  sig_mat <- sig_mat[order(sig_mat$gene_id, -sig_mat$delta), ]
-  sig_mat <- sig_mat[!duplicated(sig_mat$gene_id), ]
-  
+  names(sig_mat) <- c("gene_id", sorf_type, "mORF", "score")
   sig_mat <- sig_mat[!is.na(sig_mat$gene_id), ]
+  sig_mat <- sig_mat[order(sig_mat$score, decreasing = TRUE), ]
   rownames(sig_mat) <- sig_mat$gene_id
+
+  if (is.numeric(top_genes)) {
+    sig_mat <- head(sig_mat, top_genes)
+  }
   
-  sig_mat <- sig_mat[ , !(names(sig_mat) %in% c("gene_id", "delta"))]
-  
+  sig_mat <- sig_mat[ , !(names(sig_mat) %in% c("gene_id", "score"))]
   sig_mat[] <- lapply(sig_mat, as.numeric)
   sig_mat <- as.matrix(sig_mat)
   sig_mat_clean <- sig_mat[complete.cases(sig_mat), ]
-  
-  if (is.numeric(top_genes)) {
-    top_ids <- sig_res[
-      order(abs(sig_res[[estimates_col]]), -sig_res[[padj_col]], decreasing = TRUE),
-    ]$gene_id
-    top_ids <- unique(top_ids)
-    top_ids <- top_ids[top_ids %in% rownames(sig_mat_clean)]
-    top_ids <- head(top_ids, top_genes)
-    sig_mat_clean <- sig_mat_clean[top_ids, , drop = FALSE]
-  }
-    
     
   row_cluster_clean <- hclust(dist(sig_mat_clean))
   row_dend_clean <- as.dendrogram(row_cluster_clean)
@@ -590,7 +593,6 @@ cistronic_data <- function(
   
   if (!is.null(gene_annotation)) {
     genes_unique <- gene_annotation[!duplicated(gene_annotation$ensembl_gene_id), ]
-    genes_unique <- genes_unique[match(ensembl_ids, genes_unique$ensembl_gene_id), ]
     genes_unique_sorted <- genes_unique[match(ensembl_ids, genes_unique$ensembl_gene_id), ]
     gene_labels <- genes_unique_sorted[[2]]
   } else {
@@ -1205,6 +1207,9 @@ plotDOT <- function(
   
   # Heatmap plot
   if ("heatmap" %in% plot_types) {
+    if (verbose) {
+      message("plotting heatmap for the top ", top_genes, " DOU genes")
+    }
     paired_data <- tryCatch({
       cistronic_data(
         results = results,
