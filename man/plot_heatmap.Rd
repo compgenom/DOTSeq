@@ -2,7 +2,7 @@
 % Please edit documentation in R/analysis.R
 \name{plot_heatmap}
 \alias{plot_heatmap}
-\title{Plot DOU Heatmap with Dendrogram and Highlights}
+\title{Plot Heatmap for Differential ORF Usage (DOU)}
 \usage{
 plot_heatmap(paired_data)
 }

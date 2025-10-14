@@ -225,8 +225,8 @@ plot_composite <- function(
   local({
     old_par <- par(no.readonly = TRUE)
     on.exit({
-      par(old_par)
-      layout(1)  # Reset layout to default
+      try(suppressWarnings(suppressMessages(par(old_par))), silent = TRUE)
+      try(suppressWarnings(suppressMessages(layout(1))), silent = TRUE)
     }, add = TRUE)
     
     if (isTRUE(flip_sign)) {
@@ -235,8 +235,6 @@ plot_composite <- function(
     } else {
       correlation_results <- cor.test(results[[dte_estimates_col]], results[[dou_estimates_col]], method = "spearman")
     }
-    
-    print(correlation_results)
     
     results <- na.omit(results)
     padj_sig <- !is.na(results[[dte_padj_col]]) & results[[dte_padj_col]] < dte_padj_threshold
@@ -252,7 +250,7 @@ plot_composite <- function(
     
     # Layout setup
     layMat <- matrix(c(1, 4, 3, 2), ncol = 2)
-    layout(layMat, widths = c(6/7, 1/7), heights = c(1/7, 6/7))
+    layout(layMat, widths = c(4/5, 1/5), heights = c(1/5, 4/5))
     ospc <- 0.5
     pext <- 4
     bspc <- 1
@@ -289,11 +287,175 @@ plot_composite <- function(
     points(results[[dte_estimates_col]][both_sig], results[[dou_estimates_col]][both_sig], col = col_both)
     
     legend("bottomright", legend = c("DTE", "DOU", "Both"),
-           col = c(col_dte, col_dou, col_both), pch = 1, bty = "n", inset = 0.05)
+           col = c(col_dte, col_dou, col_both), pch = 1, bty = "n", inset = 0.04)
+    
+    message(
+      "Spearman correlation between DOU and DTE estimates: ",
+      round(correlation_results$estimate[["rho"]], 3),
+      ", p-value: ",
+      format.pval(correlation_results$p.value, digits = 3, eps = 1e-16)
+    )
+    
   })
   
 }
 
+
+#' Plot Composite Scatter for DTE vs DOU with Marginal Distributions by ORF Types
+#'
+#' @description
+#' Generates a composite plot to visualize the relationship between differential translation efficiency (DTE)
+#' and differential ORF usage (DOU). The central scatter plot shows DTE vs DOU estimates for ORFs, colored by ORF type
+#' (uORF, mORF, dORF), while marginal plots (histograms or density curves) display the distribution of DTE and DOU estimates.
+#' This visualization helps assess the overlap and divergence between DTE and DOU signals across ORF types.
+#'
+#' @param results A data frame containing DTE and DOU post hoc contrast results. Must include columns for DTE and DOU estimates,
+#'   adjusted p-values (e.g., \code{padj} for DTE and \code{lfsr} for DOU), and an \code{orf_id} column for merging.
+#' @param rowdata A data frame containing ORF metadata, with row names corresponding to \code{orf_id}. Must include an \code{orf_type} column
+#'   with values "uORF", "mORF", or "dORF".
+#' @param marginal_plot_type Character string specifying the type of marginal plot: either \code{"histogram"} or \code{"density"}.
+#'   Default is \code{"density"}.
+#' @param dou_estimates_col Column name for DOU posterior estimates. Default is \code{"PosteriorMean"}.
+#' @param dou_padj_col Column name for DOU significance values (typically local false sign rate). Default is \code{"lfsr"}.
+#' @param dte_estimates_col Column name for DTE estimates (typically log2 fold-change). Default is \code{"log2FoldChange"}.
+#' @param dte_padj_col Column name for DTE adjusted p-values. Default is \code{"padj"}.
+#' @param dou_padj_threshold Numeric threshold for DOU significance. Default is \code{0.05}.
+#' @param dte_padj_threshold Numeric threshold for DTE significance. Default is \code{0.05}.
+#' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates to align directionality with DTE. Default is \code{TRUE}.
+#' @param lhist Integer; number of bins for marginal histograms. Default is \code{20}.
+#'
+#' @return A composite plot consisting of:
+#' \describe{
+#'   \item{Scatter plot}{Displays DTE (log2 fold-change) vs DOU (log-odds change) estimates, colored by ORF type.}
+#'   \item{Marginal plots}{Show the distribution of DTE and DOU estimates along the top and right margins, using either histograms or density curves.}
+#' }
+#' The function also prints the Spearman correlation between DTE and DOU estimates to the console.
+#'
+#' @details
+#' The function uses base R graphics and a custom layout matrix to arrange the scatter and marginal plots.
+#' ORFs are colored by type (uORF, mORF, dORF) using semi-transparent colors for visual clarity.
+#' Significance thresholds are used internally for filtering, but not for coloring in this version.
+#'
+#' @importFrom graphics plot points legend par layout barplot plot.new plot.window hist text lines
+#' @importFrom grDevices adjustcolor
+#' @importFrom stats cor.test density na.omit
+#'
+#' @keywords internal
+#' 
+plot_composite_by_orfs <- function(
+    results,
+    rowdata,
+    marginal_plot_type = "density",
+    dou_estimates_col = "PosteriorMean",
+    dou_padj_col = "lfsr",
+    dte_estimates_col = "log2FoldChange",
+    dte_padj_col = "padj",
+    dou_padj_threshold = 0.05,
+    dte_padj_threshold = 0.05,
+    flip_sign = TRUE,
+    lhist = 20
+) {
+  local({
+    old_par <- par(no.readonly = TRUE)
+    on.exit({
+      try(suppressWarnings(suppressMessages(par(old_par))), silent = TRUE)
+      try(suppressWarnings(suppressMessages(layout(1))), silent = TRUE)
+    }, add = TRUE)
+    
+    if (isTRUE(flip_sign)) {
+      # correlation_results <- cor.test(results[[dte_estimates_col]], results[[dou_estimates_col]] * -1, method = "spearman")
+      results[[dou_estimates_col]] <- results[[dou_estimates_col]] * -1
+    } else {
+      # correlation_results <- cor.test(results[[dte_estimates_col]], results[[dou_estimates_col]], method = "spearman")
+    }
+    
+    results <- merge(results, rowdata, by.x = "orf_id", by.y = "row.names")
+    results <- na.omit(results)
+    
+    is_uorfs <- results$orf_type == "uORF"
+    is_morfs <- results$orf_type == "mORF"
+    is_dorfs <- results$orf_type == "dORF"
+    
+    col_morfs <- adjustcolor("#D73027", alpha.f = 0.5)
+    col_uorfs <- adjustcolor("#4575B4", alpha.f = 0.5)
+    col_dorfs <- adjustcolor("#A6A6A6", alpha.f = 0.5)
+    
+    layMat <- matrix(c(1, 4, 3, 2), ncol = 2)
+    layout(layMat, widths = c(4/5, 1/5), heights = c(1/5, 4/5))
+    ospc <- 0.5
+    pext <- 4
+    bspc <- 1
+    par(mar = c(pext, pext, bspc, bspc), oma = rep(ospc, 4))
+    
+    xlim <- range(results[[dte_estimates_col]], na.rm = TRUE)
+    ylim <- range(results[[dou_estimates_col]], na.rm = TRUE)
+    
+    if (marginal_plot_type == "histogram") {
+      par(mar = c(0, pext, 0, 0))
+      hist_u <- hist(results[[dte_estimates_col]][is_uorfs], breaks = seq(xlim[1], xlim[2], length.out = lhist), plot = FALSE)
+      hist_m <- hist(results[[dte_estimates_col]][is_morfs], breaks = hist_u$breaks, plot = FALSE)
+      hist_d <- hist(results[[dte_estimates_col]][is_dorfs], breaks = hist_u$breaks, plot = FALSE)
+      barplot(rbind(hist_u$density, hist_m$density, hist_d$density), beside = FALSE, space = 0,
+              col = c(col_uorfs, col_morfs, col_dorfs), axes = FALSE) #border = NA,
+      
+      par(mar = c(pext, 0, 0, 0))
+      hist_u_y <- hist(results[[dou_estimates_col]][is_uorfs], breaks = seq(ylim[1], ylim[2], length.out = lhist), plot = FALSE)
+      hist_m_y <- hist(results[[dou_estimates_col]][is_morfs], breaks = hist_u_y$breaks, plot = FALSE)
+      hist_d_y <- hist(results[[dou_estimates_col]][is_dorfs], breaks = hist_u_y$breaks, plot = FALSE)
+      barplot(rbind(hist_u_y$density, hist_m_y$density, hist_d_y$density), beside = FALSE, space = 0,
+              col = c(col_uorfs, col_morfs, col_dorfs), axes = FALSE, horiz = TRUE) #border = NA, 
+    } else if (marginal_plot_type == "density") {
+      # Top: DTE distribution
+      par(mar = c(0, pext, 0, 0))
+      plot.new()
+      plot.window(xlim = xlim, ylim = c(0, 1))
+      dens_list <- lapply(c("uORF", "mORF", "dORF"), function(orf_type) {
+        subset <- results[results$orf_type == orf_type, ]
+        density(subset[[dte_estimates_col]], from = xlim[1], to = xlim[2])
+      })
+      ymax <- max(sapply(dens_list, function(d) max(d$y)))
+      
+      for (i in seq_along(dens_list)) {
+        lines(dens_list[[i]]$x, dens_list[[i]]$y / ymax, col = c(col_uorfs, col_morfs, col_dorfs)[i], lwd = 2)
+      }
+      
+      # Right: DOU distribution
+      par(mar = c(pext, 0, 0, 0))
+      plot.new()
+      plot.window(xlim = c(0, 1), ylim = ylim)
+      dens_list <- lapply(c("uORF", "mORF", "dORF"), function(orf_type) {
+        subset <- results[results$orf_type == orf_type, ]
+        density(subset[[dou_estimates_col]], from = ylim[1], to = ylim[2])
+      })
+      ymax <- max(sapply(dens_list, function(d) max(d$y)))
+      
+      for (i in seq_along(dens_list)) {
+        lines(dens_list[[i]]$y / ymax, dens_list[[i]]$x, col = c(col_uorfs, col_morfs, col_dorfs)[i], lwd = 2)
+      } 
+      
+    } else {
+      stop("Marginal plot type not recognized: ", marginal_plot_type)
+    }
+    
+    # Placeholder
+    par(mar = c(0, 0, 0, 0))
+    plot.new()
+    
+    # Main scatter plot
+    par(mar = c(pext, pext, 0, 0))
+    plot(results[[dte_estimates_col]][is_dorfs], results[[dou_estimates_col]][is_dorfs],
+         col = col_dorfs,
+         xlab = "log2 fold-change in ORF TE",
+         ylab = "log-odds change in ORF usage",
+         xlim = xlim,
+         ylim = ylim)
+    points(results[[dte_estimates_col]][is_morfs], results[[dou_estimates_col]][is_morfs], col = col_morfs)
+    points(results[[dte_estimates_col]][is_uorfs], results[[dou_estimates_col]][is_uorfs], col = col_uorfs)
+    
+    legend("bottomright", legend = c("uORF", "mORF", "dORF"),
+           col = c(col_uorfs, col_morfs, col_dorfs), pch = 1, bty = "n", inset = 0.04)
+  })
+}
 
 
 #' Prepare Data and Metadata for DOU Heatmap
@@ -463,8 +625,10 @@ cistronic_data <- function(
 #' @return A character vector of Ensembl gene IDs corresponding to significant ORFs.
 #'
 #' @examples
+#' \dontrun{
 #' sig_genes <- get_significant_genes(results_df, padj_col = "lfsr", padj_threshold = 0.05)
-#'
+#' }
+#' 
 #' @keywords internal
 #' 
 get_significant_genes <- function(
@@ -592,7 +756,7 @@ get_gene_annotation <- function(ensembl_ids,
 }
 
 
-#' Plot DOU Heatmap with Dendrogram and Highlights
+#' Plot Heatmap for Differential ORF Usage (DOU)
 #'
 #' @description
 #' Generates a heatmap of differential ORF usage (DOU) estimates with hierarchical clustering
@@ -621,8 +785,7 @@ get_gene_annotation <- function(ensembl_ids,
 #' @importFrom graphics axis image mtext rect par layout plot
 #'
 #' @keywords internal
-#' 
-plot_heatmap <- function(paired_data) { # width = NULL, height = NULL, output_file = "dou.pdf"
+plot_heatmap <- function(paired_data) {
   
   ordered_matrix <- paired_data$ordered_matrix
   row_dend_clean <- paired_data$row_dend_clean
@@ -632,64 +795,72 @@ plot_heatmap <- function(paired_data) { # width = NULL, height = NULL, output_fi
   color_breaks <- paired_data$color_breaks
   abs_max <- paired_data$abs_max
   
-  old_par <- par(no.readonly = TRUE)
-  on.exit(par(old_par), add = TRUE)
+  local({
+    old_par <- par(no.readonly = TRUE)
+    on.exit(par(old_par), add = TRUE)
+    
+    n_rows <- nrow(ordered_matrix)
+    n_cols <- ncol(ordered_matrix)
+    
+    # Dynamic scaling
+    cex_row <- ifelse(n_rows > 50, 0.5, 0.8)
+    cex_col <- ifelse(n_cols > 50, 0.5, 0.8)
+    right_margin <- max(5, min(5, n_rows / 5))
+    layout_widths <- c(2, max(6, n_cols / 10))
+    
+    layout(matrix(c(1, 2), nrow = 1), widths = layout_widths)
+    
+    ## Panel 1: Dendrogram
+    par(mar = c(5, 1.5, 4, 0))
+    # par(mar = c(4, 1, 3, 1))
+    plot(row_dend_clean, horiz = TRUE, axes = FALSE, yaxs = "i")
+    
+    ## Panel 2: Heatmap
+    par(mar = c(5, 0.5, 4, right_margin))
+    image(x = 1:ncol(ordered_matrix),
+          y = 1:nrow(ordered_matrix),
+          z = t(ordered_matrix),
+          col = color_palette,
+          breaks = color_breaks,
+          axes = FALSE,
+          xlab = "")
+    
+    for (i in seq_len(nrow(highlight_df))) {
+      rect(
+        xleft = highlight_df$col[i] - 0.5,
+        xright = highlight_df$col[i] + 0.5,
+        ybottom = highlight_df$row[i] - 0.5,
+        ytop = highlight_df$row[i] + 0.5,
+        border = highlight_df$color[i],
+        lwd = 1.5
+      )
+    }
+    
+    axis(1, at = 1:ncol(ordered_matrix), labels = colnames(ordered_matrix), las = 2, cex.axis = cex_col)
+    axis(4, at = 1:nrow(ordered_matrix), labels = gene_labels, las = 2, cex.axis = cex_row)
+    
+    mtext("Differential ORF usage", side = 3, line = 1.5, cex = 1.2, adj = 0.5, font = 2)
+    
+    ## Dynamic Color Key Placement (Top-Left)
+    dend_width <- layout_widths[1] / sum(layout_widths)
+    legend_width <- 0.15
+    legend_height <- 0.08
+    legend_left <- 0.02
+    legend_right <- legend_left + legend_width
+    legend_bottom <- 0.92
+    legend_top <- legend_bottom + legend_height
+    
+    par(fig = c(legend_left, legend_right, legend_bottom, legend_top), new = TRUE, mar = c(0, 0, 2, 0))
+    image(z = t(matrix(seq(-abs_max, abs_max, length.out = 100), nrow = 1)),
+          col = color_palette, axes = FALSE)
+    
+    tick_vals <- pretty(c(-abs_max, abs_max), n = 5)
+    tick_pos <- (tick_vals - (-abs_max)) / (2 * abs_max)
+    axis(1, at = tick_pos, labels = tick_vals, las = 1, cex.axis = 0.7)
+    mtext("log-odds", side = 1, line = 2, cex = 0.8)
+    
+  })
   
-  n_rows <- nrow(ordered_matrix)
-  n_cols <- ncol(ordered_matrix)
-  
-  # Dynamic scaling
-  cex_row <- ifelse(n_rows > 50, 0.5, 0.8)
-  cex_col <- ifelse(n_cols > 50, 0.5, 0.8)
-  right_margin <- max(5, min(5, n_rows / 5))
-  layout_widths <- c(2, max(6, n_cols / 10))
-  key_bottom <- ifelse(n_rows > 50, 0.13, 0.13)
-  key_top <- key_bottom + 0.08
-  
-  # pdf(output_file, width = width, height = height)
-  layout(matrix(c(1, 2), nrow = 1), widths = layout_widths)
-  
-  ## Panel 1: Dendrogram
-  par(mar = c(5, 1.5, 4, 0))
-  plot(row_dend_clean, horiz = TRUE, axes = FALSE, yaxs = "i")
-  
-  ## Panel 2: Heatmap
-  par(mar = c(5, 0.5, 4, right_margin))
-  image(x = 1:ncol(ordered_matrix),
-        y = 1:nrow(ordered_matrix),
-        z = t(ordered_matrix),
-        col = color_palette,
-        breaks = color_breaks,
-        axes = FALSE,
-        xlab = "")
-  
-  for (i in seq_len(nrow(highlight_df))) {
-    rect(
-      xleft = highlight_df$col[i] - 0.5,
-      xright = highlight_df$col[i] + 0.5,
-      ybottom = highlight_df$row[i] - 0.5,
-      ytop = highlight_df$row[i] + 0.5,
-      border = highlight_df$color[i],
-      lwd = 1.5
-    )
-  }
-  
-  axis(1, at = 1:ncol(ordered_matrix), labels = colnames(ordered_matrix), las = 2, cex.axis = cex_col)
-  axis(4, at = 1:nrow(ordered_matrix), labels = gene_labels, las = 2, cex.axis = cex_row)
-  
-  mtext("Differential ORF usage", side = 3, line = 1.5, cex = 1.2, adj = 0.5, font = 2)
-  
-  ## Color key
-  par(fig = c(0.75, 0.9, key_bottom, key_top), new = TRUE, mar = c(0, 0, 2, 0))
-  image(z = t(matrix(seq(-abs_max, abs_max, length.out = 100), nrow = 1)),
-        col = color_palette, axes = FALSE)
-  
-  tick_vals <- pretty(c(-abs_max, abs_max), n = 5)
-  tick_pos <- (tick_vals - (-abs_max)) / (2 * abs_max)
-  axis(1, at = tick_pos, labels = tick_vals, las = 1, cex.axis = 0.7)
-  mtext("log-odds", side = 1, line = 2, cex = 0.8)
-  
-  # dev.off()
   par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
 }
 
@@ -846,14 +1017,21 @@ plot_volcano <- function(
 #'
 #' @description
 #' A high-level wrapper that visualizes differential ORF usage (DOU) and translation efficiency (DTE)
-#' relationships through a suite of plots including Venn diagrams, volcano plots, composite plots,
-#' and heatmaps. It integrates Ensembl gene annotations and highlights significant ORFs based on
-#' empirical Bayes shrinkage (via the \code{ashr} package).
+#' relationships through a suite of plots including Venn diagrams, volcano plots, composite scatter plots
+#' with marginal distributions, and heatmaps. It integrates Ensembl gene annotations and highlights significant ORFs
+#' based on empirical Bayes shrinkage (via the \code{ashr} package).
 #'
 #' @param results A data frame containing DOU and DTE estimates and significance values. Must include
 #'   ORF-level identifiers and columns specified by \code{dou_estimates_col}, \code{dou_padj_col},
 #'   \code{dte_estimates_col}, and \code{dte_padj_col}.
 #' @param rowdata A data frame containing ORF-level metadata, including ORF type (e.g., mORF, uORF).
+#' @param gene_annotation A data frame containing gene annotations for the input Ensembl IDs. 
+#'   Default is \code{NULL}.
+#' @param include_go Logical; if \code{TRUE}, includes GO annotations (\code{go_id}, \code{name_1006}, 
+#'   \code{namespace_1003}) in the output.
+#' @param plot_types Character vector specifying which plots to generate. Options include \code{"venn"},
+#'   \code{"composite"}, \code{"volcano"}, and \code{"heatmap"}.
+#' @param marginal_plot_type Character string specifying the type of marginal plot: either \code{"histogram"} or \code{"density"}.
 #' @param dou_estimates_col Character string specifying the column name for DOU effect size estimates.
 #'   Default is \code{"PosteriorMean"}.
 #' @param dou_padj_col Character string specifying the column name for DOU significance values (LFSR).
@@ -874,23 +1052,31 @@ plot_volcano <- function(
 #' @param symbol_col Character string specifying the column name for gene symbols in the annotation data. Default is \code{"hgnc_symbol"}.
 #' @param mart_source Character string specifying the BioMart source. One of \code{"ensembl"}, \code{"plants"}, \code{"fungi"},
 #'   \code{"protists"}, \code{"metazoa"}, or \code{"bacteria"}.
+#' @param force_new_device_on_error Logicall if \code{TRUE}, detects graphics error and reset graphics state. 
+#' @param verbose Logical; if \code{TRUE}, prints progress messages. Default is \code{TRUE}.
 #'
 #' @return A data frame containing gene annotations retrieved from Ensembl, used for labeling and heatmap visualization.
 #'
 #' @details
 #' This function orchestrates multiple visualization components to explore differential translation across ORFs.
 #' It uses empirical Bayes shrinkage to identify significant ORFs, retrieves gene annotations via \code{biomaRt},
-#' and generates plots to summarize DOU and DTE relationships. The function is designed for exploratory analysis
-#' and figure generation in translational profiling studies.
+#' and generates plots to summarize DOU and DTE relationships. The composite scatter plot includes marginal distributions
+#' by ORF type, helping to visualize the overlap and divergence between DTE and DOU signals. The volcano plot highlights
+#' extreme and top-ranked ORFs, while the heatmap summarizes translation changes across top genes.
 #'
 #' @importFrom graphics par layout
 #' @importFrom grid grid.newpage grid.draw
+#' @importFrom grDevices dev.new dev.off
 #'
 #' @export
 #' 
 plotDOT <- function(
     results,
     rowdata,
+    gene_annotation = NULL,
+    include_go = FALSE,
+    plot_types = c("venn", "composite", "volcano", "heatmap"),
+    marginal_plot_type = "density",
     dou_estimates_col = "PosteriorMean",
     dou_padj_col = "lfsr",
     dte_estimates_col = "log2FoldChange",
@@ -898,104 +1084,157 @@ plotDOT <- function(
     dou_estimates_threshold = 1,
     dou_padj_threshold = 0.05,
     extreme_threshold = NULL,
-    label_topn = NULL,
-    top_genes = NULL,
+    label_topn = 10,
+    top_genes = 40,
     flip_sign = TRUE,
     sorf_type = "uORF",
     dataset = "hsapiens_gene_ensembl",
     symbol_col = "hgnc_symbol",
-    mart_source = "ensembl"
-    ) {
-  
-  # Initialize variables to NULL in case early steps fail
-  ensembl_ids <- NULL
-  gene_annotation <- NULL
-  paired_data <- NULL
-  venn <- NULL
-  composite <- NULL
-  volcano <- NULL
-  heatmap <- NULL
-  
-  ensembl_ids <- get_significant_genes(results)
-  gene_annotation <- get_gene_annotation(ensembl_ids = ensembl_ids, dataset = dataset, mart_source = mart_source)
+    mart_source = "ensembl",
+    verbose = TRUE,
+    force_new_device_on_error = TRUE
+) {
+  # Retrieve gene annotation if needed
+  if (any(c("heatmap", "volcano") %in% plot_types) && is.null(gene_annotation)) {
+    if (verbose) message("retrieving gene annotation from BioMart...")
+    gene_annotation_attempt <- tryCatch({
+      get_gene_annotation(
+        ensembl_ids = get_significant_genes(results),
+        dataset = dataset,
+        mart_source = mart_source,
+        include_go = include_go
+      )
+    }, error = function(e) {
+      if (verbose) message("Failed to retrieve gene annotation: ", e$message)
+      NULL
+    })
+    if (!is.null(gene_annotation_attempt)) {
+      gene_annotation <- gene_annotation_attempt
+    }
+  }
   
   local({
     old_par <- par(no.readonly = TRUE)
     on.exit({
-      par(old_par)
-      layout(1) # Reset layout to default
+      try(par(old_par), silent = TRUE)
+      try(suppressWarnings(suppressMessages(layout(1))), silent = TRUE)
     }, add = TRUE)
     
+    # Helper: recover graphics device
+    recover_graphics <- function(plot_fn) {
+      tryCatch({
+        plot_fn()
+      }, error = function(e) {
+        if (grepl("invalid graphics state", e$message, ignore.case = TRUE) && force_new_device_on_error) {
+          if (verbose) message("Graphics error detected. Attempting to recover...")
+          try(dev.off(), silent = TRUE)
+          try(dev.new(), silent = TRUE)
+          tryCatch({
+            plot_fn()
+          }, error = function(e2) {
+            if (verbose) message("Failed to plot after recovery: ", e2$message)
+          })
+        } else {
+          if (verbose) message("Plotting failed: ", e$message)
+        }
+      })
+    }
     
-    venn <- tryCatch({
-      grid::grid.newpage()
-      venn_plot <- grid::grid.draw(
-        plot_venn(
+    # Venn plot
+    if ("venn" %in% plot_types) {
+      recover_graphics(function() {
+        grid::grid.newpage()
+        grid::grid.draw(plot_venn(
           results = results,
           dou_padj_col = dou_padj_col,
           dte_padj_col = dte_padj_col
         ))
-      if (is.null(venn_plot)) venn_plot <- "Venn diagram displayed but not returned"
-      venn_plot
-    }, error = function(e) {
-      NULL
-    })
-    # grid::grid.draw(venn)
+        if (verbose) message("Venn diagram plotted")
+      })
+    }
     
-    composite <- tryCatch({
-      comp <- plot_composite(
-        results = results,
-        dou_estimates_col = dou_estimates_col,
-        dou_padj_col = dou_padj_col,
-        dte_estimates_col = dte_estimates_col,
-        dte_padj_col = dte_padj_col,
-        flip_sign = flip_sign,
-        lhist = 20
-      )
-      if (is.null(comp)) comp <- "Composite plot displayed but not returned"
-      comp
-    }, error = function(e) {
-      NULL
-    })
+    # Composite plots
+    if ("composite" %in% plot_types) {
+      recover_graphics(function() {
+        plot_composite(
+          results = results,
+          dou_estimates_col = dou_estimates_col,
+          dou_padj_col = dou_padj_col,
+          dte_estimates_col = dte_estimates_col,
+          dte_padj_col = dte_padj_col,
+          flip_sign = flip_sign,
+          lhist = 20
+        )
+        plot_composite_by_orfs(
+          results = results,
+          rowdata = rowdata,
+          marginal_plot_type = marginal_plot_type,
+          dou_estimates_col = dou_estimates_col,
+          dou_padj_col = dou_padj_col,
+          dte_estimates_col = dte_estimates_col,
+          dte_padj_col = dte_padj_col,
+          flip_sign = flip_sign,
+          lhist = 20
+        )
+        if (verbose) message("composite plots plotted")
+      })
+    }
     
-
-    paired_data <- cistronic_data(
-        results = results,
-        rowdata = rowdata,
-        gene_annotation = gene_annotation,
-        estimates_col = dou_estimates_col,
-        padj_col = dou_padj_col,
-        padj_threshold = dou_padj_threshold,
-        flip_sign = flip_sign,
-        sorf_type = sorf_type,
-        top_genes = top_genes
-      )
-
-    volcano <- tryCatch({
-      plot_volcano(
-        results = results,
-        gene_annotation = gene_annotation,
-        dou_estimates_col = dou_estimates_col,
-        dou_padj_col = dou_padj_col,
-        dte_estimates_col = dte_estimates_col,
-        dte_padj_col = dte_padj_col,
-        dou_estimates_threshold = dou_estimates_threshold,
-        dou_padj_threshold = dou_padj_threshold,
-        extreme_threshold = extreme_threshold,
-        label_topn = label_topn
-      )
-    }, error = function(e) NULL)
+    # Volcano plot
+    if ("volcano" %in% plot_types) {
+      recover_graphics(function() {
+        plot_volcano(
+          results = results,
+          gene_annotation = gene_annotation,
+          dou_estimates_col = dou_estimates_col,
+          dou_padj_col = dou_padj_col,
+          dte_estimates_col = dte_estimates_col,
+          dte_padj_col = dte_padj_col,
+          dou_estimates_threshold = dou_estimates_threshold,
+          dou_padj_threshold = dou_padj_threshold,
+          extreme_threshold = extreme_threshold,
+          label_topn = label_topn
+        )
+        if (verbose) message("volcano plot plotted")
+      })
+    }
     
-    heatmap <- tryCatch({
-      plot_heatmap(paired_data)
-    }, error = function(e) {
-      NULL
-    })
-    
-    par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
+    # Heatmap plot
+    if ("heatmap" %in% plot_types) {
+      paired_data <- tryCatch({
+        cistronic_data(
+          results = results,
+          rowdata = rowdata,
+          gene_annotation = gene_annotation,
+          estimates_col = dou_estimates_col,
+          padj_col = dou_padj_col,
+          padj_threshold = dou_padj_threshold,
+          flip_sign = flip_sign,
+          sorf_type = sorf_type,
+          top_genes = top_genes
+        )
+      }, error = function(e) {
+        if (verbose) message("Failed to prepare heatmap data: ", e$message)
+        NULL
+      })
+      
+      if (!is.null(paired_data)) {
+        recover_graphics(function() {
+          warning("Plotting device too small or corrupted. Please increase the plot window size and rerun with plot_types = 'heatmap'.",
+                  "\nTo avoid re-downloading gene annotations, reuse the gene_annotation object like this:",
+                  "\n\n# Example usage:",
+                  "\ngene_annot <- plotDOT(results, rowdata, plot_types = 'heatmap')",
+                  "\nplotDOT(results, rowdata, gene_annotation = gene_annot, plot_types = 'heatmap')"
+                  )
+          plot_heatmap(paired_data)
+          if (verbose) message("heatmap plotted")
+          
+        })
+      }
+    }
   })
-  
-  return(gene_annotation)
+  return(invisible(gene_annotation))
 }
+
 
 

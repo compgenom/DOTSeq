@@ -7,6 +7,10 @@
 plotDOT(
   results,
   rowdata,
+  gene_annotation = NULL,
+  include_go = FALSE,
+  plot_types = c("venn", "composite", "volcano", "heatmap"),
+  marginal_plot_type = "density",
   dou_estimates_col = "PosteriorMean",
   dou_padj_col = "lfsr",
   dte_estimates_col = "log2FoldChange",
@@ -14,13 +18,15 @@ plotDOT(
   dou_estimates_threshold = 1,
   dou_padj_threshold = 0.05,
   extreme_threshold = NULL,
-  label_topn = NULL,
-  top_genes = NULL,
+  label_topn = 10,
+  top_genes = 40,
   flip_sign = TRUE,
   sorf_type = "uORF",
   dataset = "hsapiens_gene_ensembl",
   symbol_col = "hgnc_symbol",
-  mart_source = "ensembl"
+  mart_source = "ensembl",
+  verbose = TRUE,
+  force_new_device_on_error = TRUE
 )
 }
 \arguments{
@@ -29,6 +35,17 @@ ORF-level identifiers and columns specified by \code{dou_estimates_col}, \code{d
 \code{dte_estimates_col}, and \code{dte_padj_col}.}
 
 \item{rowdata}{A data frame containing ORF-level metadata, including ORF type (e.g., mORF, uORF).}
+
+\item{gene_annotation}{A data frame containing gene annotations for the input Ensembl IDs.
+Default is \code{NULL}.}
+
+\item{include_go}{Logical; if \code{TRUE}, includes GO annotations (\code{go_id}, \code{name_1006},
+\code{namespace_1003}) in the output.}
+
+\item{plot_types}{Character vector specifying which plots to generate. Options include \code{"venn"},
+\code{"composite"}, \code{"volcano"}, and \code{"heatmap"}.}
+
+\item{marginal_plot_type}{Character string specifying the type of marginal plot: either \code{"histogram"} or \code{"density"}.}
 
 \item{dou_estimates_col}{Character string specifying the column name for DOU effect size estimates.
 Default is \code{"PosteriorMean"}.}
@@ -63,19 +80,24 @@ Default is \code{"padj"}.}
 
 \item{mart_source}{Character string specifying the BioMart source. One of \code{"ensembl"}, \code{"plants"}, \code{"fungi"},
 \code{"protists"}, \code{"metazoa"}, or \code{"bacteria"}.}
+
+\item{verbose}{Logical; if \code{TRUE}, prints progress messages. Default is \code{TRUE}.}
+
+\item{force_new_device_on_error}{Logicall if \code{TRUE}, detects graphics error and reset graphics state.}
 }
 \value{
 A data frame containing gene annotations retrieved from Ensembl, used for labeling and heatmap visualization.
 }
 \description{
 A high-level wrapper that visualizes differential ORF usage (DOU) and translation efficiency (DTE)
-relationships through a suite of plots including Venn diagrams, volcano plots, composite plots,
-and heatmaps. It integrates Ensembl gene annotations and highlights significant ORFs based on
-empirical Bayes shrinkage (via the \code{ashr} package).
+relationships through a suite of plots including Venn diagrams, volcano plots, composite scatter plots
+with marginal distributions, and heatmaps. It integrates Ensembl gene annotations and highlights significant ORFs
+based on empirical Bayes shrinkage (via the \code{ashr} package).
 }
 \details{
 This function orchestrates multiple visualization components to explore differential translation across ORFs.
 It uses empirical Bayes shrinkage to identify significant ORFs, retrieves gene annotations via \code{biomaRt},
-and generates plots to summarize DOU and DTE relationships. The function is designed for exploratory analysis
-and figure generation in translational profiling studies.
+and generates plots to summarize DOU and DTE relationships. The composite scatter plot includes marginal distributions
+by ORF type, helping to visualize the overlap and divergence between DTE and DOU signals. The volcano plot highlights
+extreme and top-ranked ORFs, while the heatmap summarizes translation changes across top genes.
 }

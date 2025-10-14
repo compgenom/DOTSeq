@@ -21,7 +21,9 @@ Identifies genes with significant differential ORF usage (DOU) based on a local 
 Extracts gene IDs from ORF-level results and filters those with LFSR below the specified threshold.
 }
 \examples{
+\dontrun{
 sig_genes <- get_significant_genes(results_df, padj_col = "lfsr", padj_threshold = 0.05)
+}
 
 }
 \keyword{internal}
