@@ -162,6 +162,8 @@ plot_venn <- function(
     main = "Differentially translated ORFs"
     )
   
+  par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
+  
   return(venn)
 }
 
@@ -222,81 +224,81 @@ plot_composite <- function(
     flip_sign = TRUE,
     lhist = 20
 ) {
-  local({
-    old_par <- par(no.readonly = TRUE)
-    on.exit({
-      try(suppressWarnings(suppressMessages(par(old_par))), silent = TRUE)
-      try(suppressWarnings(suppressMessages(layout(1))), silent = TRUE)
-    }, add = TRUE)
+
+  old_par <- par(no.readonly = TRUE)
+  on.exit({
+    try(suppressWarnings(suppressMessages(par(old_par))), silent = TRUE)
+    try(suppressWarnings(suppressMessages(layout(1))), silent = TRUE)
+  }, add = TRUE)
+  
+  if (isTRUE(flip_sign)) {
+    correlation_results <- cor.test(results[[dte_estimates_col]], results[[dou_estimates_col]]  * -1, method = "spearman")
+    results[[dou_estimates_col]] <- results[[dou_estimates_col]] * -1
+  } else {
+    correlation_results <- cor.test(results[[dte_estimates_col]], results[[dou_estimates_col]], method = "spearman")
+  }
+  
+  results <- na.omit(results)
+  padj_sig <- !is.na(results[[dte_padj_col]]) & results[[dte_padj_col]] < dte_padj_threshold
+  fdr_sig <- !is.na(results[[dou_padj_col]]) & results[[dou_padj_col]] < dou_padj_threshold
+  both_sig <- padj_sig & fdr_sig
+  padj_only <- padj_sig & !fdr_sig
+  fdr_only <- fdr_sig & !padj_sig
+  
+  col_dte <- adjustcolor("#0072B2", alpha.f = 0.6)
+  col_dou <- adjustcolor("#E69F00", alpha.f = 0.6)
+  col_both <- adjustcolor("#CC79A7", alpha.f = 0.6)
+  col_none <- adjustcolor("grey80", alpha.f = 0.6)
+  
+  # Layout setup
+  layMat <- matrix(c(1, 4, 3, 2), ncol = 2)
+  layout(layMat, widths = c(4/5, 1/5), heights = c(1/5, 4/5))
+  ospc <- 0.5
+  pext <- 4
+  bspc <- 1
+  par(mar = c(pext, pext, bspc, bspc), oma = rep(ospc, 4))
+  
+  xlim <- range(results[[dte_estimates_col]])
+  ylim <- range(results[[dou_estimates_col]])
+  
+  # Top histogram
+  xhist <- hist(results[[dte_estimates_col]], breaks = seq(xlim[1], xlim[2], length.out = lhist), plot = FALSE)
+  par(mar = c(0, pext, 0, 0))
+  barplot(xhist$density, axes = FALSE, ylim = c(0, max(xhist$density)), space = 0,
+          col = "gray", border = "black")
+  
+  # Right histogram
+  yhist <- hist(results[[dou_estimates_col]], breaks = seq(ylim[1], ylim[2], length.out = lhist), plot = FALSE)
+  par(mar = c(pext, 0, 0, 0))
+  barplot(yhist$density, axes = FALSE, xlim = c(0, max(yhist$density)), space = 0,
+          col = "gray", border = "black", horiz = TRUE)
+  
+  # Placeholder
+  par(mar = c(0, 0, 0, 0))
+  plot.new()
+  
+  # Main scatter plot
+  par(mar = c(pext, pext, 0, 0))
+  plot(results[[dte_estimates_col]], results[[dou_estimates_col]],
+       col = col_none, pch = 16,
+       xlab = "log2 fold-change in ORF TE",
+       ylab = "log-odds change in ORF usage")
+  
+  points(results[[dte_estimates_col]][padj_only], results[[dou_estimates_col]][padj_only], col = col_dte)
+  points(results[[dte_estimates_col]][fdr_only], results[[dou_estimates_col]][fdr_only], col = col_dou)
+  points(results[[dte_estimates_col]][both_sig], results[[dou_estimates_col]][both_sig], col = col_both)
+  
+  legend("bottomright", legend = c("DTE", "DOU", "Both"),
+         col = c(col_dte, col_dou, col_both), pch = 1, bty = "n", inset = 0.04)
+  
+  message(
+    "Spearman correlation between DOU and DTE estimates: ",
+    round(correlation_results$estimate[["rho"]], 3),
+    ", p-value: ",
+    format.pval(correlation_results$p.value, digits = 3, eps = 1e-16)
+  )
     
-    if (isTRUE(flip_sign)) {
-      correlation_results <- cor.test(results[[dte_estimates_col]], results[[dou_estimates_col]]  * -1, method = "spearman")
-      results[[dou_estimates_col]] <- results[[dou_estimates_col]] * -1
-    } else {
-      correlation_results <- cor.test(results[[dte_estimates_col]], results[[dou_estimates_col]], method = "spearman")
-    }
-    
-    results <- na.omit(results)
-    padj_sig <- !is.na(results[[dte_padj_col]]) & results[[dte_padj_col]] < dte_padj_threshold
-    fdr_sig <- !is.na(results[[dou_padj_col]]) & results[[dou_padj_col]] < dou_padj_threshold
-    both_sig <- padj_sig & fdr_sig
-    padj_only <- padj_sig & !fdr_sig
-    fdr_only <- fdr_sig & !padj_sig
-    
-    col_dte <- adjustcolor("#0072B2", alpha.f = 0.6)
-    col_dou <- adjustcolor("#E69F00", alpha.f = 0.6)
-    col_both <- adjustcolor("#CC79A7", alpha.f = 0.6)
-    col_none <- adjustcolor("grey80", alpha.f = 0.6)
-    
-    # Layout setup
-    layMat <- matrix(c(1, 4, 3, 2), ncol = 2)
-    layout(layMat, widths = c(4/5, 1/5), heights = c(1/5, 4/5))
-    ospc <- 0.5
-    pext <- 4
-    bspc <- 1
-    par(mar = c(pext, pext, bspc, bspc), oma = rep(ospc, 4))
-    
-    xlim <- range(results[[dte_estimates_col]])
-    ylim <- range(results[[dou_estimates_col]])
-    
-    # Top histogram
-    xhist <- hist(results[[dte_estimates_col]], breaks = seq(xlim[1], xlim[2], length.out = lhist), plot = FALSE)
-    par(mar = c(0, pext, 0, 0))
-    barplot(xhist$density, axes = FALSE, ylim = c(0, max(xhist$density)), space = 0,
-            col = "gray", border = "black")
-    
-    # Right histogram
-    yhist <- hist(results[[dou_estimates_col]], breaks = seq(ylim[1], ylim[2], length.out = lhist), plot = FALSE)
-    par(mar = c(pext, 0, 0, 0))
-    barplot(yhist$density, axes = FALSE, xlim = c(0, max(yhist$density)), space = 0,
-            col = "gray", border = "black", horiz = TRUE)
-    
-    # Placeholder
-    par(mar = c(0, 0, 0, 0))
-    plot.new()
-    
-    # Main scatter plot
-    par(mar = c(pext, pext, 0, 0))
-    plot(results[[dte_estimates_col]], results[[dou_estimates_col]],
-         col = col_none, pch = 16,
-         xlab = "log2 fold-change in ORF TE",
-         ylab = "log-odds change in ORF usage")
-    
-    points(results[[dte_estimates_col]][padj_only], results[[dou_estimates_col]][padj_only], col = col_dte)
-    points(results[[dte_estimates_col]][fdr_only], results[[dou_estimates_col]][fdr_only], col = col_dou)
-    points(results[[dte_estimates_col]][both_sig], results[[dou_estimates_col]][both_sig], col = col_both)
-    
-    legend("bottomright", legend = c("DTE", "DOU", "Both"),
-           col = c(col_dte, col_dou, col_both), pch = 1, bty = "n", inset = 0.04)
-    
-    message(
-      "Spearman correlation between DOU and DTE estimates: ",
-      round(correlation_results$estimate[["rho"]], 3),
-      ", p-value: ",
-      format.pval(correlation_results$p.value, digits = 3, eps = 1e-16)
-    )
-    
-  })
+  par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
   
 }
 
@@ -355,106 +357,107 @@ plot_composite_by_orfs <- function(
     flip_sign = TRUE,
     lhist = 20
 ) {
-  local({
-    old_par <- par(no.readonly = TRUE)
-    on.exit({
-      try(suppressWarnings(suppressMessages(par(old_par))), silent = TRUE)
-      try(suppressWarnings(suppressMessages(layout(1))), silent = TRUE)
-    }, add = TRUE)
+
+  old_par <- par(no.readonly = TRUE)
+  on.exit({
+    try(suppressWarnings(suppressMessages(par(old_par))), silent = TRUE)
+    try(suppressWarnings(suppressMessages(layout(1))), silent = TRUE)
+  }, add = TRUE)
+  
+  if (isTRUE(flip_sign)) {
+    # correlation_results <- cor.test(results[[dte_estimates_col]], results[[dou_estimates_col]] * -1, method = "spearman")
+    results[[dou_estimates_col]] <- results[[dou_estimates_col]] * -1
+  } else {
+    # correlation_results <- cor.test(results[[dte_estimates_col]], results[[dou_estimates_col]], method = "spearman")
+  }
+  
+  results <- merge(results, rowdata, by.x = "orf_id", by.y = "row.names")
+  results <- na.omit(results)
+  
+  is_uorfs <- results$orf_type == "uORF"
+  is_morfs <- results$orf_type == "mORF"
+  is_dorfs <- results$orf_type == "dORF"
+  
+  col_morfs <- adjustcolor("#D73027", alpha.f = 0.5)
+  col_uorfs <- adjustcolor("#4575B4", alpha.f = 0.5)
+  col_dorfs <- adjustcolor("#A6A6A6", alpha.f = 0.5)
+  
+  layMat <- matrix(c(1, 4, 3, 2), ncol = 2)
+  layout(layMat, widths = c(4/5, 1/5), heights = c(1/5, 4/5))
+  ospc <- 0.5
+  pext <- 4
+  bspc <- 1
+  par(mar = c(pext, pext, bspc, bspc), oma = rep(ospc, 4))
+  
+  xlim <- range(results[[dte_estimates_col]], na.rm = TRUE)
+  ylim <- range(results[[dou_estimates_col]], na.rm = TRUE)
+  
+  if (marginal_plot_type == "histogram") {
+    par(mar = c(0, pext, 0, 0))
+    hist_u <- hist(results[[dte_estimates_col]][is_uorfs], breaks = seq(xlim[1], xlim[2], length.out = lhist), plot = FALSE)
+    hist_m <- hist(results[[dte_estimates_col]][is_morfs], breaks = hist_u$breaks, plot = FALSE)
+    hist_d <- hist(results[[dte_estimates_col]][is_dorfs], breaks = hist_u$breaks, plot = FALSE)
+    barplot(rbind(hist_u$density, hist_m$density, hist_d$density), beside = FALSE, space = 0,
+            col = c(col_uorfs, col_morfs, col_dorfs), axes = FALSE) #border = NA,
     
-    if (isTRUE(flip_sign)) {
-      # correlation_results <- cor.test(results[[dte_estimates_col]], results[[dou_estimates_col]] * -1, method = "spearman")
-      results[[dou_estimates_col]] <- results[[dou_estimates_col]] * -1
-    } else {
-      # correlation_results <- cor.test(results[[dte_estimates_col]], results[[dou_estimates_col]], method = "spearman")
-    }
-    
-    results <- merge(results, rowdata, by.x = "orf_id", by.y = "row.names")
-    results <- na.omit(results)
-    
-    is_uorfs <- results$orf_type == "uORF"
-    is_morfs <- results$orf_type == "mORF"
-    is_dorfs <- results$orf_type == "dORF"
-    
-    col_morfs <- adjustcolor("#D73027", alpha.f = 0.5)
-    col_uorfs <- adjustcolor("#4575B4", alpha.f = 0.5)
-    col_dorfs <- adjustcolor("#A6A6A6", alpha.f = 0.5)
-    
-    layMat <- matrix(c(1, 4, 3, 2), ncol = 2)
-    layout(layMat, widths = c(4/5, 1/5), heights = c(1/5, 4/5))
-    ospc <- 0.5
-    pext <- 4
-    bspc <- 1
-    par(mar = c(pext, pext, bspc, bspc), oma = rep(ospc, 4))
-    
-    xlim <- range(results[[dte_estimates_col]], na.rm = TRUE)
-    ylim <- range(results[[dou_estimates_col]], na.rm = TRUE)
-    
-    if (marginal_plot_type == "histogram") {
-      par(mar = c(0, pext, 0, 0))
-      hist_u <- hist(results[[dte_estimates_col]][is_uorfs], breaks = seq(xlim[1], xlim[2], length.out = lhist), plot = FALSE)
-      hist_m <- hist(results[[dte_estimates_col]][is_morfs], breaks = hist_u$breaks, plot = FALSE)
-      hist_d <- hist(results[[dte_estimates_col]][is_dorfs], breaks = hist_u$breaks, plot = FALSE)
-      barplot(rbind(hist_u$density, hist_m$density, hist_d$density), beside = FALSE, space = 0,
-              col = c(col_uorfs, col_morfs, col_dorfs), axes = FALSE) #border = NA,
-      
-      par(mar = c(pext, 0, 0, 0))
-      hist_u_y <- hist(results[[dou_estimates_col]][is_uorfs], breaks = seq(ylim[1], ylim[2], length.out = lhist), plot = FALSE)
-      hist_m_y <- hist(results[[dou_estimates_col]][is_morfs], breaks = hist_u_y$breaks, plot = FALSE)
-      hist_d_y <- hist(results[[dou_estimates_col]][is_dorfs], breaks = hist_u_y$breaks, plot = FALSE)
-      barplot(rbind(hist_u_y$density, hist_m_y$density, hist_d_y$density), beside = FALSE, space = 0,
-              col = c(col_uorfs, col_morfs, col_dorfs), axes = FALSE, horiz = TRUE) #border = NA, 
-    } else if (marginal_plot_type == "density") {
-      # Top: DTE distribution
-      par(mar = c(0, pext, 0, 0))
-      plot.new()
-      plot.window(xlim = xlim, ylim = c(0, 1))
-      dens_list <- lapply(c("uORF", "mORF", "dORF"), function(orf_type) {
-        subset <- results[results$orf_type == orf_type, ]
-        density(subset[[dte_estimates_col]], from = xlim[1], to = xlim[2])
-      })
-      ymax <- max(sapply(dens_list, function(d) max(d$y)))
-      
-      for (i in seq_along(dens_list)) {
-        lines(dens_list[[i]]$x, dens_list[[i]]$y / ymax, col = c(col_uorfs, col_morfs, col_dorfs)[i], lwd = 2)
-      }
-      
-      # Right: DOU distribution
-      par(mar = c(pext, 0, 0, 0))
-      plot.new()
-      plot.window(xlim = c(0, 1), ylim = ylim)
-      dens_list <- lapply(c("uORF", "mORF", "dORF"), function(orf_type) {
-        subset <- results[results$orf_type == orf_type, ]
-        density(subset[[dou_estimates_col]], from = ylim[1], to = ylim[2])
-      })
-      ymax <- max(sapply(dens_list, function(d) max(d$y)))
-      
-      for (i in seq_along(dens_list)) {
-        lines(dens_list[[i]]$y / ymax, dens_list[[i]]$x, col = c(col_uorfs, col_morfs, col_dorfs)[i], lwd = 2)
-      } 
-      
-    } else {
-      stop("Marginal plot type not recognized: ", marginal_plot_type)
-    }
-    
-    # Placeholder
-    par(mar = c(0, 0, 0, 0))
+    par(mar = c(pext, 0, 0, 0))
+    hist_u_y <- hist(results[[dou_estimates_col]][is_uorfs], breaks = seq(ylim[1], ylim[2], length.out = lhist), plot = FALSE)
+    hist_m_y <- hist(results[[dou_estimates_col]][is_morfs], breaks = hist_u_y$breaks, plot = FALSE)
+    hist_d_y <- hist(results[[dou_estimates_col]][is_dorfs], breaks = hist_u_y$breaks, plot = FALSE)
+    barplot(rbind(hist_u_y$density, hist_m_y$density, hist_d_y$density), beside = FALSE, space = 0,
+            col = c(col_uorfs, col_morfs, col_dorfs), axes = FALSE, horiz = TRUE) #border = NA, 
+  } else if (marginal_plot_type == "density") {
+    # Top: DTE distribution
+    par(mar = c(0, pext, 0, 0))
     plot.new()
+    plot.window(xlim = xlim, ylim = c(0, 1))
+    dens_list <- lapply(c("uORF", "mORF", "dORF"), function(orf_type) {
+      subset <- results[results$orf_type == orf_type, ]
+      density(subset[[dte_estimates_col]], from = xlim[1], to = xlim[2])
+    })
+    ymax <- max(sapply(dens_list, function(d) max(d$y)))
     
-    # Main scatter plot
-    par(mar = c(pext, pext, 0, 0))
-    plot(results[[dte_estimates_col]][is_dorfs], results[[dou_estimates_col]][is_dorfs],
-         col = col_dorfs,
-         xlab = "log2 fold-change in ORF TE",
-         ylab = "log-odds change in ORF usage",
-         xlim = xlim,
-         ylim = ylim)
-    points(results[[dte_estimates_col]][is_morfs], results[[dou_estimates_col]][is_morfs], col = col_morfs)
-    points(results[[dte_estimates_col]][is_uorfs], results[[dou_estimates_col]][is_uorfs], col = col_uorfs)
+    for (i in seq_along(dens_list)) {
+      lines(dens_list[[i]]$x, dens_list[[i]]$y / ymax, col = c(col_uorfs, col_morfs, col_dorfs)[i], lwd = 2)
+    }
     
-    legend("bottomright", legend = c("uORF", "mORF", "dORF"),
-           col = c(col_uorfs, col_morfs, col_dorfs), pch = 1, bty = "n", inset = 0.04)
-  })
+    # Right: DOU distribution
+    par(mar = c(pext, 0, 0, 0))
+    plot.new()
+    plot.window(xlim = c(0, 1), ylim = ylim)
+    dens_list <- lapply(c("uORF", "mORF", "dORF"), function(orf_type) {
+      subset <- results[results$orf_type == orf_type, ]
+      density(subset[[dou_estimates_col]], from = ylim[1], to = ylim[2])
+    })
+    ymax <- max(sapply(dens_list, function(d) max(d$y)))
+    
+    for (i in seq_along(dens_list)) {
+      lines(dens_list[[i]]$y / ymax, dens_list[[i]]$x, col = c(col_uorfs, col_morfs, col_dorfs)[i], lwd = 2)
+    } 
+    
+  } else {
+    stop("Marginal plot type not recognized: ", marginal_plot_type)
+  }
+  
+  # Placeholder
+  par(mar = c(0, 0, 0, 0))
+  plot.new()
+  
+  # Main scatter plot
+  par(mar = c(pext, pext, 0, 0))
+  plot(results[[dte_estimates_col]][is_dorfs], results[[dou_estimates_col]][is_dorfs],
+       col = col_dorfs,
+       xlab = "log2 fold-change in ORF TE",
+       ylab = "log-odds change in ORF usage",
+       xlim = xlim,
+       ylim = ylim)
+  points(results[[dte_estimates_col]][is_morfs], results[[dou_estimates_col]][is_morfs], col = col_morfs)
+  points(results[[dte_estimates_col]][is_uorfs], results[[dou_estimates_col]][is_uorfs], col = col_uorfs)
+  
+  legend("bottomright", legend = c("uORF", "mORF", "dORF"),
+         col = c(col_uorfs, col_morfs, col_dorfs), pch = 1, bty = "n", inset = 0.04)
+  
+  par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
 }
 
 
@@ -795,71 +798,68 @@ plot_heatmap <- function(paired_data) {
   color_breaks <- paired_data$color_breaks
   abs_max <- paired_data$abs_max
   
-  local({
-    old_par <- par(no.readonly = TRUE)
-    on.exit(par(old_par), add = TRUE)
-    
-    n_rows <- nrow(ordered_matrix)
-    n_cols <- ncol(ordered_matrix)
-    
-    # Dynamic scaling
-    cex_row <- ifelse(n_rows > 50, 0.5, 0.8)
-    cex_col <- ifelse(n_cols > 50, 0.5, 0.8)
-    right_margin <- max(5, min(5, n_rows / 5))
-    layout_widths <- c(2, max(6, n_cols / 10))
-    
-    layout(matrix(c(1, 2), nrow = 1), widths = layout_widths)
-    
-    ## Panel 1: Dendrogram
-    par(mar = c(5, 1.5, 4, 0))
-    # par(mar = c(4, 1, 3, 1))
-    plot(row_dend_clean, horiz = TRUE, axes = FALSE, yaxs = "i")
-    
-    ## Panel 2: Heatmap
-    par(mar = c(5, 0.5, 4, right_margin))
-    image(x = 1:ncol(ordered_matrix),
-          y = 1:nrow(ordered_matrix),
-          z = t(ordered_matrix),
-          col = color_palette,
-          breaks = color_breaks,
-          axes = FALSE,
-          xlab = "")
-    
-    for (i in seq_len(nrow(highlight_df))) {
-      rect(
-        xleft = highlight_df$col[i] - 0.5,
-        xright = highlight_df$col[i] + 0.5,
-        ybottom = highlight_df$row[i] - 0.5,
-        ytop = highlight_df$row[i] + 0.5,
-        border = highlight_df$color[i],
-        lwd = 1.5
-      )
-    }
-    
-    axis(1, at = 1:ncol(ordered_matrix), labels = colnames(ordered_matrix), las = 2, cex.axis = cex_col)
-    axis(4, at = 1:nrow(ordered_matrix), labels = gene_labels, las = 2, cex.axis = cex_row)
-    
-    mtext("Differential ORF usage", side = 3, line = 1.5, cex = 1.2, adj = 0.5, font = 2)
-    
-    ## Dynamic Color Key Placement (Top-Left)
-    dend_width <- layout_widths[1] / sum(layout_widths)
-    legend_width <- 0.15
-    legend_height <- 0.08
-    legend_left <- 0.02
-    legend_right <- legend_left + legend_width
-    legend_bottom <- 0.92
-    legend_top <- legend_bottom + legend_height
-    
-    par(fig = c(legend_left, legend_right, legend_bottom, legend_top), new = TRUE, mar = c(0, 0, 2, 0))
-    image(z = t(matrix(seq(-abs_max, abs_max, length.out = 100), nrow = 1)),
-          col = color_palette, axes = FALSE)
-    
-    tick_vals <- pretty(c(-abs_max, abs_max), n = 5)
-    tick_pos <- (tick_vals - (-abs_max)) / (2 * abs_max)
-    axis(1, at = tick_pos, labels = tick_vals, las = 1, cex.axis = 0.7)
-    mtext("log-odds", side = 1, line = 2, cex = 0.8)
-    
-  })
+  old_par <- par(no.readonly = TRUE)
+  on.exit(par(old_par), add = TRUE)
+  
+  n_rows <- nrow(ordered_matrix)
+  n_cols <- ncol(ordered_matrix)
+  
+  # Dynamic scaling
+  cex_row <- ifelse(n_rows > 50, 0.5, 0.8)
+  cex_col <- ifelse(n_cols > 50, 0.5, 0.8)
+  right_margin <- max(5, min(5, n_rows / 5))
+  layout_widths <- c(2, max(6, n_cols / 10))
+  
+  layout(matrix(c(1, 2), nrow = 1), widths = layout_widths)
+  
+  ## Panel 1: Dendrogram
+  par(mar = c(5, 1.5, 4, 0))
+  # par(mar = c(4, 1, 3, 1))
+  plot(row_dend_clean, horiz = TRUE, axes = FALSE, yaxs = "i")
+  
+  ## Panel 2: Heatmap
+  par(mar = c(5, 0.5, 4, right_margin))
+  image(x = 1:ncol(ordered_matrix),
+        y = 1:nrow(ordered_matrix),
+        z = t(ordered_matrix),
+        col = color_palette,
+        breaks = color_breaks,
+        axes = FALSE,
+        xlab = "")
+  
+  for (i in seq_len(nrow(highlight_df))) {
+    rect(
+      xleft = highlight_df$col[i] - 0.5,
+      xright = highlight_df$col[i] + 0.5,
+      ybottom = highlight_df$row[i] - 0.5,
+      ytop = highlight_df$row[i] + 0.5,
+      border = highlight_df$color[i],
+      lwd = 1.5
+    )
+  }
+  
+  axis(1, at = 1:ncol(ordered_matrix), labels = colnames(ordered_matrix), las = 2, cex.axis = cex_col)
+  axis(4, at = 1:nrow(ordered_matrix), labels = gene_labels, las = 2, cex.axis = cex_row)
+  
+  mtext("Differential ORF usage", side = 3, line = 1.5, cex = 1.2, adj = 0.5, font = 2)
+  
+  ## Dynamic Color Key Placement (Top-Left)
+  dend_width <- layout_widths[1] / sum(layout_widths)
+  legend_width <- 0.15
+  legend_height <- 0.08
+  legend_left <- 0.02
+  legend_right <- legend_left + legend_width
+  legend_bottom <- 0.92
+  legend_top <- legend_bottom + legend_height
+  
+  par(fig = c(legend_left, legend_right, legend_bottom, legend_top), new = TRUE, mar = c(0, 0, 2, 0))
+  image(z = t(matrix(seq(-abs_max, abs_max, length.out = 100), nrow = 1)),
+        col = color_palette, axes = FALSE)
+  
+  tick_vals <- pretty(c(-abs_max, abs_max), n = 5)
+  tick_pos <- (tick_vals - (-abs_max)) / (2 * abs_max)
+  axis(1, at = tick_pos, labels = tick_vals, las = 1, cex.axis = 0.7)
+  mtext("log-odds", side = 1, line = 2, cex = 0.8)
   
   par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
 }
@@ -917,6 +917,8 @@ plot_volcano <- function(
     results$ensembl_gene_id <- sub("\\..*", "", results$orf_id)
     results <- merge(genes_unique, results, by = "ensembl_gene_id", all.x = TRUE)
   }
+  
+  par(mfrow = c(1, 1), mar = c(5, 4, 2, 2) + 0.1, fig = c(0, 1, 0, 1))
   
   padj_sig <- !is.na(results[[dte_padj_col]]) & results[[dte_padj_col]] < dte_padj_threshold
   fdr_sig <- !is.na(results[[dou_padj_col]]) & results[[dou_padj_col]] < dou_padj_threshold
@@ -1009,6 +1011,7 @@ plot_volcano <- function(
          col = c(col_dte, col_dou, col_both),
          pch = 1, bty = "n", inset = c(0.02, 0.05))
   
+  par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
 }
 
 
@@ -1113,126 +1116,127 @@ plotDOT <- function(
     }
   }
   
-  local({
-    old_par <- par(no.readonly = TRUE)
-    on.exit({
-      try(par(old_par), silent = TRUE)
-      try(suppressWarnings(suppressMessages(layout(1))), silent = TRUE)
-    }, add = TRUE)
-    
-    # Helper: recover graphics device
-    recover_graphics <- function(plot_fn) {
-      tryCatch({
-        plot_fn()
-      }, error = function(e) {
-        if (grepl("invalid graphics state", e$message, ignore.case = TRUE) && force_new_device_on_error) {
-          if (verbose) message("Graphics error detected. Attempting to recover...")
-          try(dev.off(), silent = TRUE)
-          try(dev.new(), silent = TRUE)
-          tryCatch({
-            plot_fn()
-          }, error = function(e2) {
-            if (verbose) message("Failed to plot after recovery: ", e2$message)
-          })
-        } else {
-          if (verbose) message("Plotting failed: ", e$message)
-        }
-      })
-    }
-    
-    # Venn plot
-    if ("venn" %in% plot_types) {
-      recover_graphics(function() {
-        grid::grid.newpage()
-        grid::grid.draw(plot_venn(
-          results = results,
-          dou_padj_col = dou_padj_col,
-          dte_padj_col = dte_padj_col
-        ))
-        if (verbose) message("Venn diagram plotted")
-      })
-    }
-    
-    # Composite plots
-    if ("composite" %in% plot_types) {
-      recover_graphics(function() {
-        plot_composite(
-          results = results,
-          dou_estimates_col = dou_estimates_col,
-          dou_padj_col = dou_padj_col,
-          dte_estimates_col = dte_estimates_col,
-          dte_padj_col = dte_padj_col,
-          flip_sign = flip_sign,
-          lhist = 20
-        )
-        plot_composite_by_orfs(
-          results = results,
-          rowdata = rowdata,
-          marginal_plot_type = marginal_plot_type,
-          dou_estimates_col = dou_estimates_col,
-          dou_padj_col = dou_padj_col,
-          dte_estimates_col = dte_estimates_col,
-          dte_padj_col = dte_padj_col,
-          flip_sign = flip_sign,
-          lhist = 20
-        )
-        if (verbose) message("composite plots plotted")
-      })
-    }
-    
-    # Volcano plot
-    if ("volcano" %in% plot_types) {
-      recover_graphics(function() {
-        plot_volcano(
-          results = results,
-          gene_annotation = gene_annotation,
-          dou_estimates_col = dou_estimates_col,
-          dou_padj_col = dou_padj_col,
-          dte_estimates_col = dte_estimates_col,
-          dte_padj_col = dte_padj_col,
-          dou_estimates_threshold = dou_estimates_threshold,
-          dou_padj_threshold = dou_padj_threshold,
-          extreme_threshold = extreme_threshold,
-          label_topn = label_topn
-        )
-        if (verbose) message("volcano plot plotted")
-      })
-    }
-    
-    # Heatmap plot
-    if ("heatmap" %in% plot_types) {
-      paired_data <- tryCatch({
-        cistronic_data(
-          results = results,
-          rowdata = rowdata,
-          gene_annotation = gene_annotation,
-          estimates_col = dou_estimates_col,
-          padj_col = dou_padj_col,
-          padj_threshold = dou_padj_threshold,
-          flip_sign = flip_sign,
-          sorf_type = sorf_type,
-          top_genes = top_genes
-        )
-      }, error = function(e) {
-        if (verbose) message("Failed to prepare heatmap data: ", e$message)
-        NULL
-      })
-      
-      if (!is.null(paired_data)) {
-        recover_graphics(function() {
-          warning("Plotting device too small or corrupted. Please increase the plot window size and rerun with plot_types = 'heatmap'.",
-                  "\nTo avoid re-downloading gene annotations, reuse the gene_annotation object like this:",
-                  "\n\n# Example usage:",
-                  "\ngene_annot <- plotDOT(results, rowdata, plot_types = 'heatmap')",
-                  "\nplotDOT(results, rowdata, gene_annotation = gene_annot, plot_types = 'heatmap')"
-                  )
-          plot_heatmap(paired_data)
-          if (verbose) message("heatmap plotted")
-          
+  old_par <- par(no.readonly = TRUE)
+  on.exit({
+    try(par(old_par), silent = TRUE)
+    try(suppressWarnings(suppressMessages(layout(1))), silent = TRUE)
+  }, add = TRUE)
+  
+  # Helper: recover graphics device
+  recover_graphics <- function(plot_fn) {
+    tryCatch({
+      plot_fn()
+    }, error = function(e) {
+      if ((grepl("invalid graphics state", e$message, ignore.case = TRUE) | grepl("figure margins too large", e$message, ignore.case = TRUE)) && force_new_device_on_error) {
+        if (verbose) message("Graphics error detected. Attempting to recover...")
+        try(dev.off(), silent = TRUE)
+        try(dev.new(), silent = TRUE)
+        tryCatch({
+          plot_fn()
+        }, error = function(e2) {
+          if (verbose) message("Failed to plot after recovery: ", e2$message)
         })
+      } else {
+        if (verbose) message("Plotting failed: ", e$message)
       }
+    })
+  }
+  
+  par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
+  
+  # Venn plot
+  if ("venn" %in% plot_types) {
+    recover_graphics(function() {
+      grid::grid.newpage()
+      grid::grid.draw(plot_venn(
+        results = results,
+        dou_padj_col = dou_padj_col,
+        dte_padj_col = dte_padj_col
+      ))
+      if (verbose) message("Venn diagram plotted")
+    })
+  }
+  
+  # Composite plots
+  if ("composite" %in% plot_types) {
+    recover_graphics(function() {
+      plot_composite(
+        results = results,
+        dou_estimates_col = dou_estimates_col,
+        dou_padj_col = dou_padj_col,
+        dte_estimates_col = dte_estimates_col,
+        dte_padj_col = dte_padj_col,
+        flip_sign = flip_sign,
+        lhist = 20
+      )
+      plot_composite_by_orfs(
+        results = results,
+        rowdata = rowdata,
+        marginal_plot_type = marginal_plot_type,
+        dou_estimates_col = dou_estimates_col,
+        dou_padj_col = dou_padj_col,
+        dte_estimates_col = dte_estimates_col,
+        dte_padj_col = dte_padj_col,
+        flip_sign = flip_sign,
+        lhist = 20
+      )
+      if (verbose) message("composite plots plotted")
+    })
+  }
+  
+  # Volcano plot
+  if ("volcano" %in% plot_types) {
+    recover_graphics(function() {
+      plot_volcano(
+        results = results,
+        gene_annotation = gene_annotation,
+        dou_estimates_col = dou_estimates_col,
+        dou_padj_col = dou_padj_col,
+        dte_estimates_col = dte_estimates_col,
+        dte_padj_col = dte_padj_col,
+        dou_estimates_threshold = dou_estimates_threshold,
+        dou_padj_threshold = dou_padj_threshold,
+        extreme_threshold = extreme_threshold,
+        label_topn = label_topn
+      )
+      if (verbose) message("volcano plot plotted")
+    })
+  }
+  
+  # Heatmap plot
+  if ("heatmap" %in% plot_types) {
+    paired_data <- tryCatch({
+      cistronic_data(
+        results = results,
+        rowdata = rowdata,
+        gene_annotation = gene_annotation,
+        estimates_col = dou_estimates_col,
+        padj_col = dou_padj_col,
+        padj_threshold = dou_padj_threshold,
+        flip_sign = flip_sign,
+        sorf_type = sorf_type,
+        top_genes = top_genes
+      )
+    }, error = function(e) {
+      if (verbose) message("Failed to prepare heatmap data: ", e$message)
+      NULL
+    })
+    
+    if (!is.null(paired_data)) {
+      recover_graphics(function() {
+        warning("Plotting device too small or corrupted. Please increase the plot window size and rerun with plot_types = 'heatmap'.",
+                "\nTo avoid re-downloading gene annotations, reuse the gene_annotation object like this:",
+                "\n\n# Example usage:",
+                "\ngene_annot <- plotDOT(results, rowdata, plot_types = 'heatmap')",
+                "\nplotDOT(results, rowdata, gene_annotation = gene_annot, plot_types = 'heatmap')"
+                )
+        plot_heatmap(paired_data)
+        if (verbose) message("heatmap plotted")
+        
+      })
     }
-  })
+  }
+  
   return(invisible(gene_annotation))
 }
 
