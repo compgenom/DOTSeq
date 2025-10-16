@@ -97,11 +97,11 @@ reduce_formula <- function(formula_input, data) {
   reduced_formula <- as.formula(new_formula_str)
   
   if (!isTRUE(all.equal(reduced_formula, formula_input, ignore.environment = TRUE))) {
-    message(paste0(
+    message(
       "formula has been reduced due to missing variables or terms with only one level\n",
       "   original formula: ", deparse(formula_input), "\n",
       "   reduced formula:  ", deparse(reduced_formula)
-    ))
+    )
   }
   
   return(list(reduced_formula = reduced_formula, 

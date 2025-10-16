@@ -29,7 +29,6 @@
 #' @param gcoeff Numeric. The log-fold change magnitude to apply to regulated ORFs.
 #' @param shape Numeric. Shape parameter for the gamma distribution used to simulate baseline coefficients.
 #' @param scale Numeric. Scale parameter for the gamma distribution used to simulate baseline coefficients.
-#' @param seed Optional integer. If provided, sets the random seed for reproducibility.
 #'
 #' @return A list with the following components:
 #' \describe{
@@ -42,16 +41,15 @@
 #' 
 #' @examples
 #' \dontrun{
-#' # generate_coefficients(orfs_df, scenario = "uORF_up_mORF_down", seed = 123)
+#' # generate_coefficients(orfs_df, scenario = "uORF_up_mORF_down")
 #' }
-generate_coefficients <- function(orfs, 
-                                  scenario = "uORF_up_mORF_down", 
-                                  gcoeff = 1.5, 
-                                  shape = 0.6, 
-                                  scale = 0.5, 
-                                  seed = NULL) {
-  
-  if (!is.null(seed)) set.seed(seed)
+generate_coefficients <- function(
+    orfs, 
+    scenario = "uORF_up_mORF_down", 
+    gcoeff = 1.5, 
+    shape = 0.6, 
+    scale = 0.5
+    ) {
   
   df <- orfs
   
@@ -144,45 +142,45 @@ generate_coefficients <- function(orfs,
 #'
 #' @keywords internal
 #' 
-get_params = function(counts, threshold=NULL, size_factor = NULL, min_size = NULL, scale_p0 = NULL){
+get_params <- function(counts, threshold=NULL, size_factor = NULL, min_size = NULL, scale_p0 = NULL){
   
   if(!is.null(threshold)){
-    rowm = rowMeans(counts)
-    index1 = which(rowm > threshold)
-    counts = counts[index1,]
+    rowm <- rowMeans(counts)
+    index1 <- which(rowm > threshold)
+    counts <- counts[index1,]
   }
   
-  nsamples = dim(counts)[2]
-  counts0 = counts==0
-  nn0 = rowSums(!counts0)
+  nsamples <- dim(counts)[2]
+  counts0 <- counts==0
+  nn0 <- rowSums(!counts0)
   if(any(nn0 == 1)){
     # need more than 1 nonzero count to estimate variance
-    counts = counts[nn0 > 1, ]
-    nn0 = nn0[nn0 > 1]
-    counts0 = counts==0
+    counts <- counts[nn0 > 1, ]
+    nn0 <- nn0[nn0 > 1]
+    counts0 <- counts==0
   }
-  mu = rowSums((!counts0)*counts)/nn0
-  s2 = rowSums((!counts0)*(counts - mu)^2)/(nn0-1)
-  size = mu^2/(s2-mu + 0.0001)
-  size = ifelse(size > 0, size, min(size[size > 0])) 
-  p0 = (nsamples-nn0)/nsamples
+  mu <- rowSums((!counts0)*counts)/nn0
+  s2 <- rowSums((!counts0)*(counts - mu)^2)/(nn0-1)
+  size <- mu^2/(s2-mu + 0.0001)
+  size <- ifelse(size > 0, size, min(size[size > 0])) 
+  p0 <- (nsamples-nn0)/nsamples
   
   if (!is.null(size_factor)) {
-    size = size * size_factor
+    size <- size * size_factor
   }
   
   if (!is.null(min_size)) {
-    size[size < min_size] = min_size
+    size[size < min_size] <- min_size
   }
   
   if (!is.null(scale_p0)) {
-    p0 = p0 * scale_p0
-    p0[p0 > 1] = 1
+    p0 <- p0 * scale_p0
+    p0[p0 > 1] <- 1
   }
   
-  lsize = log(size)
-  lmu = log(mu + 0.0001)
-  fit = smooth.spline(lsize ~ lmu)
+  lsize <- log(size)
+  lmu <- log(mu + 0.0001)
+  fit <- smooth.spline(lsize ~ lmu)
   return(list(p0=p0, mu=mu, size=size, fit=fit))
 }
 
@@ -199,7 +197,6 @@ get_params = function(counts, threshold=NULL, size_factor = NULL, min_size = NUL
 #' @param mod  Model matrix you would like to simulate from without an intercept
 #' @param beta set of coefficients for the model matrix (must have same number
 #'   of columns as mod)
-#' @param seed optional seed to set (for reproducibility)
 #'
 #' @return counts Data matrix with counts for genes in rows and samples in
 #'   columns
@@ -211,39 +208,45 @@ get_params = function(counts, threshold=NULL, size_factor = NULL, min_size = NUL
 #'
 #' @keywords internal
 #' 
-create_read_numbers = function(mu, fit, p0, m=NULL, n=NULL, mod=NULL, beta=NULL,
-                               seed=NULL){
+create_read_numbers <- function(
+    mu, 
+    fit, 
+    p0, 
+    m=NULL, 
+    n=NULL, 
+    mod=NULL, 
+    beta=NULL
+    ){
   
-  if(!is.null(seed)){set.seed(seed)}
   if(is.null(mod) | is.null(beta)){
-    cat("Generating data from baseline model.\n")
+    message("Generating data from baseline model.\n")
     if(is.null(m) | is.null(n)){
       stop("create_read_numbers error: if you don't specify
             mod and beta, you must specify m and n.\n")
     }
-    index = sample(1:length(mu),size=m)
-    mus = mu[index]
-    p0s = p0[index]
-    mumat = log(mus + 0.001) %*% t(rep(1,n))
+    index <- sample(1:length(mu),size=m)
+    mus <- mu[index]
+    p0s <- p0[index]
+    mumat <- log(mus + 0.001) %*% t(rep(1,n))
   } else {
-    m = dim(beta)[1]
-    n = dim(mod)[1]
-    index = sample(1:length(mu),size=m)
-    mus = mu[index]
-    p0s = p0[index]
+    m <- dim(beta)[1]
+    n <- dim(mod)[1]
+    index <- sample(1:length(mu),size=m)
+    mus <- mu[index]
+    p0s <- p0[index]
     
-    ind = !apply(mod,2,function(x){all(x==1)})
-    mod = cbind(mod[,ind])
-    beta = cbind(beta[,ind])
-    mumat = log(mus + 0.001) + beta %*% t(mod)
+    ind <- !apply(mod,2,function(x){all(x==1)})
+    mod <- cbind(mod[,ind])
+    beta <- cbind(beta[,ind])
+    mumat <- log(mus + 0.001) + beta %*% t(mod)
   }
   
-  muvec = as.vector(mumat)
-  sizevec = predict(fit,muvec)$y
-  sizemat = matrix(sizevec,nrow=m)
-  counts = sizemat*NA
-  for(i in 1:m){
-    counts[i,] = rbinom(n,prob=(1-p0s[i]),size=1)*
+  muvec <- as.vector(mumat)
+  sizevec <- predict(fit,muvec)$y
+  sizemat <- matrix(sizevec,nrow=m)
+  counts <- sizemat*NA
+  for(i in seq_len(m)){
+    counts[i,] <- rbinom(n,prob=(1-p0s[i]),size=1)*
       rnbinom(n,mu=exp(mumat[i,]),size=exp(sizemat[i,]))
   }
   return(counts)
@@ -311,6 +314,54 @@ create_read_numbers = function(mu, fit, p0, m=NULL, n=NULL, mod=NULL, beta=NULL,
 #' @importFrom grDevices dev.cur dev.new dev.size
 #' 
 #' @export
+#' @examples
+#' # Load \link[SummarizedExperiment]{SummarizedExperiment} to enable access to 
+#' # components like assay and rowData.
+#' library(SummarizedExperiment)
+#' 
+#' # Read in count matrix, condition table, and annotation files.
+#' dir <- system.file("extdata", package = "DOTSeq")
+#' 
+#' cnt <- read.table(file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), 
+#'   header=TRUE, 
+#'   comment.char ='#'
+#'   )
+#' names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
+#' 
+#' flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+#' bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+#' 
+#' meta <- read.table(file.path(dir, "metadata.txt.gz"))
+#' names(meta) <-  c("run","strategy","replicate","treatment","condition")
+#' cond <- meta[meta$treatment=="chx",] # extract only samples processed using cyclohexamide 
+#' cond$treatment <- NULL # remove the treatment column
+#' 
+#' # Create SummarizedExperiment objects using \code{\link{DOTSeqDataSet}}.
+#' m <- DOTSeqDataSet(
+#'   count_table = cnt, 
+#'   condition_table = cond, 
+#'   flattened_gtf = flat, 
+#'   bed = bed
+#'   )
+#'   
+#' # Extract data as inputs for simDOT
+#' raw_counts <- assay(m$sumExp)[, grep("Cycling|Interphase", colnames(assay(m$sumExp)))]
+#' ribo <- raw_counts[, grep("ribo", colnames(raw_counts))]
+#' rna <- raw_counts[, grep("rna", colnames(raw_counts))]
+#' orfs <- rowData(m$sumExp)
+#' r <- "uORF_up_mORF_down"
+#' g <- 1.5
+#' simData <- simDOT(
+#'   ribo,
+#'   rna,
+#'   orfs = orfs,
+#'   regulation_type = r,
+#'   gcoeff = g,
+#'   num_samples = 1,
+#'   num_batches = 2,
+#'   seed = 42
+#'   )
+#'
 #' 
 simDOT <- function(
     ribo,
@@ -332,7 +383,8 @@ simDOT <- function(
     batch_scenario = "balanced",
     diagplot_ribo = FALSE,
     diagplot_rna = FALSE,
-    seed = NULL) {
+    seed = NULL
+    ) {
   
   if (!is.null(seed)) set.seed(seed)
   
@@ -461,8 +513,7 @@ simDOT <- function(
       scenario = regulation_type,
       gcoeff = gcoeff,
       shape = shape, 
-      scale = scale, 
-      seed = seed
+      scale = scale
     )
     gcoeffs_ribo <- coeffs_list$gcoeffs_ribo
     gcoeffs_rna <- coeffs_list$gcoeffs_rna
@@ -561,15 +612,15 @@ simDOT <- function(
   }
   
   if (batch_scenario == "modality_specific") {
-    sim_ribo_filtered <- create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0, beta = coeffs_ribo, mod = mod_ribo, seed = seed)
-    sim_rna_filtered <- create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0, beta = coeffs_rna, mod = mod_rna, seed = seed) # params_rna$fit
+    sim_ribo_filtered <- create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0, beta = coeffs_ribo, mod = mod_ribo)
+    sim_rna_filtered <- create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0, beta = coeffs_rna, mod = mod_rna)
   } else {
-    sim_ribo_filtered <- create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0, beta = coeffs_ribo, mod = mod, seed = seed)
-    sim_rna_filtered <- create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0, beta = coeffs_rna, mod = mod, seed = seed)
+    sim_ribo_filtered <- create_read_numbers(params_ribo$mu, params_ribo$fit, params_ribo$p0, beta = coeffs_ribo, mod = mod)
+    sim_rna_filtered <- create_read_numbers(params_rna$mu, params_rna$fit, params_rna$p0, beta = coeffs_rna, mod = mod)
   }
   
-  final_cols_ribo <- paste0("sample", 1:total_samples, ".condition", group, ".batch", batch, ".ribo")
-  final_cols_rna <- paste0("sample", 1:total_samples, ".condition", group, ".batch", batch, ".rna")
+  final_cols_ribo <- paste0("sample", seq_len(total_samples), ".condition", group, ".batch", batch, ".ribo")
+  final_cols_rna <- paste0("sample", seq_len(total_samples), ".condition", group, ".batch", batch, ".rna")
   
   sim_ribo_full <- matrix(0, nrow = length(original_genes), ncol = total_samples, dimnames = list(original_genes, final_cols_ribo))
   sim_rna_full <- matrix(0, nrow = length(original_genes), ncol = total_samples, dimnames = list(original_genes, final_cols_rna))
@@ -793,7 +844,7 @@ simDOT <- function(
       # Reset margins
       par(xpd = FALSE, mar = c(5, 4, 4, 2) + 0.1)
     }, error = function(e) {
-      message("Skipping RNA-seq PCA plot due to error: ", e$message)
+      # message("Skipping RNA-seq PCA plot due to error: ", e$message)
     })
   }
   

@@ -7,12 +7,12 @@
 cistronic_data(
   results,
   rowdata,
-  gene_annotation = NULL,
+  id_mapping = NULL,
   estimates_col = "PosteriorMean",
   padj_col = "lfsr",
   padj_threshold = 0.05,
   top_genes = NULL,
-  flip_sign = TRUE,
+  flip_sign = FALSE,
   sorf_type = "uORF"
 )
 }
@@ -22,7 +22,7 @@ Must include columns for ORF IDs, gene IDs, effect size estimates, and LFSR valu
 
 \item{rowdata}{A data frame containing ORF-level metadata, including ORF type (e.g., mORF, uORF).}
 
-\item{gene_annotation}{Optional data frame with gene annotations (e.g., from biomaRt).
+\item{id_mapping}{Optional data frame with gene symbols (e.g., from biomaRt).
 Used to label heatmap rows with gene symbols.}
 
 \item{estimates_col}{Character string specifying the column name for DOU effect size estimates.
@@ -58,12 +58,12 @@ A list containing:
 \description{
 Prepares a matrix of differential ORF usage (DOU) estimates for heatmap visualization,
 comparing mORFs with either uORFs or dORFs. Filters significant ORFs based on local false sign rate (LFSR),
-clusters genes based on DOU profiles, and retrieves gene annotations for labeling.
+clusters genes based on DOU profiles, and retrieves gene symbols for labeling.
 }
 \details{
 This function supports visualization of differential ribosome loading across ORFs within genes.
 It compares mORFs with a specified short ORF type (e.g., uORFs), filters significant ORFs using
-local false sign rate (LFSR), and clusters genes based on DOU profiles. Gene annotations are optionally
+local false sign rate (LFSR), and clusters genes based on DOU profiles. gene symbols are optionally
 retrieved from Ensembl and used for labeling. The output is designed for downstream heatmap plotting.
 }
 \keyword{internal}

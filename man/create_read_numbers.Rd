@@ -4,16 +4,7 @@
 \alias{create_read_numbers}
 \title{Generate a simulated data set based on known model parameters}
 \usage{
-create_read_numbers(
-  mu,
-  fit,
-  p0,
-  m = NULL,
-  n = NULL,
-  mod = NULL,
-  beta = NULL,
-  seed = NULL
-)
+create_read_numbers(mu, fit, p0, m = NULL, n = NULL, mod = NULL, beta = NULL)
 }
 \arguments{
 \item{mu}{Baseline mean expression for negative binomial model}
@@ -32,8 +23,6 @@ specified)}
 
 \item{beta}{set of coefficients for the model matrix (must have same number
 of columns as mod)}
-
-\item{seed}{optional seed to set (for reproducibility)}
 }
 \value{
 counts Data matrix with counts for genes in rows and samples in

@@ -31,12 +31,13 @@ This is useful for extracting custom contrasts not directly available via \code{
 post hoc comparisons in complex designs involving interaction terms.
 }
 \examples{
-\dontrun{
+\donttest{
 # Generate contrast vectors from a DESeqDataSet
 contrast_list <- contrast_vectors(dds, formula = ~ condition * strategy)
 
 # Use a contrast vector with DESeq2
 res <- lfcShrink(dot$dds, contrast = contrast_list[[1]], type = "ashr")
 }
+
 
 }

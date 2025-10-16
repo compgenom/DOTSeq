@@ -54,7 +54,7 @@
 #' @param nullweight Numeric. Prior weight on the null hypothesis for empirical Bayes shrinkage in DOU.
 #'   Higher values yield more conservative lfsr estimates. Default is \code{500}.
 #' @param contrasts_method Character string specifying the method for post hoc contrasts in DOU.
-#'   Default is \code{"pairwise"}; other methods supported by \code{emmeans} may be used.
+#'   Default is \code{"revpairwise"}; other methods supported by \code{emmeans} may be used.
 #' @param seed Optional integer to set the random seed for reproducibility in model fitting (default: \code{NULL}).
 #' @param verbose Logical; if \code{TRUE}, prints progress messages and runtime summaries (default: \code{TRUE}).
 #'
@@ -66,26 +66,74 @@
 #'   used for modeling Differential Translation Efficiency within the DOTSeq framework via DESeq2.}
 #' }
 #'
-#' @examples
-#' \dontrun{
-#' result <- DOTSeq(
-#'   count_table = "counts.txt",
-#'   condition_table = "samples.txt",
-#'   flattened_gtf = "flattened.gff",
-#'   bed = "orfs.bed",
-#'   min_count = 1,
-#'   stringent = TRUE,
-#'   seed = 42,
-#'   verbose = TRUE
-#' )
-#' head(result$sumExp)
-#' }
 #'
 #' @importFrom DESeq2 DESeq design resultsNames lfcShrink
 #' @importFrom SummarizedExperiment rowRanges assay rowData rowData<-
 #' @importFrom S4Vectors metadata metadata<- mcols mcols<-
 #' 
 #' @export
+#' @examples
+#' # Load \link[SummarizedExperiment]{SummarizedExperiment} to enable access to 
+#' # components like metadata.
+#' library(SummarizedExperiment)
+#' 
+#' # Read in count matrix, condition table, and annotation files.
+#' dir <- system.file("extdata", package = "DOTSeq")
+#' 
+#' cnt <- read.table(
+#'   file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), 
+#'   header=TRUE, 
+#'   comment.char ='#'
+#'   )
+#' names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
+#' 
+#' flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+#' bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+#' 
+#' meta <- read.table(file.path(dir, "metadata.txt.gz"))
+#' names(meta) <-  c("run","strategy","replicate","treatment","condition")
+#' cond <- meta[meta$treatment=="chx",] # extract only samples processed using cyclohexamide 
+#' cond$treatment <- NULL # remove the treatment column
+#' 
+#' # Run DTE analysis only.
+#' m <- DOTSeq(
+#'   count_table = cnt, 
+#'   condition_table = cond, 
+#'   flattened_gtf = flat, 
+#'   bed = bed,
+#'   modules = "DTE"
+#'   )
+#' # View the list of \link[SummarizedExperiment]{SummarizedExperiment} objects.
+#' names(m)
+#' # View post hoc results for DTE
+#' # Model fitting, post hoc contrasts and shrinkage has been performed on m$dds 
+#' metadata(m$dds)
+#' 
+#' # Randomly sample 100 ORFs for \code{\link{fitDOU}}.
+#' n <- 100 
+#' set.seed(42)
+#' random_rows <- sample(seq_len(nrow(m$sumExp)), size = n)
+#' 
+#' # Subset the SummarizedExperiment object
+#' m$sumExp <- m$sumExp[random_rows, ]
+#' 
+#' # Run DOU on the existing m$sumExp subset. This will skip DTE automatically. 
+#' m <- DOTSeq(dotseq_dataset = m)
+#' # View post hoc results for DOU.
+#' metadata(m$sumExp)
+#' 
+#' # Create \link[SummarizedExperiment]{SummarizedExperiment} objects using 
+#' # \code{\link{DOTSeqDataSet}} and run DTE analysis.
+#' m <- DOTSeqDataSet(
+#'   count_table = cnt, 
+#'   condition_table = cond, 
+#'   flattened_gtf = flat, 
+#'   bed = bed
+#'   )
+#' 
+#' m <- DOTSeq(dotseq_dataset = m, modules = "DTE")
+#' metadata(m$dds)
+#' 
 #' 
 DOTSeq <- function(
     dotseq_dataset = NULL,
@@ -106,7 +154,7 @@ DOTSeq <- function(
     parallel = list(n=4L, autopar=TRUE),
     optimizers = FALSE,
     nullweight = 500,
-    contrasts_method = "pairwise",
+    contrasts_method = "revpairwise",
     seed = NULL,
     verbose = TRUE
     ) {
@@ -126,7 +174,7 @@ DOTSeq <- function(
     dot <- dotseq_dataset
   } else {
     # Check that all required raw inputs are provided
-    if (any(sapply(list(count_table, condition_table, flattened_gtf, bed), is.null))) {
+    if (any(vapply(list(count_table, condition_table, flattened_gtf, bed), is.null, logical(1)))) {
       stop("Either provide a 'dotseq_dataset' object or all of 'count_table', 'condition_table', 'flattened_gtf', and 'bed'.")
     }
     dot <- DOTSeqDataSet(
@@ -165,7 +213,6 @@ DOTSeq <- function(
         anno = colData(dot$sumExp),
         formula = metadata(dot$sumExp)$formula,
         emm_specs = metadata(dot$sumExp)$emm_specs,
-        target = target,
         dispersion_modeling = dispersion_modeling, 
         dispformula = dispformula,
         lrt = lrt,
@@ -178,7 +225,6 @@ DOTSeq <- function(
       
       dot$sumExp <- testDOU(
         dot$sumExp,
-        emm_specs = metadata(dot$sumExp)$emm_specs,
         contrasts_method = contrasts_method,
         nullweight = nullweight,
         verbose = verbose
@@ -202,9 +248,9 @@ DOTSeq <- function(
         for (c_name in all_contrasts) {
           nrow_fitted <- nrow(interaction_results[interaction_results$contrast == c_name, ])
           message("DOU model fitting summary: ", c_name)
-          message("  models fitted: ", paste0(nrow_fitted))
-          message("  fit errors (non-convergence or invalid Hessian): ", paste0(nrow_kept - nrow_fitted))
-          message("  not fitted (filtered out): ", paste0(nrow_input - nrow_kept))
+          message("  models fitted: ", nrow_fitted)
+          message("  fit errors (non-convergence or invalid Hessian): ", nrow_kept - nrow_fitted)
+          message("  not fitted (filtered out): ", nrow_input - nrow_kept)
         }
       }
     }
@@ -271,8 +317,8 @@ DOTSeq <- function(
           nrow_fitted <- nrow(contrast_results[!is.na(contrast_results$padj) & contrast_results$contrast == c_name, ])
           
           message("DTE model fitting summary: ", c_name)
-          message("  models fitted: ", paste0(nrow_fitted))
-          message("  padj = NA (filtered or flagged): ", paste0(nrow_input - nrow_fitted))
+          message("  models fitted: ", nrow_fitted)
+          message("  padj = NA (filtered or flagged): ", nrow_input - nrow_fitted)
         }
       }
     }

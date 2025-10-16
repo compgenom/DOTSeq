@@ -1,13 +1,33 @@
 Package: DOTSeq
 Type: Package
 Title: Differential analysis of translation efficiency and usage of open reading frames
-Version: 0.34
+Version: 0.99.0
 Authors@R: c(
-    person(given = "Chun Shen", family = "Lim", email="chunshen.lim@ieee.org", role = c("aut","cre"), comment = c(ORCID = "0000-0001-7015-0125")),
-    person(given = "Gabrielle", family = "Chieng", role = c("aut","ctb")),
-    person("Marsden", role="fnd"))
-Maintainer: Chun Shen Lim <chunshen.lim@ieee.org>
-Description: DOTSeq is a statistical framework for detecting differential translation at the open reading frame (ORF) level using ribosome profiling (Ribo-seq) and matched RNA-seq data. Unlike gene-level tools, DOTSeq models translation dynamics within genes, enabling discovery of differential ORF usage and translation efficiency. It uses a flexible beta-binomial generalized linear model (GLM) framework to capture subtle regulatory signals, such as upstream ORF-mediated control, across diverse biological conditions.
+    person(
+        given = "Chun Shen", 
+        family = "Lim", 
+        email="chunshen.lim@ieee.org", 
+        role = c("aut","cre"), 
+        comment = c(ORCID = "0000-0001-7015-0125")),
+    person(
+        given = "Gabrielle", 
+        family = "Chieng", 
+        role = c("aut","ctb")),
+    person(
+        "Marsden", 
+        role="fnd"
+        )
+    )
+Description: 
+  DOTSeq is a statistical framework for detecting differential translation at 
+  the open reading frame (ORF) level using ribosome profiling (Ribo-seq) and 
+  matched RNA-seq data. Unlike gene-level tools, DOTSeq models translation 
+  dynamics within genes, enabling discovery of differential ORF usage and 
+  translation efficiency. It uses a flexible beta-binomial generalized linear 
+  model (GLM) framework to capture subtle regulatory signals, such as 
+  upstream ORF-mediated control, across diverse biological conditions.
+URL: https://github.com/compgenom/DOTSeq
+BugReports: https://github.com/compgenom/DOTSeq/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
@@ -32,4 +52,16 @@ Imports:
     IRanges,
     S4Vectors,
     SummarizedExperiment
+biocViews: 
+    GeneRegulation,
+    GeneExpression, 
+    DifferentialExpression, 
+    Genetics,
+    Sequencing, 
+    Software, 
+    WorkflowStep,
+    RNASeq,
+    Bayesian, 
+    Regression,
+    MultipleComparison
 License: MIT + file LICENSE

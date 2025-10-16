@@ -15,7 +15,6 @@
 #' @slot posthoc An object of class \code{ANY} storing post hoc summary objects (e.g., from \code{emmeans}).
 #'
 #' @export
-#'
 #' @examples
 #' ## Create a dummy PostHoc object
 #' PostHocRes <- PostHoc(
@@ -26,6 +25,8 @@
 #'   )
 #' )
 #' PostHocRes
+#' 
+#' 
 .PostHoc <- setClass("PostHoc", 
                      slots = c(
                        type = "character",
@@ -48,6 +49,9 @@
 #'
 #' @return A \code{PostHoc} S4 object.
 #'
+#' @importFrom methods new
+#' 
+#' @export
 #' @examples
 #' ## Create a dummy PostHoc object
 #' PostHocRes <- PostHoc(
@@ -55,9 +59,8 @@
 #'   results = list(x = 3, y = 7, b = 4)
 #' )
 #' PostHocRes
-#'
-#' @importFrom methods new
-#' @export
+#' 
+#' 
 PostHoc <- function(type = "fitError",
                       results = list(),
                       posthoc = NA_real_) {

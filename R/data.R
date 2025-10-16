@@ -39,6 +39,36 @@
 #' @importFrom stats relevel
 #' 
 #' @export
+#' @examples
+#' # Read in count matrix, condition table, and annotation files.
+#' dir <- system.file("extdata", package = "DOTSeq")
+#' 
+#' cnt <- read.table(
+#'   file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), 
+#'   header=TRUE, 
+#'   comment.char ='#'
+#'   )
+#' names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
+#' 
+#' flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+#' bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+#' 
+#' meta <- read.table(file.path(dir, "metadata.txt.gz"))
+#' names(meta) <-  c("run","strategy","replicate","treatment","condition")
+#' cond <- meta[meta$treatment=="chx",] # extract only samples processed using cyclohexamide 
+#' cond$treatment <- NULL # remove the treatment column
+#' 
+#' # Create \link[SummarizedExperiment]{SummarizedExperiment} objects.
+#' # These objects can be used as input for \code{\link{DOTSeq}} and \code{\link{fitDOU}}.
+#' m <- DOTSeqDataSet(
+#'   count_table = cnt, 
+#'   condition_table = cond, 
+#'   flattened_gtf = flat, 
+#'   bed = bed
+#'   )
+#'   
+#' head(m$sumExp)
+#' 
 #' 
 DOTSeqDataSet <- function(
     count_table, 
@@ -166,7 +196,7 @@ DOTSeqDataSet <- function(
   }
   
   # Remove columns with fewer than 2 levels
-  validCols <- sapply(combined_cond, function(x) !(is.factor(x) && length(unique(x)) < 2))
+  validCols <- vapply(combined_cond, function(x) !(is.factor(x) && length(unique(x)) < 2), logical(1))
   combined_cond <- combined_cond[, validCols]
   
   

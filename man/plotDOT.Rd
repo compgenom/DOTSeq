@@ -7,7 +7,7 @@
 plotDOT(
   results,
   rowdata,
-  gene_annotation = NULL,
+  id_mapping = NULL,
   include_go = FALSE,
   plot_types = c("venn", "composite", "volcano", "heatmap"),
   marginal_plot_type = "density",
@@ -17,10 +17,11 @@ plotDOT(
   dte_padj_col = "padj",
   dou_estimates_threshold = 1,
   dou_padj_threshold = 0.05,
+  dou_padj_ceiling = 10,
   extreme_threshold = NULL,
-  label_topn = 10,
+  label_topn = 3,
   top_genes = 40,
-  flip_sign = TRUE,
+  flip_sign = FALSE,
   sorf_type = "uORF",
   dataset = "hsapiens_gene_ensembl",
   symbol_col = "hgnc_symbol",
@@ -36,7 +37,7 @@ ORF-level identifiers and columns specified by \code{dou_estimates_col}, \code{d
 
 \item{rowdata}{A data frame containing ORF-level metadata, including ORF type (e.g., mORF, uORF).}
 
-\item{gene_annotation}{A data frame containing gene annotations for the input Ensembl IDs.
+\item{id_mapping}{A data frame containing gene symbols for the input Ensembl IDs.
 Default is \code{NULL}.}
 
 \item{include_go}{Logical; if \code{TRUE}, includes GO annotations (\code{go_id}, \code{name_1006},
@@ -63,6 +64,9 @@ Default is \code{"padj"}.}
 
 \item{dou_padj_threshold}{Numeric threshold for DOU LFSR significance. Default is \code{0.05}.}
 
+\item{dou_padj_ceiling}{Numeric value to define the rounding ceiling for -log10(LFSR). The maximum y-axis value
+will be rounded up to the nearest multiple of this value. Default is \code{10}.}
+
 \item{extreme_threshold}{Optional numeric threshold for labeling extreme points in the volcano plot
 (based on -log10 LFSR).}
 
@@ -86,17 +90,17 @@ Default is \code{"padj"}.}
 \item{force_new_device_on_error}{Logicall if \code{TRUE}, detects graphics error and reset graphics state.}
 }
 \value{
-A data frame containing gene annotations retrieved from Ensembl, used for labeling and heatmap visualization.
+A data frame containing gene symbols retrieved from Ensembl, used for labeling and heatmap visualization.
 }
 \description{
 A high-level wrapper that visualizes differential ORF usage (DOU) and translation efficiency (DTE)
 relationships through a suite of plots including Venn diagrams, volcano plots, composite scatter plots
-with marginal distributions, and heatmaps. It integrates Ensembl gene annotations and highlights significant ORFs
+with marginal distributions, and heatmaps. It integrates Ensembl gene symbols and highlights significant ORFs
 based on empirical Bayes shrinkage (via the \code{ashr} package).
 }
 \details{
 This function orchestrates multiple visualization components to explore differential translation across ORFs.
-It uses empirical Bayes shrinkage to identify significant ORFs, retrieves gene annotations via \code{biomaRt},
+It uses empirical Bayes shrinkage to identify significant ORFs, retrieves gene symbols via \code{biomaRt},
 and generates plots to summarize DOU and DTE relationships. The composite scatter plot includes marginal distributions
 by ORF type, helping to visualize the overlap and divergence between DTE and DOU signals. The volcano plot highlights
 extreme and top-ranked ORFs, while the heatmap summarizes translation changes across top genes.

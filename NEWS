@@ -1,0 +1,13 @@
+CHANGES IN VERSION 0.99.0
+
+- Unified Workflow: The DOTSeq() wrapper function provides a streamlined 
+  interface for performing Differential ORF Translation analysis, while also 
+  exposing modular steps for advanced customisation.
+
+- Data Structure: SummarizedExperiment is used as the foundational class for 
+  organising input data, model outputs, and metadata.
+
+- Bayesian Inference: Differential ORF Usage (DOU) is assessed using adaptive 
+  shrinkage via the ashr package, yielding posterior summaries such as 
+  PosteriorMean and local false sign rates (LFSR) for robust effect size 
+  estimation and uncertainty quantification.

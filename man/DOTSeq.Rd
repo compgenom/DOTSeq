@@ -23,7 +23,7 @@ DOTSeq(
   parallel = list(n = 4L, autopar = TRUE),
   optimizers = FALSE,
   nullweight = 500,
-  contrasts_method = "pairwise",
+  contrasts_method = "revpairwise",
   seed = NULL,
   verbose = TRUE
 )
@@ -96,7 +96,7 @@ in \code{glmmTMB}: \code{nlminb}, \code{bobyqa}, and \code{optim} (default: \cod
 Higher values yield more conservative lfsr estimates. Default is \code{500}.}
 
 \item{contrasts_method}{Character string specifying the method for post hoc contrasts in DOU.
-Default is \code{"pairwise"}; other methods supported by \code{emmeans} may be used.}
+Default is \code{"revpairwise"}; other methods supported by \code{emmeans} may be used.}
 
 \item{seed}{Optional integer to set the random seed for reproducibility in model fitting (default: \code{NULL}).}
 
@@ -118,18 +118,66 @@ modeling for Differential Translation Efficiency (DTE). This wrapper function ru
 including data loading, ORF filtering, normalization, and model fitting for one or both modules.
 }
 \examples{
-\dontrun{
-result <- DOTSeq(
-  count_table = "counts.txt",
-  condition_table = "samples.txt",
-  flattened_gtf = "flattened.gff",
-  bed = "orfs.bed",
-  min_count = 1,
-  stringent = TRUE,
-  seed = 42,
-  verbose = TRUE
-)
-head(result$sumExp)
-}
+# Load \link[SummarizedExperiment]{SummarizedExperiment} to enable access to 
+# components like metadata.
+library(SummarizedExperiment)
+
+# Read in count matrix, condition table, and annotation files.
+dir <- system.file("extdata", package = "DOTSeq")
+
+cnt <- read.table(
+  file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), 
+  header=TRUE, 
+  comment.char ='#'
+  )
+names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\\\1", names(cnt))
+
+flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+
+meta <- read.table(file.path(dir, "metadata.txt.gz"))
+names(meta) <-  c("run","strategy","replicate","treatment","condition")
+cond <- meta[meta$treatment=="chx",] # extract only samples processed using cyclohexamide 
+cond$treatment <- NULL # remove the treatment column
+
+# Run DTE analysis only.
+m <- DOTSeq(
+  count_table = cnt, 
+  condition_table = cond, 
+  flattened_gtf = flat, 
+  bed = bed,
+  modules = "DTE"
+  )
+# View the list of \link[SummarizedExperiment]{SummarizedExperiment} objects.
+names(m)
+# View post hoc results for DTE
+# Model fitting, post hoc contrasts and shrinkage has been performed on m$dds 
+metadata(m$dds)
+
+# Randomly sample 100 ORFs for \code{\link{fitDOU}}.
+n <- 100 
+set.seed(42)
+random_rows <- sample(seq_len(nrow(m$sumExp)), size = n)
+
+# Subset the SummarizedExperiment object
+m$sumExp <- m$sumExp[random_rows, ]
+
+# Run DOU on the existing m$sumExp subset. This will skip DTE automatically. 
+m <- DOTSeq(dotseq_dataset = m)
+# View post hoc results for DOU.
+metadata(m$sumExp)
+
+# Create \link[SummarizedExperiment]{SummarizedExperiment} objects using 
+# \code{\link{DOTSeqDataSet}} and run DTE analysis.
+m <- DOTSeqDataSet(
+  count_table = cnt, 
+  condition_table = cond, 
+  flattened_gtf = flat, 
+  bed = bed
+  )
+
+m <- DOTSeq(dotseq_dataset = m, modules = "DTE")
+metadata(m$dds)
+
 
 }

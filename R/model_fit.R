@@ -110,8 +110,6 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
 #' @param rna_mat A numeric matrix of RNA-seq counts for the same gene (same dimensions as \code{ribo_mat}).
 #' @param anno A data frame containing sample annotations. Must include columns such as \code{condition}, \code{strategy}, and \code{replicate}.
 #' @param formula A formula object specifying the model design, e.g., \code{~ condition * strategy}.
-#' @param target Character string specifying the non-reference condition level to extract the corresponding interaction term from the model. 
-#' This is contrasted against the baseline condition (default: \code{NULL}).
 #' @param dispersion_modeling Character string specifying the dispersion modeling strategy.
 #'   Options are:
 #'   \describe{
@@ -145,7 +143,6 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
     anno, 
     formula = ~ condition * strategy, 
     emm_specs = ~ condition * strategy, 
-    target = NULL,
     dispersion_modeling = c("auto", "shared", "custom"), 
     dispformula = NULL, 
     lrt = FALSE,
@@ -213,7 +210,6 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
 
   # Check for negative counts
   if (isTRUE(any(long_data$counts < 0))) {
-    print(long_data)
     stop("Encounter negative counts")
   }
   
@@ -552,8 +548,8 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
 #' @param orf2gene A data frame mapping ORF IDs to gene IDs. Must contain columns \code{orf_id} and \code{gene_id}.
 #' @param anno A data frame containing sample annotations. Must include columns such as \code{condition}, \code{strategy}, and \code{replicate}.
 #' @param formula A formula object specifying the model design, e.g., \code{~ condition * strategy}.
-#' @param target Character string specifying the non-reference condition level to extract the corresponding interaction term from the model. 
-#' This is contrasted against the baseline condition (default: \code{NULL}).
+#' @param emm_specs A formula specifying the structure of the estimated marginal means.
+#'   Default is \code{~condition * strategy}.
 #' @param dispformula Optional formula object specifying a custom dispersion model (used when \code{dispersion_modeling = "custom"}).
 #' @param dispersion_modeling Character string specifying the dispersion modeling strategy.
 #'   Options are:
@@ -570,30 +566,89 @@ fit_glmm <- function(formula, dispformula, data, family = betabinomial(), parall
 #'   e.g., \code{list(parallel = TRUE, ncpus = 4)}. Default: \code{list(n = 4L, autopar = TRUE)}.
 #' @param optimizers Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers in \code{glmmTMB} (default: \code{FALSE}).
 #' @param seed Optional integer to set the random seed for reproducibility (default: \code{NULL}).
-#' @param verbose Logical; if \code{TRUE}, prints progress messages (default: \code{FALSE}).
+#' @param verbose Logical; if \code{TRUE}, prints progress messages (default: \code{TRUE}).
 #'
 #' @return A named \code{list} of \code{PostHoc} objects, one per ORF.
 #' 
 #' @importFrom S4Vectors mcols mcols<-
 #' @importFrom stats setNames
 #' 
-#' @keywords internal
+#' @export
+#' @examples
+#' # Load \link[SummarizedExperiment]{SummarizedExperiment} to enable subsetting 
+#' # and access to components like rowRanges and rowData.
+#' library(SummarizedExperiment)
+#' 
+#' # Read in count matrix, condition table, and annotation files.
+#' dir <- system.file("extdata", package = "DOTSeq")
+#' 
+#' cnt <- read.table(
+#'   file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), 
+#'   header=TRUE, 
+#'   comment.char ='#'
+#'   )
+#' names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
+#' 
+#' flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+#' bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+#' 
+#' meta <- read.table(file.path(dir, "metadata.txt.gz"))
+#' names(meta) <-  c("run","strategy","replicate","treatment","condition")
+#' cond <- meta[meta$treatment=="chx",] # extract only samples processed using cyclohexamide 
+#' cond$treatment <- NULL # remove the treatment column
+#' 
+#' # Create \link[SummarizedExperiment]{SummarizedExperiment} objects.
+#' # These objects can be used as input for \code{\link{DOTSeq}} and \code{\link{fitDOU}}.
+#' m <- DOTSeqDataSet(
+#'   count_table = cnt, 
+#'   condition_table = cond, 
+#'   flattened_gtf = flat, 
+#'   bed = bed
+#'   )
+#'  
+#' # Keep ORFs where all replicates in at least one condition pass min_count.
+#' # Single-ORF genes are removed.
+#' m$sumExp <- m$sumExp[rowRanges(m$sumExp)$is_kept == TRUE, ]
+#' 
+#' # Randomly sample 100 ORFs for \code{\link{fitDOU}}.
+#' n <- 100 
+#' set.seed(42)
+#' random_rows <- sample(seq_len(nrow(m$sumExp)), size = n)
+#' 
+#' # Subset the SummarizedExperiment object
+#' m$sumExp <- m$sumExp[random_rows, ]
+#' 
+#' # Model fitting using \code{\link{fitDOU}}.
+#' rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
+#'   countData = assay(m$sumExp),
+#'   orf2gene = rowData(m$sumExp), 
+#'   anno = colData(m$sumExp),
+#'   formula = ~condition * strategy,
+#'   emm_specs = ~condition * strategy,
+#'   dispersion_modeling = "auto",
+#'   lrt = FALSE,
+#'   optimizers = FALSE,
+#'   diagnostic = FALSE,
+#'   parallel = list(n=4L, autopar=TRUE),
+#'   seed = 42,
+#'   verbose = TRUE
+#' )
+#' 
 #' 
 fitDOU <- function(
     countData,
     orf2gene,
     anno,
-    formula,
-    emm_specs,
-    target,
-    dispformula,
-    dispersion_modeling,
-    lrt,
-    diagnostic, 
-    parallel,
-    optimizers,
-    seed,
-    verbose
+    formula = ~condition * strategy,
+    emm_specs = ~condition * strategy,
+    dispformula = NULL,
+    dispersion_modeling = "auto",
+    lrt = FALSE,
+    diagnostic = FALSE, 
+    parallel = list(n=4L, autopar=TRUE),
+    optimizers = FALSE,
+    seed = NULL,
+    verbose = TRUE
 ) {
   stopifnot(class(countData)[1] %in% c("matrix", "data.frame", "dgCMatrix", "DelayedMatrix"))
   
@@ -648,14 +703,14 @@ fitDOU <- function(
     models_gene <- tryCatch({
       .fitBetaBinomial(
         ribo_mat = ribo_mat, rna_mat = rna_mat, anno = anno, 
-        formula = formula, emm_specs = emm_specs, target = target,
+        formula = formula, emm_specs = emm_specs, 
         dispersion_modeling = dispersion_modeling, dispformula = dispformula, lrt = lrt,
         diagnostic = diagnostic, seed = seed, 
         parallel = parallel, optimizers = optimizers,
         verbose = verbose
       )
     }, error = function(e) {
-      warning(paste("Model fit failed for gene", gene, "with a critical error:", e$message))
+      warning("Model fit failed for gene", gene, "with a critical error:", e$message)
       setNames(
         lapply(orfs, function(orf) {
           .PostHoc(type = "fitError", results = list(), posthoc = NA)

@@ -221,14 +221,14 @@ plot_composite <- function(
     dte_padj_col = "padj",
     dou_padj_threshold = 0.05,
     dte_padj_threshold = 0.05,
-    flip_sign = TRUE,
+    flip_sign = FALSE,
     lhist = 20
 ) {
 
   old_par <- par(no.readonly = TRUE)
   on.exit({
-    try(suppressWarnings(suppressMessages(par(old_par))), silent = TRUE)
-    try(suppressWarnings(suppressMessages(layout(1))), silent = TRUE)
+    try(par(old_par), silent = TRUE)
+    try(layout(1), silent = TRUE)
   }, add = TRUE)
   
   if (isTRUE(flip_sign)) {
@@ -290,16 +290,10 @@ plot_composite <- function(
   
   legend("bottomright", legend = c("DTE", "DOU", "Both"),
          col = c(col_dte, col_dou, col_both), pch = 1, bty = "n", inset = 0.04)
-  
-  message(
-    "Spearman correlation between DOU and DTE estimates: ",
-    round(correlation_results$estimate[["rho"]], 3),
-    ", p-value: ",
-    format.pval(correlation_results$p.value, digits = 3, eps = 1e-16)
-  )
     
   par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
   
+  return(correlation_results)
 }
 
 
@@ -354,14 +348,14 @@ plot_composite_by_orfs <- function(
     dte_padj_col = "padj",
     dou_padj_threshold = 0.05,
     dte_padj_threshold = 0.05,
-    flip_sign = TRUE,
+    flip_sign = FALSE,
     lhist = 20
 ) {
 
   old_par <- par(no.readonly = TRUE)
   on.exit({
-    try(suppressWarnings(suppressMessages(par(old_par))), silent = TRUE)
-    try(suppressWarnings(suppressMessages(layout(1))), silent = TRUE)
+    try(par(old_par), silent = TRUE)
+    try(layout(1), silent = TRUE)
   }, add = TRUE)
   
   if (isTRUE(flip_sign)) {
@@ -415,7 +409,7 @@ plot_composite_by_orfs <- function(
       subset <- results[results$orf_type == orf_type, ]
       density(subset[[dte_estimates_col]], from = xlim[1], to = xlim[2])
     })
-    ymax <- max(sapply(dens_list, function(d) max(d$y)))
+    ymax <- max(vapply(dens_list, function(d) max(d$y), numeric(1)))
     
     for (i in seq_along(dens_list)) {
       lines(dens_list[[i]]$x, dens_list[[i]]$y / ymax, col = c(col_uorfs, col_morfs, col_dorfs)[i], lwd = 2)
@@ -429,7 +423,7 @@ plot_composite_by_orfs <- function(
       subset <- results[results$orf_type == orf_type, ]
       density(subset[[dou_estimates_col]], from = ylim[1], to = ylim[2])
     })
-    ymax <- max(sapply(dens_list, function(d) max(d$y)))
+    ymax <- max(vapply(dens_list, function(d) max(d$y), numeric(1)))
     
     for (i in seq_along(dens_list)) {
       lines(dens_list[[i]]$y / ymax, dens_list[[i]]$x, col = c(col_uorfs, col_morfs, col_dorfs)[i], lwd = 2)
@@ -466,12 +460,12 @@ plot_composite_by_orfs <- function(
 #' @description
 #' Prepares a matrix of differential ORF usage (DOU) estimates for heatmap visualization,
 #' comparing mORFs with either uORFs or dORFs. Filters significant ORFs based on local false sign rate (LFSR),
-#' clusters genes based on DOU profiles, and retrieves gene annotations for labeling.
+#' clusters genes based on DOU profiles, and retrieves gene symbols for labeling.
 #'
 #' @param results A data frame from \code{testDOT} containing DOU estimates and significance values.
 #'   Must include columns for ORF IDs, gene IDs, effect size estimates, and LFSR values.
 #' @param rowdata A data frame containing ORF-level metadata, including ORF type (e.g., mORF, uORF).
-#' @param gene_annotation Optional data frame with gene annotations (e.g., from biomaRt).
+#' @param id_mapping Optional data frame with gene symbols (e.g., from biomaRt).
 #'   Used to label heatmap rows with gene symbols.
 #' @param estimates_col Character string specifying the column name for DOU effect size estimates.
 #'   Default is \code{"PosteriorMean"}.
@@ -500,10 +494,10 @@ plot_composite_by_orfs <- function(
 #' @details
 #' This function supports visualization of differential ribosome loading across ORFs within genes.
 #' It compares mORFs with a specified short ORF type (e.g., uORFs), filters significant ORFs using
-#' local false sign rate (LFSR), and clusters genes based on DOU profiles. Gene annotations are optionally
+#' local false sign rate (LFSR), and clusters genes based on DOU profiles. gene symbols are optionally
 #' retrieved from Ensembl and used for labeling. The output is designed for downstream heatmap plotting.
 #'
-#' @importFrom stats dist hclust as.dendrogram order.dendrogram complete.cases setNames
+#' @importFrom stats dist hclust as.dendrogram order.dendrogram complete.cases setNames median
 #' @importFrom utils head
 #' @importFrom grDevices colorRampPalette
 #'
@@ -512,12 +506,12 @@ plot_composite_by_orfs <- function(
 cistronic_data <- function(
     results, 
     rowdata, 
-    gene_annotation = NULL, 
+    id_mapping = NULL, 
     estimates_col = "PosteriorMean", 
     padj_col = "lfsr", 
     padj_threshold = 0.05,
     top_genes = NULL,
-    flip_sign = TRUE, 
+    flip_sign = FALSE, 
     sorf_type = "uORF"
     ) {
   
@@ -591,8 +585,8 @@ cistronic_data <- function(
   
   ensembl_ids <- sub("\\..*", "", rownames(ordered_matrix))
   
-  if (!is.null(gene_annotation)) {
-    genes_unique <- gene_annotation[!duplicated(gene_annotation$ensembl_gene_id), ]
+  if (!is.null(id_mapping)) {
+    genes_unique <- id_mapping[!duplicated(id_mapping$ensembl_gene_id), ]
     genes_unique_sorted <- genes_unique[match(ensembl_ids, genes_unique$ensembl_gene_id), ]
     gene_labels <- genes_unique_sorted[[2]]
   } else {
@@ -650,10 +644,10 @@ get_significant_genes <- function(
 }
 
 
-#' Retrieve Gene Annotations from Ensembl or Ensembl Genomes
+#' Retrieve gene symbols from Ensembl or Ensembl Genomes
 #'
 #' @description
-#' Queries Ensembl or Ensembl Genomes BioMart databases to retrieve gene annotations such as gene symbols,
+#' Queries Ensembl or Ensembl Genomes BioMart databases to retrieve gene symbols such as gene symbols,
 #' descriptions, and optionally Gene Ontology (GO) terms. Supports multiple organism groups including
 #' vertebrates, plants, fungi, protists, metazoa, and bacteria.
 #'
@@ -668,26 +662,26 @@ get_significant_genes <- function(
 #'   \code{"protists"}, \code{"metazoa"}, or \code{"bacteria"}.
 #' @param host Optional. A custom host URL (e.g., for archived Ensembl versions).
 #'
-#' @return A data frame containing gene annotations for the input Ensembl IDs. If \code{symbol_col} is unavailable,
+#' @return A data frame containing gene symbols for the input Ensembl IDs. If \code{symbol_col} is unavailable,
 #'         the \code{description} field is used instead and renamed to match \code{symbol_col}.
 #'
 #' @examples
 #' \dontrun{
 #' # Human gene example
-#' get_gene_annotation(
+#' get_id_mapping(
 #'   c("ENSG00000139618"), 
 #'   dataset = "hsapiens_gene_ensembl", 
 #'   mart_source = "ensembl"
 #'   )
 #'
 #' # Arabidopsis gene example
-#' get_gene_annotation(c("AT1G01010"), 
+#' get_id_mapping(c("AT1G01010"), 
 #'   dataset = "athaliana_eg_gene", 
 #'   symbol_col = "tair_symbol", 
 #'   mart_source = "plants")
 #'
 #' # Plasmodium falciparum gene example with fallback
-#' get_gene_annotation(
+#' get_id_mapping(
 #'   c("PF3D7_0100100"), 
 #'   dataset = "pfalciparum_eg_gene", 
 #'   mart_source = "protists"
@@ -698,7 +692,7 @@ get_significant_genes <- function(
 #'
 #' @keywords internal
 #' 
-get_gene_annotation <- function(ensembl_ids,
+get_id_mapping <- function(ensembl_ids,
                                 dataset,
                                 symbol_col = "external_gene_name",
                                 include_go = FALSE,
@@ -821,8 +815,8 @@ plot_heatmap <- function(paired_data) {
   
   ## Panel 2: Heatmap
   par(mar = c(5, 0.5, 4, right_margin))
-  image(x = 1:ncol(ordered_matrix),
-        y = 1:nrow(ordered_matrix),
+  image(x = seq_len(ncol(ordered_matrix)),
+        y = seq_len(nrow(ordered_matrix)),
         z = t(ordered_matrix),
         col = color_palette,
         breaks = color_breaks,
@@ -874,10 +868,11 @@ plot_heatmap <- function(paired_data) {
 #' The x-axis represents log-odds changes in ORF usage (effect sizes), and the y-axis
 #' shows the negative log10-transformed local false sign rate (LFSR). Points are colored
 #' based on significance in differential translation efficiency (DTE), DOU, or both.
+#' The y-axis is capped at the nearest multiple of \code{dou_padj_ceiling} for cleaner plotting.
 #'
 #' @param results A data frame containing DOU and optionally DTE results. Must include columns
 #'   for DOU estimates and LFSR, and optionally DTE significance indicators.
-#' @param gene_annotation Optional data frame with gene annotations. Used to label points with gene symbols.
+#' @param id_mapping Optional data frame with gene symbols. Used to label points with gene symbols.
 #' @param dou_estimates_col Column name for DOU effect size estimates. Default is \code{"PosteriorMean"}.
 #' @param dou_padj_col Column name for DOU significance values (LFSR). Default is \code{"lfsr"}.
 #' @param dte_estimates_col Column name for DTE effect size estimates. Default is \code{"log2FoldChange"}.
@@ -885,37 +880,42 @@ plot_heatmap <- function(paired_data) {
 #' @param flip_sign Logical. If \code{TRUE}, flips the sign of DOU estimates for plotting. Default is \code{TRUE}.
 #' @param dou_estimates_threshold Numeric threshold for DOU effect size significance. Default is \code{1}.
 #' @param dou_padj_threshold Numeric threshold for DOU LFSR significance. Default is \code{0.05}.
+#' @param dou_padj_ceiling Numeric value to define the rounding ceiling for -log10(LFSR). The maximum y-axis value
+#'   will be rounded up to the nearest multiple of this value. Default is \code{10}.
 #' @param dte_padj_threshold Numeric threshold for DTE adjusted p-value significance. Default is \code{0.05}.
 #' @param extreme_threshold Optional numeric threshold for labeling extreme points based on -log10(LFSR).
 #' @param label_topn Optional numeric. If provided, labels the top N most significant points.
 #' @param legend_position Position of the legend. Options include \code{"bottomright"}, \code{"bottom"},
 #'   \code{"bottomleft"}, \code{"left"}, \code{"topleft"}, \code{"top"}, \code{"topright"}, \code{"right"}, \code{"center"}.
+#' @param verbose Logical. If \code{TRUE}, prints messages about plot scaling and thresholds. Default is \code{TRUE}.
 #'
 #' @return A volcano plot is displayed in a new graphics device.
 #'
 #' @importFrom graphics plot points abline legend text
 #' @importFrom utils head
-#' 
+#'
 #' @keywords internal
 #'
 plot_volcano <- function(
     results,
-    gene_annotation = NULL,
+    id_mapping = NULL,
     dou_estimates_col = "PosteriorMean",
     dou_padj_col = "lfsr",
     dte_estimates_col = "log2FoldChange",
     dte_padj_col = "padj",
-    flip_sign = TRUE,
+    flip_sign = FALSE,
     dou_estimates_threshold = 1,
     dou_padj_threshold = 0.05,
+    dou_padj_ceiling = 10,
     dte_padj_threshold = 0.05,
     extreme_threshold = NULL,
     label_topn = NULL,
-    legend_position = "right"
+    legend_position = "right",
+    verbose = TRUE
 ) {
   
-  if (!is.null(gene_annotation)) {
-    genes_unique <- gene_annotation[!duplicated(gene_annotation$ensembl_gene_id), ]
+  if (!is.null(id_mapping)) {
+    genes_unique <- id_mapping[!duplicated(id_mapping$ensembl_gene_id), ]
     results$ensembl_gene_id <- sub("\\..*", "", results$orf_id)
     results <- merge(genes_unique, results, by = "ensembl_gene_id", all.x = TRUE)
   }
@@ -928,10 +928,10 @@ plot_volcano <- function(
   padj_only <- padj_sig & !fdr_sig
   fdr_only <- fdr_sig & !padj_sig
   
-  col_dte = "#0072B2"
-  col_dou = "#E69F00"
-  col_both = "#CC79A7"
-  col_none = "grey80"
+  col_dte <- "#0072B2"
+  col_dou <- "#E69F00"
+  col_both <- "#CC79A7"
+  col_none <- "grey80"
   
   if (isTRUE(flip_sign)) {
     estimates <- results[[dou_estimates_col]] * -1
@@ -943,9 +943,13 @@ plot_volcano <- function(
   loglfsr <- -log10(lfsr)
   
   # Cap at a reasonable value for cleaner plotting
-  loglfsr[loglfsr > 300] <- 300
+  loglfsr_ceiling <- ceiling(max(loglfsr[is.finite(loglfsr)], na.rm = TRUE) / dou_padj_ceiling) * dou_padj_ceiling
+  if (isTRUE(verbose)) {
+    message("Capping volcano plot y-axis at -log10(", dou_padj_col, ") = ", loglfsr_ceiling)
+  }
+  loglfsr[loglfsr > loglfsr_ceiling] <- loglfsr_ceiling
   ylim_max <- max(loglfsr, na.rm = TRUE) * 1.1 # Add 10% buffer
-  ylim_min <- 0 # Assuming -log10(LFSR) starts at 0
+  ylim_min <- 0
   y_range_step <- (ylim_max - ylim_min) * 0.02 # Define a small offset (2% of y-range)
   
   plot(
@@ -979,7 +983,7 @@ plot_volcano <- function(
     # y_offset <- rep(c(-0.1, 0, 0.1), length.out = length(idx_to_label))
     y_offset <- rep(c(-y_range_step, 0, y_range_step), length.out = length(idx_to_label))
     
-    if (!is.null(gene_annotation)) {
+    if (!is.null(id_mapping)) {
       text(
         x = estimates[idx_to_label] + x_offset,
         y = loglfsr[idx_to_label] + y_offset, # Apply the offset to the y-coordinate
@@ -989,7 +993,7 @@ plot_volcano <- function(
         # srt = 45,
         xpd = TRUE # Allow plotting outside the plot region margins
       )
-    } else if (is.null(gene_annotation)) {
+    } else if (is.null(id_mapping)) {
       text(
         x = estimates[idx_to_label] + x_offset,
         y = loglfsr[idx_to_label] + y_offset, # Apply the offset to the y-coordinate
@@ -1018,19 +1022,190 @@ plot_volcano <- function(
 
 
 
+#' Volcano Plot for Differential ORF Usage (DOU) Colored by ORF Type
+#'
+#' @description
+#' Generates a volcano plot to visualize differential ORF usage (DOU) results.
+#' The x-axis represents log-odds changes in ORF usage (effect sizes), and the y-axis
+#' shows the negative log10-transformed local false sign rate (LFSR). Points are colored
+#' by ORF type (uORF, mORF, dORF) to highlight biological categories. Optionally, points
+#' can be labeled based on gene symbols or ORF IDs, and significance thresholds can be
+#' used to annotate extreme or top-ranked ORFs.
+#'
+#' @param results A data frame containing DOU and optionally DTE results. Must include columns
+#'   for DOU estimates, LFSR, and ORF type (e.g., \code{orf_type} with values "uORF", "mORF", "dORF").
+#' @param id_mapping Optional data frame with gene symbols. Used to label points with gene symbols.
+#' @param dou_estimates_col Column name for DOU effect size estimates. Default is \code{"PosteriorMean"}.
+#' @param dou_padj_col Column name for DOU significance values (LFSR). Default is \code{"lfsr"}.
+#' @param dte_estimates_col Column name for DTE effect size estimates. Default is \code{"log2FoldChange"}.
+#' @param dte_padj_col Column name for DTE adjusted p-values. Default is \code{"padj"}.
+#' @param flip_sign Logical. If \code{TRUE}, flips the sign of DOU estimates for plotting. Default is \code{TRUE}.
+#' @param dou_estimates_threshold Numeric threshold for DOU effect size significance. Default is \code{1}.
+#' @param dou_padj_threshold Numeric threshold for DOU LFSR significance. Default is \code{0.05}.
+#' @param dou_padj_ceiling Numeric value to define the rounding ceiling for -log10(LFSR). The maximum y-axis value
+#'   will be rounded up to the nearest multiple of this value. Default is \code{10}.
+#' @param dte_padj_threshold Numeric threshold for DTE adjusted p-value significance. Default is \code{0.05}.
+#' @param extreme_threshold Optional numeric threshold for labeling extreme points based on -log10(LFSR).
+#' @param label_topn Optional numeric. If provided, labels the top N most significant points.
+#' @param legend_position Position of the legend. Options include \code{"bottomright"}, \code{"bottom"},
+#'   \code{"bottomleft"}, \code{"left"}, \code{"topleft"}, \code{"top"}, \code{"topright"}, \code{"right"}, \code{"center"}.
+#' @param verbose Logical. If \code{TRUE}, prints messages about plot scaling and thresholds. Default is \code{TRUE}.
+#'
+#' @return A volcano plot is displayed in a new graphics device, with points colored by ORF type.
+#'
+#' @importFrom graphics plot points abline legend text
+#' @importFrom grDevices adjustcolor
+#' @importFrom utils head
+#'
+#' @keywords internal
+#' 
+plot_volcano_by_orfs <- function(
+    results,
+    rowdata,
+    id_mapping = NULL,
+    dou_estimates_col = "PosteriorMean",
+    dou_padj_col = "lfsr",
+    dte_estimates_col = "log2FoldChange",
+    dte_padj_col = "padj",
+    flip_sign = FALSE,
+    dou_estimates_threshold = 1,
+    dou_padj_threshold = 0.05,
+    dou_padj_ceiling = 10,
+    dte_padj_threshold = 0.05,
+    extreme_threshold = NULL,
+    label_topn = NULL,
+    legend_position = "right",
+    verbose = TRUE
+) {
+  
+  results <- merge(results, rowdata, by.x = "orf_id", by.y = "row.names")
+  results <- na.omit(results)
+  # results <- results[is.finite(results[[dou_estimates_col]]) & is.finite(results[[dou_padj_col]]), ]
+  
+  if (!is.null(id_mapping)) {
+    genes_unique <- id_mapping[!duplicated(id_mapping$ensembl_gene_id), ]
+    results$ensembl_gene_id <- sub("\\..*", "", results$orf_id)
+    results <- merge(genes_unique, results, by = "ensembl_gene_id", all.x = TRUE)
+  }
+  
+  par(mfrow = c(1, 1), mar = c(5, 4, 2, 2) + 0.1, fig = c(0, 1, 0, 1))
+  
+  padj_sig <- !is.na(results[[dte_padj_col]]) & results[[dte_padj_col]] < dte_padj_threshold
+  fdr_sig <- !is.na(results[[dou_padj_col]]) & results[[dou_padj_col]] < dou_padj_threshold
+  both_sig <- padj_sig & fdr_sig
+  padj_only <- padj_sig & !fdr_sig
+  fdr_only <- fdr_sig & !padj_sig
+  
+  # ORF type-based coloring
+  col_uorfs <- adjustcolor("#4575B4", alpha.f = 1)
+  col_morfs <- adjustcolor("#D73027", alpha.f = 0.2)
+  col_dorfs <- adjustcolor("#A6A6A6", alpha.f = 1)
+  
+  is_uorfs <- results$orf_type == "uORF"
+  is_morfs <- results$orf_type == "mORF"
+  is_dorfs <- results$orf_type == "dORF"
+  
+  if (isTRUE(flip_sign)) {
+    results[[dou_estimates_col]] <- results[[dou_estimates_col]] * -1
+  }
+  
+  results$loglfsr <- -log10(results[[dou_padj_col]])
+  
+  # Cap at a reasonable value for cleaner plotting
+  loglfsr_ceiling <- ceiling(max(results$loglfsr[is.finite(results$loglfsr)], na.rm = TRUE) / dou_padj_ceiling) * dou_padj_ceiling
+  if (isTRUE(verbose)) {
+    message("Capping volcano plot y-axis at -log10(", dou_padj_col, ") = ", loglfsr_ceiling)
+  }
+  results$loglfsr[results$loglfsr > loglfsr_ceiling] <- loglfsr_ceiling
+  ylim_max <- max(results$loglfsr, na.rm = TRUE) * 1.1 # Add 10% buffer
+  ylim_min <- 0
+  y_range_step <- (ylim_max - ylim_min) * 0.02 # Define a small offset (2% of y-range)
+  
+  xlim_max <- max(results[[dou_estimates_col]], na.rm = TRUE) * 1.1 # Add 10% buffer
+  xlim_min <- min(results[[dou_estimates_col]], na.rm = TRUE) * 1.1 # Add 10% buffer
+  
+  plot(
+    results[[dou_estimates_col]][is_dorfs],
+    results$loglfsr[is_dorfs],
+    pch = 20,
+    col = col_dorfs,
+    main = NULL,
+    xlab = "log-odds change in ORF usage",
+    xlim = c(xlim_min, xlim_max),
+    ylim = c(ylim_min, ylim_max),
+    ylab = expression(paste("-log"[10], "(LFSR)"))
+  )
+  
+  # Dynamic Text Placement (Staggering)
+  if (!is.null(extreme_threshold)) {
+    extreme_idx <- which(results$loglfsr > extreme_threshold)
+    idx_to_label <- extreme_idx
+    
+  } else if (is.numeric(label_topn)) {
+    # Get the top N most significant entries
+    idx_to_label <- head(order(results$loglfsr, decreasing = TRUE), label_topn)
+  } else {
+    idx_to_label <- NULL
+  }
+  
+  if (!is.null(idx_to_label)) {
+    # Create an alternating vertical offset vector
+    # offset_vector <- rep(c(0, y_range_step, y_range_step*1), 
+    #                      length.out = length(idx_to_label))
+    x_offset <- rep(c(-0.1, 0, 0.1), length.out = length(idx_to_label))
+    # y_offset <- rep(c(-0.1, 0, 0.1), length.out = length(idx_to_label))
+    y_offset <- rep(c(-y_range_step, 0, y_range_step), length.out = length(idx_to_label))
+    
+    if (!is.null(id_mapping)) {
+      text(
+        x = results[[dou_estimates_col]][idx_to_label] + x_offset,
+        y = results$loglfsr[idx_to_label] + y_offset, # Apply the offset to the y-coordinate
+        labels = results[[2]][idx_to_label],
+        pos = 3, # Place text above the point/offset
+        cex = 0.7,
+        # srt = 45,
+        xpd = TRUE # Allow plotting outside the plot region margins
+      )
+    } else if (is.null(id_mapping)) {
+      text(
+        x = results[[dou_estimates_col]][idx_to_label] + x_offset,
+        y = results$loglfsr[idx_to_label] + y_offset, # Apply the offset to the y-coordinate
+        labels = results$orf_id[idx_to_label],
+        pos = 3, # Place text above the point/offset
+        cex = 0.7,
+        # srt = 45,
+        xpd = TRUE # Allow plotting outside the plot region margins
+      )
+    }
+  }
+  
+  points(results[[dou_estimates_col]][is_uorfs], results$loglfsr[is_uorfs], col = col_uorfs, pch = 20)
+  points(results[[dou_estimates_col]][is_morfs], results$loglfsr[is_morfs], col = col_morfs, pch = 20)
+  
+  abline(h = -log10(dou_padj_threshold), col = "black", lty = 2)
+  abline(v = c(-dou_estimates_threshold, dou_estimates_threshold), col = "black", lty = 2)
+  
+  legend(legend_position, legend = c("uORF", "mORF", "dORF"),
+         col = c(col_uorfs, col_morfs, col_dorfs),
+         pch = 20, bty = "n", inset = c(0.02, 0.05))
+  
+  par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
+}
+
+
 #' Generate Differential ORF Translation (DOT) Visualization Suite
 #'
 #' @description
 #' A high-level wrapper that visualizes differential ORF usage (DOU) and translation efficiency (DTE)
 #' relationships through a suite of plots including Venn diagrams, volcano plots, composite scatter plots
-#' with marginal distributions, and heatmaps. It integrates Ensembl gene annotations and highlights significant ORFs
+#' with marginal distributions, and heatmaps. It integrates Ensembl gene symbols and highlights significant ORFs
 #' based on empirical Bayes shrinkage (via the \code{ashr} package).
 #'
 #' @param results A data frame containing DOU and DTE estimates and significance values. Must include
 #'   ORF-level identifiers and columns specified by \code{dou_estimates_col}, \code{dou_padj_col},
 #'   \code{dte_estimates_col}, and \code{dte_padj_col}.
 #' @param rowdata A data frame containing ORF-level metadata, including ORF type (e.g., mORF, uORF).
-#' @param gene_annotation A data frame containing gene annotations for the input Ensembl IDs. 
+#' @param id_mapping A data frame containing gene symbols for the input Ensembl IDs. 
 #'   Default is \code{NULL}.
 #' @param include_go Logical; if \code{TRUE}, includes GO annotations (\code{go_id}, \code{name_1006}, 
 #'   \code{namespace_1003}) in the output.
@@ -1047,6 +1222,8 @@ plot_volcano <- function(
 #'   Default is \code{"padj"}.
 #' @param dou_estimates_threshold Numeric threshold for DOU effect size significance. Default is \code{1}.
 #' @param dou_padj_threshold Numeric threshold for DOU LFSR significance. Default is \code{0.05}.
+#' @param dou_padj_ceiling Numeric value to define the rounding ceiling for -log10(LFSR). The maximum y-axis value
+#'   will be rounded up to the nearest multiple of this value. Default is \code{10}.
 #' @param extreme_threshold Optional numeric threshold for labeling extreme points in the volcano plot
 #'   (based on -log10 LFSR).
 #' @param label_topn Optional numeric. If specified, labels the top N most significant points in the volcano plot.
@@ -1060,11 +1237,11 @@ plot_volcano <- function(
 #' @param force_new_device_on_error Logicall if \code{TRUE}, detects graphics error and reset graphics state. 
 #' @param verbose Logical; if \code{TRUE}, prints progress messages. Default is \code{TRUE}.
 #'
-#' @return A data frame containing gene annotations retrieved from Ensembl, used for labeling and heatmap visualization.
+#' @return A data frame containing gene symbols retrieved from Ensembl, used for labeling and heatmap visualization.
 #'
 #' @details
 #' This function orchestrates multiple visualization components to explore differential translation across ORFs.
-#' It uses empirical Bayes shrinkage to identify significant ORFs, retrieves gene annotations via \code{biomaRt},
+#' It uses empirical Bayes shrinkage to identify significant ORFs, retrieves gene symbols via \code{biomaRt},
 #' and generates plots to summarize DOU and DTE relationships. The composite scatter plot includes marginal distributions
 #' by ORF type, helping to visualize the overlap and divergence between DTE and DOU signals. The volcano plot highlights
 #' extreme and top-ranked ORFs, while the heatmap summarizes translation changes across top genes.
@@ -1078,7 +1255,7 @@ plot_volcano <- function(
 plotDOT <- function(
     results,
     rowdata,
-    gene_annotation = NULL,
+    id_mapping = NULL,
     include_go = FALSE,
     plot_types = c("venn", "composite", "volcano", "heatmap"),
     marginal_plot_type = "density",
@@ -1088,10 +1265,11 @@ plotDOT <- function(
     dte_padj_col = "padj",
     dou_estimates_threshold = 1,
     dou_padj_threshold = 0.05,
+    dou_padj_ceiling = 10,
     extreme_threshold = NULL,
-    label_topn = 10,
+    label_topn = 3,
     top_genes = 40,
-    flip_sign = TRUE,
+    flip_sign = FALSE,
     sorf_type = "uORF",
     dataset = "hsapiens_gene_ensembl",
     symbol_col = "hgnc_symbol",
@@ -1099,11 +1277,14 @@ plotDOT <- function(
     verbose = TRUE,
     force_new_device_on_error = TRUE
 ) {
+  
+  results <- as.data.frame(results)
+  
   # Retrieve gene annotation if needed
-  if (any(c("heatmap", "volcano") %in% plot_types) && is.null(gene_annotation)) {
+  if (any(c("heatmap", "volcano", NULL) %in% plot_types) && is.null(id_mapping)) {
     if (verbose) message("retrieving gene annotation from BioMart...")
-    gene_annotation_attempt <- tryCatch({
-      get_gene_annotation(
+    id_mapping_attempt <- tryCatch({
+      get_id_mapping(
         ensembl_ids = get_significant_genes(results),
         dataset = dataset,
         mart_source = mart_source,
@@ -1113,15 +1294,15 @@ plotDOT <- function(
       if (verbose) message("Failed to retrieve gene annotation: ", e$message)
       NULL
     })
-    if (!is.null(gene_annotation_attempt)) {
-      gene_annotation <- gene_annotation_attempt
+    if (!is.null(id_mapping_attempt)) {
+      id_mapping <- id_mapping_attempt
     }
   }
   
   old_par <- par(no.readonly = TRUE)
   on.exit({
     try(par(old_par), silent = TRUE)
-    try(suppressWarnings(suppressMessages(layout(1))), silent = TRUE)
+    try(layout(1), silent = TRUE)
   }, add = TRUE)
   
   # Helper: recover graphics device
@@ -1136,10 +1317,10 @@ plotDOT <- function(
         tryCatch({
           plot_fn()
         }, error = function(e2) {
-          if (verbose) message("Failed to plot after recovery: ", e2$message)
+          # if (verbose) message("Failed to plot after recovery: ", e2$message)
         })
       } else {
-        if (verbose) message("Plotting failed: ", e$message)
+        # if (verbose) message("Plotting failed: ", e$message)
       }
     })
   }
@@ -1162,7 +1343,7 @@ plotDOT <- function(
   # Composite plots
   if ("composite" %in% plot_types) {
     recover_graphics(function() {
-      plot_composite(
+      correlation_results <- plot_composite(
         results = results,
         dou_estimates_col = dou_estimates_col,
         dou_padj_col = dou_padj_col,
@@ -1171,6 +1352,7 @@ plotDOT <- function(
         flip_sign = flip_sign,
         lhist = 20
       )
+      
       plot_composite_by_orfs(
         results = results,
         rowdata = rowdata,
@@ -1182,6 +1364,14 @@ plotDOT <- function(
         flip_sign = flip_sign,
         lhist = 20
       )
+      
+      message(
+        "Spearman correlation between DOU and DTE estimates: ",
+        round(correlation_results$estimate[["rho"]], 3),
+        ", p-value: ",
+        format.pval(correlation_results$p.value, digits = 3, eps = 1e-16)
+      )
+      
       if (verbose) message("composite plots plotted")
     })
   }
@@ -1191,15 +1381,33 @@ plotDOT <- function(
     recover_graphics(function() {
       plot_volcano(
         results = results,
-        gene_annotation = gene_annotation,
+        id_mapping = id_mapping,
         dou_estimates_col = dou_estimates_col,
         dou_padj_col = dou_padj_col,
         dte_estimates_col = dte_estimates_col,
         dte_padj_col = dte_padj_col,
         dou_estimates_threshold = dou_estimates_threshold,
         dou_padj_threshold = dou_padj_threshold,
+        dou_padj_ceiling = dou_padj_ceiling,
         extreme_threshold = extreme_threshold,
-        label_topn = label_topn
+        label_topn = label_topn,
+        verbose = TRUE
+      )
+      
+      plot_volcano_by_orfs(
+        results = results,
+        rowdata = rowdata,
+        id_mapping = id_mapping,
+        dou_estimates_col = dou_estimates_col,
+        dou_padj_col = dou_padj_col,
+        dte_estimates_col = dte_estimates_col,
+        dte_padj_col = dte_padj_col,
+        dou_estimates_threshold = dou_estimates_threshold,
+        dou_padj_threshold = dou_padj_threshold,
+        dou_padj_ceiling = dou_padj_ceiling,
+        extreme_threshold = extreme_threshold,
+        label_topn = label_topn,
+        verbose = TRUE
       )
       if (verbose) message("volcano plot plotted")
     })
@@ -1214,7 +1422,7 @@ plotDOT <- function(
       cistronic_data(
         results = results,
         rowdata = rowdata,
-        gene_annotation = gene_annotation,
+        id_mapping = id_mapping,
         estimates_col = dou_estimates_col,
         padj_col = dou_padj_col,
         padj_threshold = dou_padj_threshold,
@@ -1230,10 +1438,10 @@ plotDOT <- function(
     if (!is.null(paired_data)) {
       recover_graphics(function() {
         warning("Plotting device too small or corrupted. Please increase the plot window size and rerun with plot_types = 'heatmap'.",
-                "\nTo avoid re-downloading gene annotations, reuse the gene_annotation object like this:",
+                "\nTo avoid re-downloading gene symbols, reuse the id_mapping object like this:",
                 "\n\n# Example usage:",
                 "\ngene_annot <- plotDOT(results, rowdata, plot_types = 'heatmap')",
-                "\nplotDOT(results, rowdata, gene_annotation = gene_annot, plot_types = 'heatmap')"
+                "\nplotDOT(results, rowdata, id_mapping = gene_annot, plot_types = 'heatmap')"
                 )
         plot_heatmap(paired_data)
         if (verbose) message("heatmap plotted")
@@ -1242,7 +1450,7 @@ plotDOT <- function(
     }
   }
   
-  return(invisible(gene_annotation))
+  return(invisible(id_mapping))
 }
 
 

@@ -6,25 +6,27 @@
 \usage{
 plot_volcano(
   results,
-  gene_annotation = NULL,
+  id_mapping = NULL,
   dou_estimates_col = "PosteriorMean",
   dou_padj_col = "lfsr",
   dte_estimates_col = "log2FoldChange",
   dte_padj_col = "padj",
-  flip_sign = TRUE,
+  flip_sign = FALSE,
   dou_estimates_threshold = 1,
   dou_padj_threshold = 0.05,
+  dou_padj_ceiling = 10,
   dte_padj_threshold = 0.05,
   extreme_threshold = NULL,
   label_topn = NULL,
-  legend_position = "right"
+  legend_position = "right",
+  verbose = TRUE
 )
 }
 \arguments{
 \item{results}{A data frame containing DOU and optionally DTE results. Must include columns
 for DOU estimates and LFSR, and optionally DTE significance indicators.}
 
-\item{gene_annotation}{Optional data frame with gene annotations. Used to label points with gene symbols.}
+\item{id_mapping}{Optional data frame with gene symbols. Used to label points with gene symbols.}
 
 \item{dou_estimates_col}{Column name for DOU effect size estimates. Default is \code{"PosteriorMean"}.}
 
@@ -40,6 +42,9 @@ for DOU estimates and LFSR, and optionally DTE significance indicators.}
 
 \item{dou_padj_threshold}{Numeric threshold for DOU LFSR significance. Default is \code{0.05}.}
 
+\item{dou_padj_ceiling}{Numeric value to define the rounding ceiling for -log10(LFSR). The maximum y-axis value
+will be rounded up to the nearest multiple of this value. Default is \code{10}.}
+
 \item{dte_padj_threshold}{Numeric threshold for DTE adjusted p-value significance. Default is \code{0.05}.}
 
 \item{extreme_threshold}{Optional numeric threshold for labeling extreme points based on -log10(LFSR).}
@@ -48,6 +53,8 @@ for DOU estimates and LFSR, and optionally DTE significance indicators.}
 
 \item{legend_position}{Position of the legend. Options include \code{"bottomright"}, \code{"bottom"},
 \code{"bottomleft"}, \code{"left"}, \code{"topleft"}, \code{"top"}, \code{"topright"}, \code{"right"}, \code{"center"}.}
+
+\item{verbose}{Logical. If \code{TRUE}, prints messages about plot scaling and thresholds. Default is \code{TRUE}.}
 }
 \value{
 A volcano plot is displayed in a new graphics device.
@@ -57,5 +64,6 @@ Generates a volcano plot to visualize differential ORF usage (DOU) results.
 The x-axis represents log-odds changes in ORF usage (effect sizes), and the y-axis
 shows the negative log10-transformed local false sign rate (LFSR). Points are colored
 based on significance in differential translation efficiency (DTE), DOU, or both.
+The y-axis is capped at the nearest multiple of \code{dou_padj_ceiling} for cleaner plotting.
 }
 \keyword{internal}

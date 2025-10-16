@@ -8,17 +8,16 @@ fitDOU(
   countData,
   orf2gene,
   anno,
-  formula,
-  emm_specs,
-  target,
-  dispformula,
-  dispersion_modeling,
-  lrt,
-  diagnostic,
-  parallel,
-  optimizers,
-  seed,
-  verbose
+  formula = ~condition * strategy,
+  emm_specs = ~condition * strategy,
+  dispformula = NULL,
+  dispersion_modeling = "auto",
+  lrt = FALSE,
+  diagnostic = FALSE,
+  parallel = list(n = 4L, autopar = TRUE),
+  optimizers = FALSE,
+  seed = NULL,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -30,8 +29,8 @@ fitDOU(
 
 \item{formula}{A formula object specifying the model design, e.g., \code{~ condition * strategy}.}
 
-\item{target}{Character string specifying the non-reference condition level to extract the corresponding interaction term from the model.
-This is contrasted against the baseline condition (default: \code{NULL}).}
+\item{emm_specs}{A formula specifying the structure of the estimated marginal means.
+Default is \code{~condition * strategy}.}
 
 \item{dispformula}{Optional formula object specifying a custom dispersion model (used when \code{dispersion_modeling = "custom"}).}
 
@@ -56,7 +55,7 @@ e.g., \code{list(parallel = TRUE, ncpus = 4)}. Default: \code{list(n = 4L, autop
 
 \item{seed}{Optional integer to set the random seed for reproducibility (default: \code{NULL}).}
 
-\item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{FALSE}).}
+\item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{TRUE}).}
 }
 \value{
 A named \code{list} of \code{PostHoc} objects, one per ORF.
@@ -67,4 +66,65 @@ across all genes. It supports multiple dispersion modeling strategies and option
 diagnostics using DHARMa. This function is adapted from the \code{satuRn} package
 to support beta-binomial GLM/GLMMs via \code{glmmTMB}.
 }
-\keyword{internal}
+\examples{
+# Load \link[SummarizedExperiment]{SummarizedExperiment} to enable subsetting 
+# and access to components like rowRanges and rowData.
+library(SummarizedExperiment)
+
+# Read in count matrix, condition table, and annotation files.
+dir <- system.file("extdata", package = "DOTSeq")
+
+cnt <- read.table(
+  file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), 
+  header=TRUE, 
+  comment.char ='#'
+  )
+names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\\\1", names(cnt))
+
+flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+
+meta <- read.table(file.path(dir, "metadata.txt.gz"))
+names(meta) <-  c("run","strategy","replicate","treatment","condition")
+cond <- meta[meta$treatment=="chx",] # extract only samples processed using cyclohexamide 
+cond$treatment <- NULL # remove the treatment column
+
+# Create \link[SummarizedExperiment]{SummarizedExperiment} objects.
+# These objects can be used as input for \code{\link{DOTSeq}} and \code{\link{fitDOU}}.
+m <- DOTSeqDataSet(
+  count_table = cnt, 
+  condition_table = cond, 
+  flattened_gtf = flat, 
+  bed = bed
+  )
+ 
+# Keep ORFs where all replicates in at least one condition pass min_count.
+# Single-ORF genes are removed.
+m$sumExp <- m$sumExp[rowRanges(m$sumExp)$is_kept == TRUE, ]
+
+# Randomly sample 100 ORFs for \code{\link{fitDOU}}.
+n <- 100 
+set.seed(42)
+random_rows <- sample(seq_len(nrow(m$sumExp)), size = n)
+
+# Subset the SummarizedExperiment object
+m$sumExp <- m$sumExp[random_rows, ]
+
+# Model fitting using \code{\link{fitDOU}}.
+rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
+  countData = assay(m$sumExp),
+  orf2gene = rowData(m$sumExp), 
+  anno = colData(m$sumExp),
+  formula = ~condition * strategy,
+  emm_specs = ~condition * strategy,
+  dispersion_modeling = "auto",
+  lrt = FALSE,
+  optimizers = FALSE,
+  diagnostic = FALSE,
+  parallel = list(n=4L, autopar=TRUE),
+  seed = 42,
+  verbose = TRUE
+)
+
+
+}

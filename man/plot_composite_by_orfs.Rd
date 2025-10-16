@@ -14,7 +14,7 @@ plot_composite_by_orfs(
   dte_padj_col = "padj",
   dou_padj_threshold = 0.05,
   dte_padj_threshold = 0.05,
-  flip_sign = TRUE,
+  flip_sign = FALSE,
   lhist = 20
 )
 }

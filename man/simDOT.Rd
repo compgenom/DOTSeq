@@ -101,3 +101,53 @@ Simulates ribosome profiling and matched RNA-seq count matrices with specified
 differential ORF translation (DOT) effects. The simulation can include batch effects
 and supports multiple experimental conditions and replicates.
 }
+\examples{
+# Load \link[SummarizedExperiment]{SummarizedExperiment} to enable access to 
+# components like assay and rowData.
+library(SummarizedExperiment)
+
+# Read in count matrix, condition table, and annotation files.
+dir <- system.file("extdata", package = "DOTSeq")
+
+cnt <- read.table(file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), 
+  header=TRUE, 
+  comment.char ='#'
+  )
+names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\\\1", names(cnt))
+
+flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+
+meta <- read.table(file.path(dir, "metadata.txt.gz"))
+names(meta) <-  c("run","strategy","replicate","treatment","condition")
+cond <- meta[meta$treatment=="chx",] # extract only samples processed using cyclohexamide 
+cond$treatment <- NULL # remove the treatment column
+
+# Create SummarizedExperiment objects using \code{\link{DOTSeqDataSet}}.
+m <- DOTSeqDataSet(
+  count_table = cnt, 
+  condition_table = cond, 
+  flattened_gtf = flat, 
+  bed = bed
+  )
+  
+# Extract data as inputs for simDOT
+raw_counts <- assay(m$sumExp)[, grep("Cycling|Interphase", colnames(assay(m$sumExp)))]
+ribo <- raw_counts[, grep("ribo", colnames(raw_counts))]
+rna <- raw_counts[, grep("rna", colnames(raw_counts))]
+orfs <- rowData(m$sumExp)
+r <- "uORF_up_mORF_down"
+g <- 1.5
+simData <- simDOT(
+  ribo,
+  rna,
+  orfs = orfs,
+  regulation_type = r,
+  gcoeff = g,
+  num_samples = 1,
+  num_batches = 2,
+  seed = 42
+  )
+
+
+}

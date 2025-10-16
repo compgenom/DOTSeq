@@ -9,8 +9,7 @@ generate_coefficients(
   scenario = "uORF_up_mORF_down",
   gcoeff = 1.5,
   shape = 0.6,
-  scale = 0.5,
-  seed = NULL
+  scale = 0.5
 )
 }
 \arguments{
@@ -42,8 +41,6 @@ Must be one of:
 \item{shape}{Numeric. Shape parameter for the gamma distribution used to simulate baseline coefficients.}
 
 \item{scale}{Numeric. Scale parameter for the gamma distribution used to simulate baseline coefficients.}
-
-\item{seed}{Optional integer. If provided, sets the random seed for reproducibility.}
 }
 \value{
 A list with the following components:
@@ -60,7 +57,7 @@ changes to multi-cistronic ORFs based on a selected regulatory scenario.
 }
 \examples{
 \dontrun{
-# generate_coefficients(orfs_df, scenario = "uORF_up_mORF_down", seed = 123)
+# generate_coefficients(orfs_df, scenario = "uORF_up_mORF_down")
 }
 }
 \keyword{internal}

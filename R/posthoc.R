@@ -8,10 +8,8 @@
 #'
 #' @param sumExp A SummarizedExperiment object containing fitted model objects,
 #'   typically stored in `rowData(sumExp)[['fitDOUModels']]`.
-#' @param emm_specs A formula specifying the structure of the estimated marginal means.
-#'   Default is \code{~condition * strategy}.
 #' @param contrasts_method Character string specifying the method for computing contrasts.
-#'   Default is \code{"pairwise"}.
+#'   Default is \code{"revpairwise"}.
 #' @param nullweight Numeric. Prior weight on the null hypothesis for empirical Bayes shrinkage.
 #'   Higher values yield more conservative lfsr estimates. Default is \code{500}.
 #' @param verbose Logical. If \code{TRUE}, prints progress messages. Default is \code{TRUE}.
@@ -45,11 +43,72 @@
 #' @importFrom stats p.adjust pnorm
 #' 
 #' @export
+#' @examples
+#' # Load \link[SummarizedExperiment]{SummarizedExperiment} to enable subsetting 
+#' # and access to components like rowRanges and rowData.
+#' library(SummarizedExperiment)
+#' 
+#' # Read in count matrix, condition table, and annotation files.
+#' dir <- system.file("extdata", package = "DOTSeq")
+#' 
+#' cnt <- read.table(
+#'   file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), 
+#'   header=TRUE, 
+#'   comment.char ='#'
+#'   )
+#' names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
+#' 
+#' flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+#' bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+#' 
+#' meta <- read.table(file.path(dir, "metadata.txt.gz"))
+#' names(meta) <-  c("run","strategy","replicate","treatment","condition")
+#' cond <- meta[meta$treatment=="chx",] # extract only samples processed using cyclohexamide 
+#' cond$treatment <- NULL # remove the treatment column
+#' 
+#' # Create \link[SummarizedExperiment]{SummarizedExperiment} objects.
+#' # These objects can be used as input for \code{\link{DOTSeq}} and \code{\link{fitDOU}}.
+#' m <- DOTSeqDataSet(
+#'   count_table = cnt, 
+#'   condition_table = cond, 
+#'   flattened_gtf = flat, 
+#'   bed = bed
+#'   )
+#'  
+#' # Keep ORFs where all replicates in at least one condition pass min_count.
+#' # Single-ORF genes are removed.
+#' m$sumExp <- m$sumExp[rowRanges(m$sumExp)$is_kept == TRUE, ]
+#' 
+#' # Randomly sample 100 ORFs for \code{\link{fitDOU}}.
+#' n <- 100 
+#' set.seed(42)
+#' random_rows <- sample(seq_len(nrow(m$sumExp)), size = n)
+#' 
+#' # Subset the SummarizedExperiment object
+#' m$sumExp <- m$sumExp[random_rows, ]
+#' 
+#' # Model fitting using \code{\link{fitDOU}}.
+#' rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
+#'   countData = assay(m$sumExp),
+#'   orf2gene = rowData(m$sumExp), 
+#'   anno = colData(m$sumExp),
+#'   formula = ~condition * strategy,
+#'   emm_specs = ~condition * strategy,
+#'   dispersion_modeling = "auto",
+#'   lrt = FALSE,
+#'   optimizers = FALSE,
+#'   diagnostic = FALSE,
+#'   parallel = list(n=4L, autopar=TRUE),
+#'   seed = 42,
+#'   verbose = TRUE
+#' )
+#' 
+#' # Run post hoc contrasts, Wald tests, and effect size shrinkage
+#' m$sumExp <- testDOU(m$sumExp, verbose = TRUE)
 #' 
 testDOU <- function(
     sumExp, 
-    emm_specs = ~condition * strategy, 
-    contrasts_method = "pairwise", 
+    contrasts_method = "revpairwise", 
     nullweight = 500,
     verbose = TRUE
     ) {
@@ -124,8 +183,8 @@ testDOU <- function(
     })
     
     # Extract the betas and SEs for the current contrast name
-    betas_for_ashr <- sapply(all_contrasts, `[[`, "beta")
-    ses_for_ashr <- sapply(all_contrasts, `[[`, "se")
+    betas_for_ashr <- vapply(all_contrasts, `[[`, numeric(1), "beta")
+    ses_for_ashr <- vapply(all_contrasts, `[[`, numeric(1), "se")
     pvalues <- 2 * (1 - pnorm(abs(betas_for_ashr / ses_for_ashr)))
     
     # Run ashr on the full set of data for this contrast
@@ -151,7 +210,7 @@ testDOU <- function(
       all_results[["interaction_specific"]][[c_name]] <- res_df
       
     } else {
-      warning(paste("No valid betas for manual contrast:", c_name))
+      warning("No valid betas for manual contrast:", c_name)
       all_results[["interaction_specific"]][[c_name]] <- NULL
     }
   }
@@ -273,13 +332,14 @@ testDOU <- function(
 #' @importFrom DESeq2 resultsNames
 #' 
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Generate contrast vectors from a DESeqDataSet
 #' contrast_list <- contrast_vectors(dds, formula = ~ condition * strategy)
 #'
 #' # Use a contrast vector with DESeq2
 #' res <- lfcShrink(dot$dds, contrast = contrast_list[[1]], type = "ashr")
 #' }
+#' 
 #'
 contrast_vectors <- function(dds, formula = NULL, baseline = NULL, delim = ".") {
   # Build design matrix

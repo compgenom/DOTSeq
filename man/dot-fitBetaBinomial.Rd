@@ -10,7 +10,6 @@
   anno,
   formula = ~condition * strategy,
   emm_specs = ~condition * strategy,
-  target = NULL,
   dispersion_modeling = c("auto", "shared", "custom"),
   dispformula = NULL,
   lrt = FALSE,
@@ -29,9 +28,6 @@
 \item{anno}{A data frame containing sample annotations. Must include columns such as \code{condition}, \code{strategy}, and \code{replicate}.}
 
 \item{formula}{A formula object specifying the model design, e.g., \code{~ condition * strategy}.}
-
-\item{target}{Character string specifying the non-reference condition level to extract the corresponding interaction term from the model.
-This is contrasted against the baseline condition (default: \code{NULL}).}
 
 \item{dispersion_modeling}{Character string specifying the dispersion modeling strategy.
 Options are:

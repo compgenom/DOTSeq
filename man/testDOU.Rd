@@ -6,8 +6,7 @@
 \usage{
 testDOU(
   sumExp,
-  emm_specs = ~condition * strategy,
-  contrasts_method = "pairwise",
+  contrasts_method = "revpairwise",
   nullweight = 500,
   verbose = TRUE
 )
@@ -16,11 +15,8 @@ testDOU(
 \item{sumExp}{A SummarizedExperiment object containing fitted model objects,
 typically stored in \code{rowData(sumExp)[['fitDOUModels']]}.}
 
-\item{emm_specs}{A formula specifying the structure of the estimated marginal means.
-Default is \code{~condition * strategy}.}
-
 \item{contrasts_method}{Character string specifying the method for computing contrasts.
-Default is \code{"pairwise"}.}
+Default is \code{"revpairwise"}.}
 
 \item{nullweight}{Numeric. Prior weight on the null hypothesis for empirical Bayes shrinkage.
 Higher values yield more conservative lfsr estimates. Default is \code{500}.}
@@ -52,4 +48,68 @@ shrinkage via the \code{ashr} package to stabilize effect size estimates.
 \details{
 The results for post hoc contrasts are stored in a long format via explicit \code{contrast} and/or
 \code{strategy} columns. Non-converged models are omitted.
+}
+\examples{
+# Load \link[SummarizedExperiment]{SummarizedExperiment} to enable subsetting 
+# and access to components like rowRanges and rowData.
+library(SummarizedExperiment)
+
+# Read in count matrix, condition table, and annotation files.
+dir <- system.file("extdata", package = "DOTSeq")
+
+cnt <- read.table(
+  file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), 
+  header=TRUE, 
+  comment.char ='#'
+  )
+names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\\\1", names(cnt))
+
+flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+
+meta <- read.table(file.path(dir, "metadata.txt.gz"))
+names(meta) <-  c("run","strategy","replicate","treatment","condition")
+cond <- meta[meta$treatment=="chx",] # extract only samples processed using cyclohexamide 
+cond$treatment <- NULL # remove the treatment column
+
+# Create \link[SummarizedExperiment]{SummarizedExperiment} objects.
+# These objects can be used as input for \code{\link{DOTSeq}} and \code{\link{fitDOU}}.
+m <- DOTSeqDataSet(
+  count_table = cnt, 
+  condition_table = cond, 
+  flattened_gtf = flat, 
+  bed = bed
+  )
+ 
+# Keep ORFs where all replicates in at least one condition pass min_count.
+# Single-ORF genes are removed.
+m$sumExp <- m$sumExp[rowRanges(m$sumExp)$is_kept == TRUE, ]
+
+# Randomly sample 100 ORFs for \code{\link{fitDOU}}.
+n <- 100 
+set.seed(42)
+random_rows <- sample(seq_len(nrow(m$sumExp)), size = n)
+
+# Subset the SummarizedExperiment object
+m$sumExp <- m$sumExp[random_rows, ]
+
+# Model fitting using \code{\link{fitDOU}}.
+rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
+  countData = assay(m$sumExp),
+  orf2gene = rowData(m$sumExp), 
+  anno = colData(m$sumExp),
+  formula = ~condition * strategy,
+  emm_specs = ~condition * strategy,
+  dispersion_modeling = "auto",
+  lrt = FALSE,
+  optimizers = FALSE,
+  diagnostic = FALSE,
+  parallel = list(n=4L, autopar=TRUE),
+  seed = 42,
+  verbose = TRUE
+)
+
+# Run post hoc contrasts, Wald tests, and effect size shrinkage
+m$sumExp <- testDOU(m$sumExp, verbose = TRUE)
+
 }
