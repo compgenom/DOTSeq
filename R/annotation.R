@@ -5,6 +5,8 @@
 #' local false sign rate (LFSR) threshold. Extracts gene IDs from ORF-level
 #' results and filters those with LFSR below the specified threshold.
 #'
+#' @seealso \code{\link{plotDOT}}
+#'
 #' @param results A data frame containing ORF-level DOU results. Must include
 #'     columns \code{orf_id} and the specified \code{padj_col}.
 #'

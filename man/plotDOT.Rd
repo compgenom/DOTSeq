@@ -158,3 +158,6 @@ Euler Diagrams with Ellipses Using eulerr.” In Proceedings of International
 Workshop on Set Visualization and Reasoning, volume 2116, 84–91.
 \url{https://ceur-ws.org/Vol-2116/paper7.pdf}
 }
+\seealso{
+\code{\link{DOTSeq}}
+}

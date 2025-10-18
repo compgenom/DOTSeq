@@ -36,4 +36,7 @@ sig_genes <- get_significant_genes(
 
 
 }
+\seealso{
+\code{\link{plotDOT}}
+}
 \keyword{internal}

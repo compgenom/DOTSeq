@@ -132,3 +132,7 @@ Least-Squares Means. R package version 2.0.0,
 Stephens, M. (2016) False discovery rates: a new deal.
 Biostatistics, 18:2. \url{https://doi.org/10.1093/biostatistics/kxw041}
 }
+\seealso{
+\code{\link{DOTSeq}}, \code{\link{DOTSeqDataSet}},
+\code{\link{fitDOU}}, \code{\link{plotDOT}}
+}

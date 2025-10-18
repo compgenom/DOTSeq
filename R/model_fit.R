@@ -755,6 +755,9 @@ fit_glmm <- function(
 #' and optional diagnostics using DHARMa. This function is adapted from the
 #' \code{satuRn} package to support beta-binomial GLM/GLMMs via \code{glmmTMB}.
 #'
+#' @seealso \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSet}}, 
+#' \code{\link{testDOU}}
+#' 
 #' @param count_table A numeric matrix of ORF-level counts (rows = ORFs,
 #'     columns = samples).
 #'

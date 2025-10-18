@@ -1,13 +1,18 @@
 #' Perform Differential ORF Translation Analysis with DOTSeq
 #'
 #' @description
-#' DOTSeq is a unified framework for modeling differential ORF translation
-#' using ribosome profiling and RNA-seq data. It includes a novel
-#' beta-binomial modeling approach for Differential ORF Usage (DOU), and
-#' integrates DESeq2-based modeling for Differential Translation Efficiency
-#' (DTE). This wrapper function runs the full DOTSeq workflow, including data
-#' loading, ORF filtering, normalization, and model fitting for one or both
-#' modules.
+#' DOTSeq is a statistical framework for modeling Differential ORF 
+#' Translation using ribosome profiling (Ribo-seq) and RNA-seq data. It 
+#' includes a novel beta-binomial modeling approach for detecting 
+#' Differential ORF Usage (DOU), and integrates DESeq2-based modeling for 
+#' Differential Translation Efficiency (DTE). This wrapper function 
+#' optionally executes one or both modules, including data loading, 
+#' ORF-level filtering, model fitting, post hoc contrasts, and adaptive 
+#' shrinkage of effect sizes. Plotting and downstream analysis are handled 
+#' separately via the \code{\link{plotDOT}} function. 
+#' 
+#' @seealso \code{\link{DOTSeqDataSet}}, \code{\link{fitDOU}}, 
+#' \code{\link{testDOU}}, \code{\link{plotDOT}}
 #'
 #' @param dotseq_dataset A named \code{list} containing pre-constructed DOTSeq
 #'     input objects. This list must include:

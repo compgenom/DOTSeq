@@ -126,7 +126,7 @@ head(meta)
 ```
 
 We will focus on Mitotic Cycling and Interphase, using samples pre-treated by 
-cyclohexamide (chx) shortly before harvesting.
+cycloheximide (chx) shortly before harvesting.
 
 ```{r extract-chx}
 cond <- meta[meta$treatment == "chx", ] # extract only samples processed using cyclohexamide
@@ -138,8 +138,8 @@ The main wrapper `DOTSeq()` performs three sequential steps:
 - Construction of two SummarizedExperiment objects (`DOTSeqDataSet()`)
 - model fitting of DOU (`glmmTMB` beta-binomial GLM via `fitDOU()`) and DTE 
 (negative-binomial GLM via `DESeq2`).
-- Post hoc contrasts and adptive shrinkage of effect size via `emmmeans` and 
-`ashr` (`testDOU()`). 
+- Post hoc contrasts and adaptive shrinkage of effect sizes via `emmmeans` 
+and `ashr` (`testDOU()`). 
 
 `DOTSeqDataSet()`, `fitDOU()`, and `testDOU()` can be ran separately. For 
 simplicity, here we will use the `DOTSeq()` wrapper. To capturing the 
@@ -212,7 +212,7 @@ rowRanges(m$sumExp)
 ```
 
 # Visualisation
-DOTSeq provides the plotDOT() function for visualising DOU and DTE results.
+DOTSeq provides the `plotDOT()` function for visualising DOU and DTE results.
 The following plots can be generated:
 
 ```{r merge}
@@ -248,7 +248,7 @@ Displays significance versus DOU effect size.
 
 By default, generating these plots involve ID mapping from Ensembl gene IDs 
 to HGNC gene symbols using `biomaRt`. This mapping helps make the plot more 
-accessible by showing gene symbols. The resulting `id_mapping` dataframe can 
+accessible by showing gene symbols. The resulting ID mapping dataframe can 
 be stored for reuse in subsequent plots to avoid repeated downloads.
 
 ```{r plot-volcano-by-significance}

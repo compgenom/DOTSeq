@@ -1193,6 +1193,8 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' and highlights significant ORFs based on empirical Bayes shrinkage
 #' (via the \code{ashr} package).
 #'
+#' @seealso \code{\link{DOTSeq}}
+#' 
 #' @param results A data frame containing DOU and DTE estimates and
 #'     significance values. Must include ORF-level identifiers and columns
 #'     specified by \code{dou_estimates_col}, \code{dou_padj_col},

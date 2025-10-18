@@ -151,3 +151,7 @@ Hartig F (2025). DHARMa: Residual Diagnostics for Hierarchical (Multi-Level /
 Mixed) Regression Models. R package version 0.4.7.
 \url{https://github.com/florianhartig/dharma}
 }
+\seealso{
+\code{\link{DOTSeq}}, \code{\link{DOTSeqDataSet}},
+\code{\link{testDOU}}
+}

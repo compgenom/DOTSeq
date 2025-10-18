@@ -7,6 +7,9 @@
 #' and strategy-specific contrasts, and applies empirical Bayes shrinkage via
 #' the \code{ashr} package to stabilize effect size estimates.
 #'
+#' @seealso \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSet}}, 
+#' \code{\link{fitDOU}}, \code{\link{plotDOT}}
+#' 
 #' @param sumExp A SummarizedExperiment object containing fitted model objects,
 #'     typically stored in \code{rowData(sumExp)[['DOUResults']]}.
 #'

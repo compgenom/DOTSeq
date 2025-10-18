@@ -63,7 +63,6 @@ biocViews:
     Genetics,
     Sequencing, 
     Software, 
-    WorkflowStep,
     RNASeq,
     Bayesian, 
     Regression,
