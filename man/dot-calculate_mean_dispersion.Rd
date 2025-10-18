@@ -14,14 +14,21 @@
 \value{
 A \code{list} containing:
 \describe{
-\item{mean_prop}{Mean proportion of ORF counts relative to total gene counts.}
-\item{rawRho}{Unclamped dispersion estimate (can be negative).}
-\item{raw_intra_class_corr}{Clamped dispersion estimate (non-negative).}
+\item{mean_prop}{
+Mean proportion of ORF counts relative to total gene counts.
+}
+\item{rawRho}{
+Unclamped dispersion estimate (can be negative).
+}
+\item{raw_intra_class_corr}{
+Clamped dispersion estimate (non-negative).
+}
 }
 }
 \description{
-This helper function computes a moment-based estimate of dispersion (intra-class correlation)
-for a given set of ORF counts and total gene counts across samples. It avoids division by zero
-and clamps negative dispersion estimates to zero.
+This helper function computes a moment-based estimate of dispersion
+(intra-class correlation) for a given set of ORF counts and total gene
+counts across samples. It avoids division by zero and clamps negative
+dispersion estimates to zero.
 }
 \keyword{internal}

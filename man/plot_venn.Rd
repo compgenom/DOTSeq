@@ -13,30 +13,42 @@ plot_venn(
 )
 }
 \arguments{
-\item{results}{A data frame containing DTE and DOU results. Must include row names
-corresponding to ORF identifiers, and columns for adjusted p-values from both tests.}
+\item{results}{A data frame containing DTE and DOU results. Must include
+row names corresponding to ORF identifiers, and columns for adjusted
+p-values from both tests.}
 
-\item{dou_padj_col}{Character string specifying the column name for DOU significance values.
-Should correspond to local false sign rate (lfsr). Default is \code{"lfsr"}.}
+\item{dou_padj_col}{Character string specifying the column name for DOU
+significance values. Should correspond to local false sign rate (lfsr).
+Default is \code{"lfsr"}.}
 
-\item{dte_padj_col}{Character string specifying the column name for DTE adjusted p-values.
-Default is \code{"padj"}.}
+\item{dte_padj_col}{Character string specifying the column name for DTE
+adjusted p-values. Default is \code{"padj"}.}
 
-\item{dou_padj_threshold}{Numeric threshold for DOU LFSR significance. Default is \code{0.05}.}
+\item{dou_padj_threshold}{Numeric threshold for DOU LFSR significance.
+Default is \code{0.05}.}
 
-\item{dte_padj_threshold}{Numeric threshold for DTE adjusted p-value significance. Default is \code{0.05}.}
+\item{dte_padj_threshold}{Numeric threshold for DTE adjusted p-value
+significance. Default is \code{0.05}.}
 }
 \value{
-A Venn diagram (Euler plot) showing the number of ORFs significant in DTE only,
-DOU only, or both.
+A Venn diagram (Euler plot) showing the number of ORFs significant
+in DTE only, DOU only, or both.
 }
 \description{
-Generates a Venn diagram (Euler diagram) showing the overlap of significantly
-differentially translated ORFs (DTE) and differentially used ORFs (DOU).
-ORFs are classified as significant in DTE only, DOU only, or both.
+Generates a Venn diagram (Euler diagram) showing the overlap of
+significantly differentially translated ORFs (DTE) and differentially
+used ORFs (DOU). ORFs are classified as significant in DTE only,
+DOU only, or both.
 }
 \details{
-Significance is determined using a threshold of 0.05 on the adjusted p-values.
-The plot uses a color-blind friendly palette and includes counts for each region.
+Significance is determined using a threshold of 0.05 on the adjusted
+p-values. The plot uses a color-blind friendly palette and includes
+counts for each region.
+}
+\references{
+Larsson J, Gustafsson P (2018). “A Case Study in Fitting Area-Proportional
+Euler Diagrams with Ellipses Using eulerr.” In Proceedings of International
+Workshop on Set Visualization and Reasoning, volume 2116, 84–91.
+\url{https://ceur-ws.org/Vol-2116/paper7.pdf}
 }
 \keyword{internal}

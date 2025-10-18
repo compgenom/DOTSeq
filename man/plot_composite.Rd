@@ -2,10 +2,13 @@
 % Please edit documentation in R/analysis.R
 \name{plot_composite}
 \alias{plot_composite}
-\title{Plot Composite Scatter and Marginal Histograms for DTE vs DOU}
+\title{Plot Composite Scatter and Marginal Plots for DTE vs DOU}
 \usage{
 plot_composite(
   results,
+  rowdata = NULL,
+  color_by = c("significance", "orf_type"),
+  marginal_plot_type = c("histogram", "density"),
   dou_estimates_col = "PosteriorMean",
   dou_padj_col = "lfsr",
   dte_estimates_col = "log2FoldChange",
@@ -17,49 +20,73 @@ plot_composite(
 )
 }
 \arguments{
-\item{results}{A data frame containing results from DTE and DOU post hoc contrasts.
-Must include columns for DTE and DOU posterior estimates, and adjusted p-values
-(e.g., \code{padj} for DTE and \code{lfsr} for DOU).}
+\item{results}{A data frame containing DTE and DOU post hoc contrast results.
+Must include columns for DTE and DOU estimates and their significance values.}
 
-\item{dou_estimates_col}{Character string specifying the column name for DOU estimates.
+\item{rowdata}{Optional data frame containing ORF metadata, with row names
+corresponding to \code{orf_id}. Must include an \code{orf_type} column
+with values "uORF", "mORF", or "dORF" if \code{color_by = "orf_type"}.}
+
+\item{color_by}{Character string specifying how to color points:
+\itemize{
+\item{\code{"significance"}: Colors by DTE-only, DOU-only, both significant}
+\item{\code{"orf_type"}: Colors by ORF type (requires \code{rowdata})}
+}
+Default is \code{"significance"}.}
+
+\item{marginal_plot_type}{Character string specifying the type of marginal plot:
+\code{"histogram"} or \code{"density"}. Default is \code{"density"}.}
+
+\item{dou_estimates_col}{Column name for DOU posterior estimates.
 Default is \code{"PosteriorMean"}.}
 
-\item{dou_padj_col}{Character string specifying the column name for DOU significance values.
-Should correspond to local false sign rate (lfsr). Default is \code{"lfsr"}.}
+\item{dou_padj_col}{Column name for DOU significance values (e.g., local false sign rate).
+Default is \code{"lfsr"}.}
 
-\item{dte_estimates_col}{Character string specifying the column name for DTE estimates.
+\item{dte_estimates_col}{Column name for DTE estimates (e.g., log2 fold-change).
 Default is \code{"log2FoldChange"}.}
 
-\item{dte_padj_col}{Character string specifying the column name for DTE adjusted p-values.
+\item{dte_padj_col}{Column name for DTE adjusted p-values.
 Default is \code{"padj"}.}
 
-\item{dou_padj_threshold}{Numeric threshold for DOU LFSR significance. Default is \code{0.05}.}
+\item{dou_padj_threshold}{Numeric threshold for DOU significance.
+Default is \code{0.05}.}
 
-\item{dte_padj_threshold}{Numeric threshold for DTE adjusted p-value significance. Default is \code{0.05}.}
+\item{dte_padj_threshold}{Numeric threshold for DTE significance.
+Default is \code{0.05}.}
 
-\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of the DOU estimates.
-Useful for aligning directionality with DTE. Default is \code{TRUE}.}
+\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU estimates
+to align directionality with DTE. Default is \code{FALSE}.}
 
-\item{lhist}{Integer; number of bins to use for the marginal histograms.
+\item{lhist}{Integer; number of bins for marginal histograms.
 Default is \code{20}.}
 }
 \value{
-A composite plot with:
+A composite plot consisting of:
 \describe{
-\item{Scatter plot}{Displays DTE (log2 fold-change) vs DOU (log-odds change) estimates,
-with points colored by significance category: DTE-only, DOU-only, both, or neither.}
-\item{Marginal histograms}{Show the distribution of DTE and DOU estimates along the top and right margins.}
+\item{Scatter plot}{
+Displays DTE (log2 fold-change) vs DOU (log-odds change) estimates,
+colored by significance or ORF type.
 }
-Additionally, the function prints the Spearman correlation between DTE and DOU estimates to the console.
+\item{Marginal plots}{
+Show the distribution of DTE and DOU estimates along the top and right
+margins, using either histograms or density curves.
+}
+}
+Additionally, the function returns the Spearman correlation between DTE and DOU
+estimates.
 }
 \description{
 Visualizes the relationship between differential translation efficiency (DTE)
-and differential ORF usage (DOU) using a scatter plot with marginal histograms.
-ORFs are colored based on significance in DTE, DOU, or both tests.
-This plot helps assess the overlap and divergence between DTE and DOU signals.
+and differential ORF usage (DOU) using a scatter plot with marginal histograms
+or density curves. Points can be colored by significance (DTE, DOU, both) or
+by ORF type (uORF, mORF, dORF). This plot helps assess overlap and divergence
+between DTE and DOU signals across ORFs.
 }
 \details{
-The function uses base R graphics and a custom layout to combine scatter and histogram plots.
-Significant ORFs are determined using a threshold of 0.05 on adjusted p-values.
+The function uses base R graphics and a custom layout matrix to arrange the
+scatter and marginal plots. Coloring by significance requires DTE and DOU
+significance columns. Coloring by ORF type requires a metadata table with
+\code{orf_type} values.
 }
 \keyword{internal}

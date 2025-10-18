@@ -7,7 +7,8 @@
 annotate_orf_type(bed, gff_granges)
 }
 \arguments{
-\item{bed}{Character string. Path to a BED file (tab-delimited, no header) with six columns:
+\item{bed}{Character string. Path to a BED file (tab-delimited, no header)
+with six columns:
 \describe{
 \item{chr}{Chromosome name}
 \item{start}{Start coordinate (0-based)}
@@ -17,23 +18,27 @@ annotate_orf_type(bed, gff_granges)
 \item{strand}{Strand information ("+" or "-")}
 }}
 
-\item{gff_granges}{A \code{GRanges} object containing ORF coordinates to be annotated.}
+\item{gff_granges}{A \code{GRanges} object containing ORF coordinates to be
+annotated.}
 }
 \value{
-A \code{GRanges} object with an added metadata column \code{orf_type}, containing
-the BED score for overlapping ORFs. Non-overlapping ORFs will have \code{NA}.
+A \code{GRanges} object with an added metadata column \code{orf_type},
+containing the BED score for overlapping ORFs. Non-overlapping ORFs will
+have \code{NA}.
 }
 \description{
 This function reads a BED file and converts it into a \code{GRanges} object.
-It then finds overlaps with a reference set of ORFs (provided as a \code{GRanges} object,
-typically derived from a GFF or DEXSeqDataSet), and annotates each overlapping ORF
-with a label (e.g., score or type) from the BED file.
+It then finds overlaps with a reference set of ORFs (provided as a
+\code{GRanges} object, typically derived from a GFF or DEXSeqDataSet), and
+annotates each overlapping ORF with a label (e.g., score or type) from the
+BED file.
 }
 \examples{
 \dontrun{
-# Annotate a GRange using a BED file's score 
-gff_granges <- parseBed("example.bed", granges)
-head(orfs)
+    # Annotate a GRanges object using a BED file's score column
+    gff_granges <- parseBed("example.bed", granges)
+    head(orfs)
 }
+
 }
 \keyword{internal}

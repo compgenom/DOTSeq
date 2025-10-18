@@ -13,34 +13,40 @@ calculateTE(
 )
 }
 \arguments{
-\item{counts}{A numeric matrix or data frame of normalized counts,
-where rows correspond to ORFs and columns correspond to samples.
-RNA-seq and Ribo-seq reads are distinguished by suffixes.}
+\item{counts}{A numeric matrix or data frame of normalized counts, where rows
+correspond to ORFs and columns correspond to samples. RNA-seq and
+Ribo-seq reads are distinguished by suffixes.}
 
-\item{rna_suffix}{Character string indicating the suffix of RNA-seq
-samples in the column names (default is ".rna").}
+\item{rna_suffix}{Character string indicating the suffix of RNA-seq samples
+in the column names. Default is \code{".rna"}.}
 
-\item{ribo_suffix}{Character string indicating the suffix of Ribo-seq
-samples in the column names (default is ".ribo").}
+\item{ribo_suffix}{Character string indicating the suffix of Ribo-seq samples
+in the column names. Default is \code{".ribo"}.}
 
-\item{sample_delim}{_delimiter used in sample name (default: ".").}
+\item{sample_delim}{Character. Delimiter used in sample names.
+Default is \code{"."}.}
 
-\item{pseudocount}{Numeric value added to counts to avoid division by zero
-(default is 1e-6).}
+\item{pseudocount}{Numeric value added to counts to avoid division by zero.
+Default is \code{1e-6}.}
 }
 \value{
 A list with two elements:
 \describe{
-\item{te}{A matrix of translational efficiency (Ribo / RNA).}
-\item{usage_shift}{A matrix of log2 ratios of Ribo-proportion / RNA-proportion within each gene.}
+\item{te}{
+A matrix of translational efficiency (Ribo / RNA).
+}
+\item{usage_shift}{
+A matrix of log2 ratios of Ribo-proportion / RNA-proportion
+within each gene.
+}
 }
 }
 \description{
 This function computes translational efficiency (TE) and shifts in ORF usage
-for a set of normalized RNA-seq and Ribo-seq counts. TE is calculated
-as the ratio of Ribo-seq counts to RNA-seq counts. Shifts in ORF usage
-is calculated as the log2 ratio of Ribo-seq proportion to RNA-seq
-proportion within each gene.
+for a set of normalized RNA-seq and Ribo-seq counts. TE is calculated as the
+ratio of Ribo-seq counts to RNA-seq counts. Shifts in ORF usage are computed
+as the log2 ratio of Ribo-seq proportion to RNA-seq proportion within each
+gene.
 }
 \examples{
 \dontrun{

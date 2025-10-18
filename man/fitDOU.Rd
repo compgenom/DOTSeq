@@ -5,8 +5,8 @@
 \title{Fit Differential ORF Usage Models}
 \usage{
 fitDOU(
-  countData,
-  orf2gene,
+  count_table,
+  rowdata,
   anno,
   formula = ~condition * strategy,
   emm_specs = ~condition * strategy,
@@ -16,115 +16,138 @@ fitDOU(
   diagnostic = FALSE,
   parallel = list(n = 4L, autopar = TRUE),
   optimizers = FALSE,
-  seed = NULL,
   verbose = TRUE
 )
 }
 \arguments{
-\item{countData}{A numeric matrix of ORF-level counts (rows = ORFs, columns = samples).}
+\item{count_table}{A numeric matrix of ORF-level counts (rows = ORFs,
+columns = samples).}
 
-\item{orf2gene}{A data frame mapping ORF IDs to gene IDs. Must contain columns \code{orf_id} and \code{gene_id}.}
+\item{rowdata}{A data frame mapping ORF IDs to gene IDs. Must contain
+columns \code{orf_id} and \code{gene_id}.}
 
-\item{anno}{A data frame containing sample annotations. Must include columns such as \code{condition}, \code{strategy}, and \code{replicate}.}
+\item{anno}{A data frame containing sample annotations. Must include columns
+such as \code{condition}, \code{strategy}, and \code{replicate}.}
 
-\item{formula}{A formula object specifying the model design, e.g., \code{~ condition * strategy}.}
+\item{formula}{A formula object specifying the model design,
+e.g., \code{~ condition * strategy}.}
 
-\item{emm_specs}{A formula specifying the structure of the estimated marginal means.
-Default is \code{~condition * strategy}.}
+\item{emm_specs}{A formula specifying the structure of the estimated
+marginal means. Default is \code{~condition * strategy}.}
 
-\item{dispformula}{Optional formula object specifying a custom dispersion model (used when \code{dispersion_modeling = "custom"}).}
+\item{dispformula}{Optional formula object specifying a custom dispersion
+model (used when \code{dispersion_modeling = "custom"}).}
 
-\item{dispersion_modeling}{Character string specifying the dispersion modeling strategy.
-Options are:
+\item{dispersion_modeling}{Character string specifying the dispersion
+modeling strategy. Options are:
 \describe{
-\item{\code{"auto"}}{Fit both strategy-dependent and shared dispersion models, and select the best via likelihood ratio test.}
-\item{\code{"strategy"}}{Model dispersion as a function of sequencing strategy.}
-\item{\code{"shared"}}{Assume constant dispersion across all predictor levels.}
-\item{\code{"custom"}}{Use a user-specified dispersion formula via \code{dispformula}.}
+\item{\code{"auto"}}{
+Fit both strategy-dependent and shared dispersion models, and
+select the best via likelihood ratio test.
+}
+\item{\code{"strategy"}}{
+Model dispersion as a function of sequencing strategy.
+}
+\item{\code{"shared"}}{
+Assume constant dispersion across all predictor levels.
+}
+\item{\code{"custom"}}{
+Use a user-specified dispersion formula via \code{dispformula}.
+}
 }}
 
-\item{lrt}{Logical; if \code{TRUE}, performs a likelihood ratio test to compare the full model (with interaction) against a reduced model
-(without interaction) to assess translation-specific effects (default: \code{FALSE}).}
+\item{lrt}{Logical; if \code{TRUE}, performs a likelihood ratio test to
+compare the full model (with interaction) against a reduced model
+(without interaction) to assess translation-specific effects.
+Default is \code{FALSE}.}
 
-\item{diagnostic}{Logical; if \code{TRUE}, runs DHARMa diagnostics to assess model fit (default: \code{FALSE}).}
+\item{diagnostic}{Logical; if \code{TRUE}, runs DHARMa diagnostics to assess
+model fit. Default is \code{FALSE}.}
 
-\item{parallel}{A list passed to \code{glmmTMBControl} to configure parallel optimization,
-e.g., \code{list(parallel = TRUE, ncpus = 4)}. Default: \code{list(n = 4L, autopar = TRUE)}.}
+\item{parallel}{A list passed to \code{glmmTMBControl} to configure parallel
+optimization, e.g., \code{list(parallel = TRUE, ncpus = 4)}.
+Default is \code{list(n = 4L, autopar = TRUE)}.}
 
-\item{optimizers}{Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers in \code{glmmTMB} (default: \code{FALSE}).}
+\item{optimizers}{Logical; if \code{TRUE}, enables brute-force optimization
+using multiple optimizers in \code{glmmTMB}. Default is \code{FALSE}.}
 
-\item{seed}{Optional integer to set the random seed for reproducibility (default: \code{NULL}).}
-
-\item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{TRUE}).}
+\item{verbose}{Logical; if \code{TRUE}, prints progress messages.
+Default is \code{TRUE}.}
 }
 \value{
 A named \code{list} of \code{PostHoc} objects, one per ORF.
 }
 \description{
-This internal function fits beta-binomial models for differential ORF usage (DOU)
-across all genes. It supports multiple dispersion modeling strategies and optional
-diagnostics using DHARMa. This function is adapted from the \code{satuRn} package
-to support beta-binomial GLM/GLMMs via \code{glmmTMB}.
+This function fits beta-binomial models for differential ORF usage
+(DOU) across all genes. It supports multiple dispersion modeling strategies
+and optional diagnostics using DHARMa. This function is adapted from the
+\code{satuRn} package to support beta-binomial GLM/GLMMs via \code{glmmTMB}.
 }
 \examples{
-# Load \link[SummarizedExperiment]{SummarizedExperiment} to enable subsetting 
-# and access to components like rowRanges and rowData.
+# Load SummarizedExperiment to enable subsetting and access to components
+# like rowRanges and rowData
 library(SummarizedExperiment)
 
-# Read in count matrix, condition table, and annotation files.
+# Read in count matrix, condition table, and annotation files
 dir <- system.file("extdata", package = "DOTSeq")
 
 cnt <- read.table(
-  file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), 
-  header=TRUE, 
-  comment.char ='#'
-  )
+    file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"),
+    header = TRUE,
+    comment.char = "#"
+)
 names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\\\1", names(cnt))
 
 flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
 bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
 
 meta <- read.table(file.path(dir, "metadata.txt.gz"))
-names(meta) <-  c("run","strategy","replicate","treatment","condition")
-cond <- meta[meta$treatment=="chx",] # extract only samples processed using cyclohexamide 
-cond$treatment <- NULL # remove the treatment column
+names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
+cond <- meta[meta$treatment == "chx", ]
+cond$treatment <- NULL
 
-# Create \link[SummarizedExperiment]{SummarizedExperiment} objects.
-# These objects can be used as input for \code{\link{DOTSeq}} and \code{\link{fitDOU}}.
+# Create SummarizedExperiment object
 m <- DOTSeqDataSet(
-  count_table = cnt, 
-  condition_table = cond, 
-  flattened_gtf = flat, 
-  bed = bed
-  )
- 
-# Keep ORFs where all replicates in at least one condition pass min_count.
-# Single-ORF genes are removed.
-m$sumExp <- m$sumExp[rowRanges(m$sumExp)$is_kept == TRUE, ]
-
-# Randomly sample 100 ORFs for \code{\link{fitDOU}}.
-n <- 100 
-set.seed(42)
-random_rows <- sample(seq_len(nrow(m$sumExp)), size = n)
-
-# Subset the SummarizedExperiment object
-m$sumExp <- m$sumExp[random_rows, ]
-
-# Model fitting using \code{\link{fitDOU}}.
-rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
-  countData = assay(m$sumExp),
-  orf2gene = rowData(m$sumExp), 
-  anno = colData(m$sumExp),
-  formula = ~condition * strategy,
-  emm_specs = ~condition * strategy,
-  dispersion_modeling = "auto",
-  lrt = FALSE,
-  optimizers = FALSE,
-  diagnostic = FALSE,
-  parallel = list(n=4L, autopar=TRUE),
-  seed = 42,
-  verbose = TRUE
+    count_table = cnt,
+    condition_table = cond,
+    flattened_gtf = flat,
+    bed = bed
 )
 
+# Filter and subset ORFs
+m$sumExp <- m$sumExp[rowRanges(m$sumExp)$is_kept == TRUE, ]
+set.seed(42)
+random_rows <- sample(seq_len(nrow(m$sumExp)), size = 100)
+m$sumExp <- m$sumExp[random_rows, ]
 
+# Fit DOU models
+rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
+    count_table = assay(m$sumExp),
+    rowdata = rowData(m$sumExp),
+    anno = colData(m$sumExp),
+    formula = ~ condition * strategy,
+    emm_specs = ~ condition * strategy,
+    dispersion_modeling = "auto",
+    lrt = FALSE,
+    optimizers = FALSE,
+    diagnostic = FALSE,
+    parallel = list(n = 4L, autopar = TRUE),
+    verbose = TRUE
+)
+
+}
+\references{
+Brooks, M. E., Kristensen, K., van Benthem, K. J., Magnusson, A., Berg, C. W.,
+Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M. (2017).
+glmmTMB balances speed and flexibility among packages for zero-inflated
+generalized linear mixed modeling. The R Journal, 378–400.
+\url{https://doi.org/10.32614/RJ-2017-066}
+
+Lenth R, Piaskowski J (2025). emmeans: Estimated Marginal Means, aka
+Least-Squares Means. R package version 2.0.0.
+\url{https://rvlenth.github.io/emmeans/}
+
+Hartig F (2025). DHARMa: Residual Diagnostics for Hierarchical (Multi-Level /
+Mixed) Regression Models. R package version 0.4.7.
+\url{https://github.com/florianhartig/dharma}
 }

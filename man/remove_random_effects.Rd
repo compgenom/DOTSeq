@@ -7,11 +7,13 @@
 remove_random_effects(formula)
 }
 \arguments{
-\item{formula}{An R formula object. Random effect terms are identified by the pattern \code{(1 | group)}.}
+\item{formula}{An R formula object. Random effect terms are identified by the
+pattern \code{(1 | group)}.}
 }
 \value{
 A new R formula object containing only the fixed effect terms.
 }
 \description{
-This function takes an R formula object that may contain random effect terms and returns a new formula with all such terms removed.
+This function takes an R formula object that may contain random effect terms
+and returns a new formula with all such terms removed.
 }

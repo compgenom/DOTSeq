@@ -1,23 +1,23 @@
 ---
-title: "Analysing Ribosome profiling data with DOTSeq: Differential ORF Translation"
+title: "DOTSeq: Detecting Differential ORF Usage in Ribosome Profiling Data"
 author: 
   - name: "Chun Shen Lim*"
     affiliation: |
-      1 Department of Biochemistry, Faculty of Biomedical Sciences, University of Otago, Dunedin, New Zealand.  
+      1 Department of Biochemistry, Faculty of Biomedical Sciences, 
+        University of Otago, Dunedin, New Zealand.  
       2 Genetics Otago, University of Otago, Dunedin, New Zealand.  
-      3 Maurice Wilkins Centre for Molecular Biodiscovery, Centres of Research Excellence, New Zealand.  
-    email: "chunshen.lim@otago.ac.nz"
+      3 Maurice Wilkins Centre for Molecular Biodiscovery, 
+        Centres of Research Excellence, New Zealand.  
+    email: "chunshen.lim@ieee.org"
   - name: "Gabrielle S.W. Chieng"
     affiliation: |
-      1 Department of Biochemistry, Faculty of Biomedical Sciences, University of Otago, Dunedin, New Zealand.  
+      1 Department of Biochemistry, Faculty of Biomedical Sciences, 
+        University of Otago, Dunedin, New Zealand.  
       2 Genetics Otago, University of Otago, Dunedin, New Zealand.
 date: "2025"
 output: 
-  html_document:
-    toc: true
-    toc_float: true
-    theme: united
-    highlight: tango
+  BiocStyle::html_document:
+      css: style.css
 vignette: >
   %\VignetteIndexEntry{DOTSeq}  
   %\VignetteEngine{knitr::rmarkdown}  
@@ -27,29 +27,41 @@ bibliography: DOTSeq.bib
 ---
 
 ```{r opts-chunk, echo=FALSE, include=FALSE}
-knitr::opts_chunk$set(tidy = FALSE,
-                      cache = FALSE,
-                      dev = "png",
-                      eval = TRUE,
-                      message = FALSE,
-                      error = FALSE,
-                      warning = FALSE)
+knitr::opts_chunk$set(
+    tidy = FALSE,
+    cache = FALSE,
+    dev = "png",
+    eval = TRUE,
+    message = FALSE,
+    error = FALSE,
+    warning = FALSE
+)
 ```
 
 # Introduction
-DOTSeq is a statistical framework for identifying differentially translated open reading frames (ORFs) from Ribo-seq and matched RNA-seq datasets. Unlike traditional gene-level approaches, DOTSeq performs ORF-level analysis, enabling detection of:
+DOTSeq is an R package for detecting differential translation of open reading 
+frames (ORFs) from matched Ribo-seq and RNA-seq datasets 
+[@lim2025differential]. Translation is a tightly regulated process, where 
+multiple ORFs within the same gene can modulate protein synthesis.
+Traditional gene-level approaches obscure these regulatory layers. DOTSeq 
+addresses this limitation by modelling translation at the ORF level.
 
-- Differential ORF Usage (DOU): Changes in the relative usage of ORFs within the same gene across conditions.
-- Differential Translation Efficiency (DTE): Changes in ribosome occupancy relative to RNA abundance across conditions.
+DOTSeq provides two complementary modules:
 
-DOTSeq uses a beta-binomial GLM implemented via `glmmTMB`, modelling translation-specific effects through an interaction term (`condition:strategy`). It supports:
+- **Differential ORF Usage (DOU)**: Detects *cis*-translational regulation 
+by testing whether the relative usage of ORFs within a gene changes across 
+biological conditions. Implemented via a beta-binomial GLM (`glmmTMB`) 
+[@RJ-2017-066].
 
-- Flexible modeling of dispersion and random effects
-- Post hoc contrasts via emmeans
-- Adaptive shrinkage via ashr
+- **Differential Translation Efficiency (DTE)**: Tests for changes in 
+ribosome occupancy relative to RNA abundance across conditions using a 
+negative-binomial GLM (`DESeq2`) [@love2014moderated].
 
-# Load Library
-First, we will load libraries required to run this vignette.
+Together, **DOU** and **DTE** modules allow global identification of 
+translation-specific effects, revealing regulatory events such as 
+uORF-mediated repression.
+
+# Load Required Library
 
 ```{r setup, warning=FALSE}
 library(DOTSeq)
@@ -57,7 +69,13 @@ library(SummarizedExperiment)
 ```
 
 # Example Dataset
-We use data from [Ly et al. (2024)](https://doi.org/10.1038/s41586-024-08088-3), who profiled translation initiation and elongation in HeLa cells synchronised at Mitotic Cycling, Mitotic Arrest, and Interphase. Two biological replicates were performed for each cell cycle stage. The raw sequencing reads are deposited on the NCBI Gene Expression Omnibus (GEO) under the accession number [GSE230189](http://www.ncbi.nlm.nih.gov/projects/geo/query/acc.cgi?acc=GSE230189).
+We demonstrate `DOTSeq` functionalities using data from [@ly2024nuclear], 
+where translation initiation and elongation were profiled in HeLa cells 
+synchronised at Mitotic Cycling, Mitotic Arrest, and Interphase.
+Each condition contains two biological replicates.
+
+Raw sequencing reads are available at GEO accession number 
+[GSE230189](http://www.ncbi.nlm.nih.gov/projects/geo/query/acc.cgi?acc=GSE230189).
 
 ```{r dir}
 dir <- system.file("extdata", package = "DOTSeq")
@@ -65,24 +83,30 @@ list.files(dir)
 ```
 
 # Input data
-Both Ribo-seq and match RNA-seq reads have been preprocessed by adapter trimming using Cutadapt and aligning to the reference genome using STAR. Mapped reads were summarised at the ORF level based on a flattened GTF annotation using featureCounts as described in [README](https://github.com/compgenom/DOTSeq/blob/main/README.md).
+Ribo-seq and RNA-seq reads were adapter-trimmed using Cutadapt 
+[@martin2011cutadapt], aligned to the reference genome using STAR 
+[@dobin2013star], and summarised at the ORF level using featureCounts 
+[@liao2014featurecounts]. Flattened ORF-level annotations were generated with 
+the orf_to_gtf.py wrapper from RIBOSS [@lim2025riboss], analogous to DEXSeq’s 
+exon-flattening procedure [@anders2012detecting].
 
-DOTSeq requires a counts matrix from featureCounts, where the first 6 columns correspond to ORF level annotation and all columns after that correspond to the counts for Ribo- and RNA-seq samples. To speed up the vignette execution we will use a subset of input data. 
+DOTSeq requires a counts matrix formatted like the output from featureCounts, 
+with the first six columns representing ORF-level annotations and the 
+remaining columns containing sample counts. To speed up the vignette 
+execution we will use a subset of input data. 
 
 ```{r read-in-count-file}
-cnt <- read.table(file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), header=TRUE, comment.char ='#')
+cnt <- read.table(
+    file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), 
+    header = TRUE, 
+    comment.char = "#")
 names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
-```
-
-We can check the first five lines of the counts matrix:
-```{r count-table-example}
 head(cnt)
 ```
 
 # ORF annotation files 
-DOTSeq requires a flatten GTF and BED files with discrete, non-overlapping ORF annotation describing the genomic locations of ORFs. These annotation files, were generated using the orf_to_gtf.py wrapper from the RIBOSS engine as described in [README](https://github.com/compgenom/DOTSeq/blob/main/README.md).
-
-Here, we specify the file path for the annotation files:
+Flattening ensures discrete, non-overlapping ORF bins across transcript 
+isoforms, allowing unambiguous assignment of Ribo-seq reads to ORFs.
 
 ```{r ref}
 flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
@@ -90,76 +114,93 @@ bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
 ```
 
 # Prepare Condition Table
-A condition (metadata) table is required to define the experimental design for both Ribo-seq and RNA-seq samples. 
-This table must include four essential columns: run (sample identifier), strategy (sequencing type, either "ribo" or "rna", or "0" and "1"), replicate (biological replicate number), and condition (biological condition, such as treatment or control). 
-
-Additional columns may also be included to capture study-specific factors, for example batch information or other variables that could influence the analysis.
+DOTSeq requires a condition table defining the experimental design for both 
+Ribo-seq and RNA-seq samples.The table must include four essential columns:
+run, strategy ("ribo" or "rna", or "0" or "1"), replicate, and condition.
+Additional columns (e.g., batch) can also be included.
 
 ```{r condition-table}
 meta <- read.table(file.path(dir, "metadata.txt.gz"))
-names(meta) <-  c("run","strategy","replicate","treatment","condition")
+names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
 head(meta)
 ```
-In this example, we will compare Mitotic Cycling and Interphase, and focus on translating ribosomes were stalled using cyclohexamide (chx) during Ribo-seq.
+
+We will focus on Mitotic Cycling and Interphase, using samples pre-treated by 
+cyclohexamide (chx) shortly before harvesting.
 
 ```{r extract-chx}
-cond <- meta[meta$treatment=="chx",] # extract only samples processed using cyclohexamide 
+cond <- meta[meta$treatment == "chx", ] # extract only samples processed using cyclohexamide
 cond$treatment <- NULL # remove the treatment column
 ```
 
 # Running DOTSeq
-The `DOTSeq()` wrapper performs:
+The main wrapper `DOTSeq()` performs three sequential steps:
 - Construction of two SummarizedExperiment objects (`DOTSeqDataSet()`)
-- model fitting via `glmmTMB` (`fitDOU()`) and `DESeq2`
-- Post hoc contrasts via `emmmeans` (`testDOU()`)
-- Shrinkage of effect size via `ashr` (`testDOU()`). 
+- model fitting of DOU (`glmmTMB` beta-binomial GLM via `fitDOU()`) and DTE 
+(negative-binomial GLM via `DESeq2`).
+- Post hoc contrasts and adptive shrinkage of effect size via `emmmeans` and 
+`ashr` (`testDOU()`). 
 
-`DOTSeqDataSet()`, `fitDOU()`, and `testDOU()` can be ran separately. For simplicity, here we will use the `DOTSeq()` wrapper.
+`DOTSeqDataSet()`, `fitDOU()`, and `testDOU()` can be ran separately. For 
+simplicity, here we will use the `DOTSeq()` wrapper. To capturing the 
+translation-specific interaction effect (β_int), `DOTSeq()` uses the 
+conditional formula `~ condition * strategy` with 
+`dispersion_modeling = "auto"` by default. The conditional and dispersion 
+formulas can be customised to include batch and random effects.
 
 ```{r dotseq, warning=FALSE}
 m <- DOTSeq(
-  count_table = cnt, 
-  condition_table = cond, 
-  flattened_gtf = flat, 
-  bed = bed)
+    count_table = cnt,
+    condition_table = cond,
+    flattened_gtf = flat,
+    bed = bed
+)
 ```
 
-In this case Interphase was automatically assigned as the baseline. The target and baseline conditions can explicitly defined as `target = "Mitotic_Cycling"` and `baseline = "Interphase"`.
-
-By default, `DOTSeq()` uses the `formula  = ~ condition * strategy` and `dispersion_modeling = "auto"`. We can customise the conditional and dispersion formulas to include batch and random effects.
+In this case Interphase was automatically assigned as the baseline. The target 
+and baseline conditions can explicitly defined as `target = "Mitotic_Cycling"` 
+and `baseline = "Interphase"`.
 
 # Accessing results
-DOTSeq returns:
+DOTSeq returns two main objects:
 
 - sumExp: DOU results (beta-binomial GLMs)
 - dds: DTE results (negative binomial GLMs)
-
-Since the DTE module is based on `DESeq2`, we use dds for the naming convention.
 
 ```{r dotseq-objects}
 names(m)
 ```
 
-We store the post hoc results in the metadata of slot, which can be returned by:
+Post hoc results are stored in the metadata:
 
 ```{r posthoc}
 dou_results <- metadata(m$sumExp)$interaction_results
 dte_results <- metadata(m$dds)$interaction_results
 ```
 
-The key results for DOU are log-odds fold-change (PosteriorMean) and Local False Sign Rate (lfsr). These values were computed by `ashr`'s adaptive shrinkage estimator using coefficients (betahat) and their standard errors (sebetahat) estimated by beta-binomial GLMs as priors.
+Key metrics include:
+
+- PosteriorMean - shrunk log-odds fold change (PosteriorMean) and
+- lfsr - Local False Sign Rate (lfsr) for DOU
+- log2FoldChange - shrunken log2-fold change and
+- padj - adjusted p-value for DTE
+
+PosteriorMean, lfsr and log2FoldChange were computed by `ashr`'s adaptive 
+shrinkage estimator.
 
 ```{r dou}
 dou_results
 ```
 
-The DTE results were obtained from `lfcShrink()` within the `DOTSeq()` wrapper. We use `type = ashr` to compute all pairwise contrasts.
+The DTE results were obtained from `lfcShrink()` within the `DOTSeq()` wrapper. 
+We use `type = ashr` to compute all pairwise contrasts.
 
 ```{r dte}
 dte_results
 ```
 
-We can also inspect the `rowData` and `rowRanges` of the SummarizedExperiment object with ORF level annotation.
+We can also inspect the `rowData` and `rowRanges` of the SummarizedExperiment 
+object with ORF level annotation.
 
 ```{r rowdata}
 rowdata <- rowData(m$sumExp)
@@ -171,7 +212,8 @@ rowRanges(m$sumExp)
 ```
 
 # Visualisation
-For plotting, we will slice the data frames for Mitotic_Cycling vs Interphase.
+DOTSeq provides the plotDOT() function for visualising DOU and DTE results.
+The following plots can be generated:
 
 ```{r merge}
 dou_mci <- dou_results[dou_results$contrast == "Mitotic_Cycling - Interphase", ]
@@ -180,33 +222,90 @@ dte_mci <- dte_results[dte_results$contrast == "Mitotic_Cycling - Interphase", ]
 results <- merge(dou_mci, dte_mci, by = "orf_id", all = TRUE)
 ```
 
-DOTSeq provides a flexible plotting function `plotDOT()` for visualizing DOU or DTE results. To avoid re-downloading gene symbols in future plots, we will fetch the gene symbols via `biomaRt` by specifying `plot_types = NULL`. However, this step is optional.
- 
-```{r id-mapping}
-id_mapping <- plotDOT(results = results, rowdata = rowdata, plot_types = NULL)
-```
-
-Let's generate a Venn diagram.
+## 1. Venn diagram: 
+Shows overlap between significant DOU and DTE ORFs.
 
 ```{r plot-venn}
 plotDOT(results = results, plot_types = "venn")
 ```
 
-We will generate composite scatter plots comparing DTE and DOU. The composite scatter plots include marginal distributions of DTE and DOU along each axis. Points are colour-coded by significance or ORF types.
+## 2. Composite scatter plot: 
+Compares DOU and DTE effect sizes with marginal density plots. Points are 
+colour-coded by significance.
 
-```{r plot-composite}
+```{r plot-composite-by-significance}
+plotDOT(results = results, plot_types = "composite")
+```
+
+Points can be colour-coded by ORF types if rowdata is given as an input.
+
+```{r plot-composite-by-orfs}
 plotDOT(results = results, rowdata = rowdata, plot_types = "composite")
 ```
 
-Finally, let's generate volcano plots and a heatmap for visualising DOU results.
+## 3. Volcano plot: 
+Displays significance versus DOU effect size.
 
-```{r plot-volcano}
-plotDOT(results = results, rowdata = rowdata, id_mapping = id_mapping, plot_types = "volcano")
+By default, generating these plots involve ID mapping from Ensembl gene IDs 
+to HGNC gene symbols using `biomaRt`. This mapping helps make the plot more 
+accessible by showing gene symbols. The resulting `id_mapping` dataframe can 
+be stored for reuse in subsequent plots to avoid repeated downloads.
+
+```{r plot-volcano-by-significance}
+id_mapping <- plotDOT(
+    results = results,
+    plot_types = "volcano"
+)
 ```
+
+Similarly, volcano plots can be colour-coded by significance or ORF types, 
+depending on whether rowdata is given as an input. 
+
+```{r plot-volcano-by-orfs}
+plotDOT(
+    results = results,
+    rowdata = rowdata,
+    id_mapping = id_mapping,
+    plot_types = "volcano"
+)
+```
+
+## 4. Heatmap: 
+Visualises the top ORFs or genes (e.g., top 40 uORF-regulated genes).
 
 ```{r plot-heatmap, fig.width=4, fig.height=8, warning=FALSE}
-plotDOT(results = results, rowdata = rowdata, id_mapping = id_mapping, plot_types = "heatmap")
+plotDOT(
+    results = results, 
+    rowdata = rowdata, 
+    id_mapping = id_mapping, 
+    plot_types = "heatmap")
 ```
+# Simulation and benchmarking
+
+DOTSeq includes the function `simDOT()` for generating simulated Ribo-seq 
+and RNA-seq count matrices. It enables benchmarking under controlled 
+scenarios with configurable effect sizes, batch effects, and ORF types.  
+Simulations in [@lim2025differential] show that:
+
+- The **DOU** module performs well at low-to-moderate effect sizes on 
+DOU-type scenarios. This module is specifically designed to detect 
+condition-dependent shifts in the expected proportion of Ribo-seq to 
+RNA-seq counts for individual ORFs relative to other ORFs within the 
+same gene* (i.e., changes in ORF usage). This module targets 
+*cis*-regulatory usage changes that alter relative ORF proportions 
+within genes.
+- The **DTE** module performs better at large-magnitude changes in 
+translation efficiency. This module captures ORF-level changes in ribosome 
+occupancy relative to RNA abundance.
+
+# Summary
+
+DOTSeq offers a unified framework for modelling translational control at 
+the ORF level. DOTSeq has two modules capturing distinct biological signals: 
+**DOU** tests for shifts in relative usage within genes (cis-regulation), 
+whereas **DTE** tests for changes in per-ORF translation efficiency relative 
+to transcript abundance. They can be used together to provide a fuller 
+picture of translational regulation.
 
 # Session Info
 ```{r sessionInfo}

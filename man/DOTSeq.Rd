@@ -24,160 +24,189 @@ DOTSeq(
   optimizers = FALSE,
   nullweight = 500,
   contrasts_method = "revpairwise",
-  seed = NULL,
   verbose = TRUE
 )
 }
 \arguments{
-\item{dotseq_dataset}{A named \code{list} containing pre-constructed DOTSeq input objects.
-This list must include:
+\item{dotseq_dataset}{A named \code{list} containing pre-constructed DOTSeq
+input objects. This list must include:
 \describe{
-\item{\code{sumExp}}{A \code{RangedSummarizedExperiment} object containing pre-filtered raw counts,
-sample metadata, and ORF-level annotations. This object is used for modeling Differential ORF Usage (DOU)
-within the DOTSeq framework.}
-\item{\code{dds}}{A \code{DESeqDataSet} object used for modeling Differential Translation Efficiency (DTE)
-within the DOTSeq framework via DESeq2.}
+\item{\code{sumExp}}{
+A \code{RangedSummarizedExperiment} object containing filtered
+raw counts, sample metadata, and ORF-level annotations.
 }
-If \code{dotseq_dataset} is provided, the function will skip raw input parsing and use these objects directly.
-Otherwise, all of \code{count_table}, \code{condition_table}, \code{flattened_gtf}, and \code{bed} must be supplied
-to construct the dataset from scratch.}
+\item{\code{dds}}{
+A \code{DESeqDataSet} object used for modeling DTE via DESeq2.
+}
+}
+If \code{dotseq_dataset} is provided, the function skips raw input
+parsing and uses these objects directly.}
 
-\item{count_table}{Path to a count table file or a data frame. Must contain columns:
-\code{Geneid}, \code{Chr}, \code{Start}, \code{End}, \code{Strand}, \code{Length},
-plus one column per sample.}
+\item{count_table}{Path to a count table file or a data frame. Must contain
+columns: \code{Geneid}, \code{Chr}, \code{Start}, \code{End},
+\code{Strand}, \code{Length}, plus one column per sample.}
 
-\item{condition_table}{Path to a sample metadata file or a data frame. Must include columns:
-\code{run}, \code{strategy}, \code{condition}, \code{replicate}.}
+\item{condition_table}{Path to a sample metadata file or a data frame.
+Must include columns: \code{run}, \code{strategy}, \code{condition},
+\code{replicate}.}
 
-\item{flattened_gtf}{Optional path to a flattened GFF/GTF file containing exon definitions.}
+\item{flattened_gtf}{Optional path to a flattened GFF/GTF file.}
 
 \item{bed}{Path to a BED file with ORF annotations.}
 
-\item{formula}{A formula object specifying the design, e.g., \code{~ condition * strategy}.}
+\item{formula}{A formula object specifying the design.
+Default is \code{~ condition * strategy}.}
 
 \item{modules}{Character vector specifying which DOTSeq modules to run.
-Options include \code{"DOU"} (Differential ORF Usage) and \code{"DTE"} (Differential Translation Efficiency).
-Both are components of the DOTSeq framework. Default is \code{c("DOU", "DTE")}, which runs both.}
+Options include \code{"DOU"} and \code{"DTE"}.
+Default is \code{c("DOU", "DTE")}.}
 
-\item{target}{Character string specifying the non-reference condition level to extract the corresponding interaction term.
-Contrasted against the baseline condition (default: \code{NULL}).}
+\item{target}{Character string specifying the non-reference condition level
+to extract the corresponding interaction term.
+Default is \code{NULL}.}
 
-\item{baseline}{Character string specifying the desired reference level (default: \code{NULL}).}
+\item{baseline}{Character string specifying the desired reference level.
+Default is \code{NULL}.}
 
-\item{min_count}{Minimum count threshold for filtering ORFs (default: \code{1}).}
+\item{min_count}{Minimum count threshold for filtering ORFs.
+Default is \code{1}.}
 
 \item{stringent}{Logical or \code{NULL}; determines the filtering strategy:
 \describe{
-\item{\code{TRUE}}{Keep ORFs where all replicates in at least one condition pass \code{min_count}.}
-\item{\code{FALSE}}{Keep ORFs where all replicates in at least one condition-strategy group pass \code{min_count}.}
-\item{\code{NULL}}{Keep ORFs where total counts across replicates pass \code{min_count}.}
+\item{\code{TRUE}}{
+Keep ORFs where all replicates in at least one condition pass
+\code{min_count}.
+}
+\item{\code{FALSE}}{
+Keep ORFs where all replicates in at least one condition-strategy
+group pass \code{min_count}.
+}
+\item{\code{NULL}}{
+Keep ORFs where total counts across replicates pass
+\code{min_count}.
+}
 }}
 
-\item{dispersion_modeling}{String specifying the dispersion modeling approach for DOU.
-Options include \code{"auto"}, \code{"shared"}, or \code{"custom"} (default: \code{"auto"}).}
+\item{dispersion_modeling}{String specifying the dispersion modeling
+approach for DOU. Options include \code{"auto"}, \code{"shared"},
+or \code{"custom"}. Default is \code{"auto"}.}
 
-\item{dispformula}{Optional formula object for custom dispersion modeling in DOU.}
+\item{dispformula}{Optional formula object for custom dispersion modeling.}
 
-\item{lrt}{Logical; if \code{TRUE}, performs a likelihood ratio test comparing full vs reduced models
-to assess translation-specific effects in DOU (default: \code{FALSE}).}
+\item{lrt}{Logical; if \code{TRUE}, performs a likelihood ratio test
+comparing full vs reduced models in DOU.
+Default is \code{FALSE}.}
 
-\item{diagnostic}{Logical; if \code{TRUE}, enables model diagnostics in DOU, including tests for overdispersion,
-zero inflation, and residual properties (default: \code{FALSE}).}
+\item{diagnostic}{Logical; if \code{TRUE}, enables model diagnostics in DOU.
+Default is \code{FALSE}.}
 
-\item{parallel}{A list passed to \code{glmmTMBControl} to configure parallel optimization in DOU.
-If \code{NULL}, parallelism is disabled. Default: \code{list(n = 4L, autopar = TRUE)}.
-Parallelization provides a noticeable speed-up only when \code{optimizers = TRUE}.
-When using only the default optimizer (\code{nlminb}), parallelism has little impact on speed.}
+\item{parallel}{A list passed to \code{glmmTMBControl} to configure parallel
+optimization in DOU. Default is \code{list(n = 4L, autopar = TRUE)}.}
 
-\item{optimizers}{Logical; if \code{TRUE}, enables brute-force optimization using multiple optimizers
-in \code{glmmTMB}: \code{nlminb}, \code{bobyqa}, and \code{optim} (default: \code{FALSE}).}
+\item{optimizers}{Logical; if \code{TRUE}, enables brute-force optimization
+using multiple optimizers in \code{glmmTMB}.
+Default is \code{FALSE}.}
 
-\item{nullweight}{Numeric. Prior weight on the null hypothesis for empirical Bayes shrinkage in DOU.
-Higher values yield more conservative lfsr estimates. Default is \code{500}.}
+\item{nullweight}{Numeric. Prior weight on the null hypothesis for empirical
+Bayes shrinkage in DOU. Default is \code{500}.}
 
-\item{contrasts_method}{Character string specifying the method for post hoc contrasts in DOU.
-Default is \code{"revpairwise"}; other methods supported by \code{emmeans} may be used.}
+\item{contrasts_method}{Character string specifying the method for post hoc
+contrasts in DOU. Default is \code{"revpairwise"}.}
 
-\item{seed}{Optional integer to set the random seed for reproducibility in model fitting (default: \code{NULL}).}
-
-\item{verbose}{Logical; if \code{TRUE}, prints progress messages and runtime summaries (default: \code{TRUE}).}
+\item{verbose}{Logical; if \code{TRUE}, prints progress messages.
+Default is \code{TRUE}.}
 }
 \value{
 A named \code{list} containing:
 \describe{
-\item{sumExp}{A \code{SummarizedExperiment} object containing filtered raw counts, sample metadata, and DOU results.
-Used for modeling Differential ORF Usage within the DOTSeq framework.}
-\item{dds}{A \code{DESeqDataSet} object containing normalized counts and metadata,
-used for modeling Differential Translation Efficiency within the DOTSeq framework via DESeq2.}
+\item{\code{sumExp}}{
+A \code{SummarizedExperiment} object with DOU results.
+}
+\item{\code{dds}}{
+A \code{DESeqDataSet} object with DTE results.
+}
 }
 }
 \description{
-DOTSeq is a unified framework for modeling differential ORF translation using ribosome profiling and RNA-seq data.
-It includes a novel beta-binomial modeling approach for Differential ORF Usage (DOU), and integrates DESeq2-based
-modeling for Differential Translation Efficiency (DTE). This wrapper function runs the full DOTSeq workflow,
-including data loading, ORF filtering, normalization, and model fitting for one or both modules.
+DOTSeq is a unified framework for modeling differential ORF translation
+using ribosome profiling and RNA-seq data. It includes a novel
+beta-binomial modeling approach for Differential ORF Usage (DOU), and
+integrates DESeq2-based modeling for Differential Translation Efficiency
+(DTE). This wrapper function runs the full DOTSeq workflow, including data
+loading, ORF filtering, normalization, and model fitting for one or both
+modules.
 }
 \examples{
-# Load \link[SummarizedExperiment]{SummarizedExperiment} to enable access to 
-# components like metadata.
+# Load SummarizedExperiment
 library(SummarizedExperiment)
 
-# Read in count matrix, condition table, and annotation files.
 dir <- system.file("extdata", package = "DOTSeq")
 
 cnt <- read.table(
-  file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), 
-  header=TRUE, 
-  comment.char ='#'
-  )
+    file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"),
+    header = TRUE,
+    comment.char = "#"
+)
 names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\\\1", names(cnt))
 
 flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
 bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
 
 meta <- read.table(file.path(dir, "metadata.txt.gz"))
-names(meta) <-  c("run","strategy","replicate","treatment","condition")
-cond <- meta[meta$treatment=="chx",] # extract only samples processed using cyclohexamide 
-cond$treatment <- NULL # remove the treatment column
+names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
+cond <- meta[meta$treatment == "chx", ]
+cond$treatment <- NULL
 
-# Run DTE analysis only.
 m <- DOTSeq(
-  count_table = cnt, 
-  condition_table = cond, 
-  flattened_gtf = flat, 
-  bed = bed,
-  modules = "DTE"
-  )
-# View the list of \link[SummarizedExperiment]{SummarizedExperiment} objects.
+    count_table = cnt,
+    condition_table = cond,
+    flattened_gtf = flat,
+    bed = bed,
+    modules = "DTE"
+)
+
 names(m)
-# View post hoc results for DTE
-# Model fitting, post hoc contrasts and shrinkage has been performed on m$dds 
 metadata(m$dds)
 
-# Randomly sample 100 ORFs for \code{\link{fitDOU}}.
-n <- 100 
 set.seed(42)
-random_rows <- sample(seq_len(nrow(m$sumExp)), size = n)
-
-# Subset the SummarizedExperiment object
+random_rows <- sample(seq_len(nrow(m$sumExp)), size = 100)
 m$sumExp <- m$sumExp[random_rows, ]
 
-# Run DOU on the existing m$sumExp subset. This will skip DTE automatically. 
 m <- DOTSeq(dotseq_dataset = m)
-# View post hoc results for DOU.
 metadata(m$sumExp)
 
-# Create \link[SummarizedExperiment]{SummarizedExperiment} objects using 
-# \code{\link{DOTSeqDataSet}} and run DTE analysis.
 m <- DOTSeqDataSet(
-  count_table = cnt, 
-  condition_table = cond, 
-  flattened_gtf = flat, 
-  bed = bed
-  )
+    count_table = cnt,
+    condition_table = cond,
+    flattened_gtf = flat,
+    bed = bed
+)
 
 m <- DOTSeq(dotseq_dataset = m, modules = "DTE")
 metadata(m$dds)
 
+}
+\references{
+Brooks, M. E., Kristensen, K., van Benthem, K. J., Magnusson, A., Berg, C. W.,
+Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M. (2017).
+glmmTMB balances speed and flexibility among packages for zero-inflated
+generalized linear mixed modeling. The R Journal, 378–400.
+\url{https://doi.org/10.32614/RJ-2017-066}
 
+Love, M. I., Huber, W., Anders, S. (2014).
+Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2.
+Genome Biology, 15:550. \url{https://doi.org/10.1186/s13059-014-0550-8}
+
+Lenth, R., Piaskowski, J. (2025).
+emmeans: Estimated Marginal Means, aka Least-Squares Means.
+R package version 2.0.0. \url{https://rvlenth.github.io/emmeans/}
+
+Stephens, M. (2016).
+False discovery rates: a new deal. Biostatistics, 18(2).
+\url{https://doi.org/10.1093/biostatistics/kxw041}
+
+Hartig, F. (2025).
+DHARMa: Residual Diagnostics for Hierarchical (Multi-Level / Mixed)
+Regression Models. R package version 0.4.7.
+\url{https://github.com/florianhartig/dharma}
 }

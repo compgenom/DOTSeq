@@ -1,13 +1,22 @@
 # DOTSeq
 
-`DOTSeq` is an R package for identifying **differentially translated open reading frames (ORFs)** from ribosome profiling (Ribo-seq) and matched RNA-seq datasets. Unlike traditional gene-level approaches, `DOTSeq` performs analysis at the **ORF level**, enabling detection of:
+`DOTSeq` is an R package for identifying **differentially translated open reading frames (ORFs)** 
+from ribosome profiling (Ribo-seq) and matched RNA-seq datasets. Unlike traditional gene-level 
+approaches, `DOTSeq` performs analysis at the **ORF level**, enabling detection of:
 
 - **Differential ORF Usage (DOU)** — changes in ORF usage within the same gene.
-- **Differential Translation Efficiency (DTE)** — changes in ribosome loading relative to RNA level across conditions.
+- **Differential Translation Efficiency (DTE)** — changes in ribosome loading relative 
+to RNA level across conditions.
 
-`DOTSeq` models Ribo-seq and RNA-seq read counts using a **beta-binomial generalised linear model (GLM)** implemented via [`glmmTMB`](https://cran.r-project.org/web/packages/glmmTMB/index.html). It supports experimental designs with multiple conditions, and uses an interaction term (`condition:strategy`) to isolate translation-specific effects.
+`DOTSeq` models Ribo-seq and RNA-seq read counts using a **beta-binomial generalised linear model (GLM)** 
+implemented via [`glmmTMB`](https://cran.r-project.org/web/packages/glmmTMB/index.html). 
+It supports experimental designs with multiple conditions, and uses an interaction 
+term (`condition:strategy`) to isolate translation-specific effects.
 
-Post hoc contrasts are computed using [`emmeans`](https://cran.r-project.org/web/packages/emmeans/index.html), and empirical Bayes shrinkage is applied via [`ashr`](https://cran.r-project.org/web/packages/ashr/index.html).
+Post hoc contrasts are computed using 
+[`emmeans`](https://cran.r-project.org/web/packages/emmeans/index.html), 
+and empirical Bayes shrinkage is applied via 
+[`ashr`](https://cran.r-project.org/web/packages/ashr/index.html).
 
 
 ## DEPENDENCIES
@@ -27,7 +36,8 @@ Post hoc contrasts are computed using [`emmeans`](https://cran.r-project.org/web
 * pbapply (>=1.7-4)
 
 ## INSTALLATION
-Please ensure the dependencies listed above are installed using the following steps before installing `DOTSeq`:
+Please ensure the dependencies listed above are installed using the following 
+steps before installing `DOTSeq`:
 ```r
 # Create a directory for R packages if not already
 package_dir <- file.path(Sys.getenv("HOME"), "R/4.5")
@@ -45,6 +55,10 @@ BiocManager::install(version = "devel")
 bioc_packages <- c("biomaRt", "SummarizedExperiment", "Bioc.gff", "DESeq2")
 BiocManager::install(bioc_packages, lib = package_dir, ask = FALSE)
 
+# If installation fails due to version or dependency issues, try installing individually
+BiocManager::install(version = "devel")
+BiocManager::install("Bioc.gff", lib = package_dir, ask = FALSE)
+
 # Install devtools if not already available
 install.packages("devtools")
 library(devtools)
@@ -61,7 +75,8 @@ please refer to the [vignettes](https://github.com/compgenom/DOTSeq/tree/main/vi
 ### Preprocessing Steps Required Before Running `DOTSeq`:
 
 #### Step 1. Align Ribo-seq and RNA-seq reads
-We use a publicly available HeLa cell cycle dataset from [Ly 2024](https://pubmed.ncbi.nlm.nih.gov/39443796/). 
+We use a publicly available HeLa cell cycle dataset from 
+[Ly 2024](https://pubmed.ncbi.nlm.nih.gov/39443796/). 
 ```shell
 # Clone DOTSeq repository
 git clone https://github.com/compgenom/DOTSeq.git
@@ -106,14 +121,14 @@ done
 ```
 
 #### Step 2. Prepare ORF-level GTF and BED files
-DOTSeq uses the [`RIBOSS`](https://github.com/lcscs12345/riboss) engine to generate flattened annotations from 
-GENCODE, Ensembl, or Araport GTFs.
+DOTSeq uses the [`RIBOSS`](https://github.com/lcscs12345/riboss) engine to generate 
+flattened annotations from GENCODE, Ensembl, or Araport GTFs.
 ```shell
 # Generate ORF-level GTF using DOTSeq's Python script
 python DOTSeq/inst/python_scripts/orf_to_gtf.py \
   --gtf DOTSeq/inst/extdata/gencode.v47.annotation.gtf.gz \
   --transcripts DOTSeq/inst/extdata/gencode.v47.pc_transcripts.fa.gz \
-  --output DOTSeq/inst/extdata/dotseq.gtf
+  --output DOTSeq/inst/extdata/dotseq
 ```
 
 #### Step 3: Count reads
@@ -124,7 +139,8 @@ featureCounts -f -O -s 0 -T 16 \
 ```
 
 #### Step 4: Run `DOTSeq`
-Follow the analysis workflow as demonstrated in the [vignettes](https://github.com/compgenom/DOTSeq/tree/main/vignettes).
+Follow the analysis workflow as demonstrated in the 
+[vignettes](https://github.com/compgenom/DOTSeq/tree/main/vignettes).
 
 ## CONTACTS AND BUG REPORTS
 - Chun Shen Lim: chunshen [dot] lim [at] otago [dot] ac [dot] nz

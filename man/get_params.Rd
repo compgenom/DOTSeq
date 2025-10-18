@@ -18,24 +18,26 @@ get_params(
 \item{threshold}{Only estimate parameters from transcripts with row means
 greater than this threshold.}
 
-\item{size_factor}{Optional numeric scalar to scale the estimated size parameters.}
+\item{size_factor}{Optional numeric scalar to scale the estimated size
+parameters.}
 
 \item{min_size}{Optional numeric value to enforce a minimum size parameter.}
 
-\item{scale_p0}{Optional numeric scalar to scale the zero-inflation probabilities.}
+\item{scale_p0}{Optional numeric scalar to scale the zero-inflation
+probabilities.}
 }
 \value{
-p0 A vector of probabilities that the count will be zero, one for
-each gene/transcript.
-
-mu The estimated negative binomial mean by method of moments for the
-non-zero counts.
-
-size The estimated negative binomial size by method of moments for
-the non-zero counts.
-
-fit A fit relating log mean to log size for use in simulating new
-data.
+A list containing:
+\describe{
+\item{p0}{A vector of probabilities that the count will be zero,
+one for each gene/transcript.}
+\item{mu}{The estimated negative binomial mean by method of
+moments for the non-zero counts.}
+\item{size}{The estimated negative binomial size by method of
+moments for the non-zero counts.}
+\item{fit}{A fit relating log mean to log size for use in
+simulating new data.}
+}
 }
 \description{
 This function estimates the parameters of a zero-inflated negative binomial

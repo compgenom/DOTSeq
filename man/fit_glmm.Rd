@@ -15,29 +15,45 @@ fit_glmm(
 )
 }
 \arguments{
-\item{formula}{A formula object specifying the fixed effects structure of the model.}
+\item{formula}{A formula object specifying the fixed effects structure of
+the model.}
 
-\item{dispformula}{A formula object specifying the dispersion model (e.g., \code{~strategy}).}
+\item{dispformula}{A formula object specifying the dispersion model
+(e.g., \code{~strategy}).}
 
-\item{data}{A data frame containing the model data, including counts and covariates.}
+\item{data}{A data frame containing the model data, including counts and
+covariates.}
 
-\item{optimizers}{A character vector of optimizer names to try sequentially. Supported values include
-\code{"nlminb"}, \code{"bobyqa"}, and \code{"optim"} (default: \code{c("nlminb", "bobyqa", "optim")}).}
+\item{optimizers}{A character vector of optimizer names to try sequentially.
+Supported values include \code{"nlminb"}, \code{"bobyqa"}, and
+\code{"optim"}. Default is \code{c("nlminb", "bobyqa", "optim")}.}
 
-\item{max_iter}{An integer specifying the maximum number of iterations for the optimizer (default: \code{1000}).}
+\item{max_iter}{An integer specifying the maximum number of iterations for
+the optimizer. Default is \code{1000}.}
 }
 \value{
-A fitted \code{glmmTMB} model object if convergence is successful. If all optimizers fail,
-the last attempted model (with convergence failure) is returned.
+A fitted \code{glmmTMB} model object if convergence is successful.
+If all optimizers fail, the last attempted model (with convergence
+failure) is returned.
 }
 \description{
-This internal function fits a beta-binomial generalized linear mixed model (GLMM) using \code{glmmTMB},
-with support for multiple optimizers to improve convergence. It is used as a backend for fitting
-models to ORF-level count data in DOTSeq.
+This internal function fits a beta-binomial generalized linear mixed model
+(GLMM) using \code{glmmTMB}, with support for multiple optimizers to improve
+convergence. It is used as a backend for fitting models to ORF-level count
+data in DOTSeq.
 }
 \details{
-The function attempts to fit the model using each optimizer in the specified order. If a model converges
-successfully (i.e., \code{model$fit$convergence == 0} and \code{model$sdr$pdHess == TRUE}), it is returned immediately.
-Otherwise, the function continues trying the next optimizer.
+The function attempts to fit the model using each optimizer in the specified
+order. If a model converges successfully (i.e.,
+\code{model$fit$convergence == 0} and \code{model$sdr$pdHess == TRUE}),
+it is returned immediately. Otherwise, the function continues trying the
+next optimizer.
+}
+\references{
+Brooks, M. E., Kristensen, K., van Benthem, K. J., Magnusson, A., Berg, C. W.,
+Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M. (2017).
+glmmTMB balances speed and flexibility among packages for zero-inflated
+generalized linear mixed modeling. The R Journal, 378–400.
+\url{https://doi.org/10.32614/RJ-2017-066}
 }
 \keyword{internal}

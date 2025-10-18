@@ -7,30 +7,34 @@
 reduce_formula(formula_input, data)
 }
 \arguments{
-\item{formula_input}{A formula object (e.g., \code{~ batch + condition * strategy}) or a character string representing a formula.}
+\item{formula_input}{A formula object (e.g.,
+\code{~ batch + condition * strategy}) or a character string
+representing a formula.}
 
 \item{data}{A data frame containing the variables referenced in the formula.}
 }
 \value{
-A reduced formula object that excludes terms with only one level in the data.
-If no valid terms remain, the function will throw an error.
+A reduced formula object that excludes terms with only one level in
+the data. If no valid terms remain, the function will throw an error.
 }
 \description{
-This function takes a formula and a data frame, and returns a simplified formula
-that includes only terms corresponding to variables with at least two levels.
-Interaction terms using \code{*} or \code{:} are retained only if all involved variables are valid.
-If the formula is reduced, a message is printed to inform the user.
+This function takes a formula and a data frame, and returns a simplified
+formula that includes only terms corresponding to variables with at least
+two levels. Interaction terms using \code{*} or \code{:} are retained only
+if all involved variables are valid. If the formula is reduced, a message
+is printed to inform the user.
 }
 \examples{
 \dontrun{
-df <- data.frame(
-  condition = factor(c(0, 0, 1, 1)),
-  strategy = factor(c("ribo", "ribo", "rna", "rna")),
-  batch = factor(rep(1, 4)) # single-level factor
-)
-formula_input <- ~ batch + condition * strategy
-reduce_formula(formula_input, df)
-# Returns: ~ condition * strategy, with a message about reduction
+    df <- data.frame(
+        condition = factor(c(0, 0, 1, 1)),
+        strategy = factor(c("ribo", "ribo", "rna", "rna")),
+        batch = factor(rep(1, 4)) # single-level factor
+    )
+    formula_input <- ~ batch + condition * strategy
+    reduce_formula(formula_input, df)
+    # Returns: ~ condition * strategy, with a message about reduction
 }
+
 }
 \keyword{internal}

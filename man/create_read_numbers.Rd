@@ -7,26 +7,29 @@
 create_read_numbers(mu, fit, p0, m = NULL, n = NULL, mod = NULL, beta = NULL)
 }
 \arguments{
-\item{mu}{Baseline mean expression for negative binomial model}
+\item{mu}{Baseline mean expression for negative binomial model.}
 
-\item{fit}{Fitted relationship between log mean and log size}
+\item{fit}{Fitted relationship between log mean and log size.}
 
-\item{p0}{A vector of the probabilities a count is zero}
+\item{p0}{A vector of the probabilities a count is zero.}
 
-\item{m}{Number of genes/transcripts to simulate (not necessary if mod,
-beta are specified)}
+\item{m}{Number of genes/transcripts to simulate (not necessary if
+\code{mod}, \code{beta} are specified).}
 
-\item{n}{Number of samples to simulate (not necessary if mod, beta are
-specified)}
+\item{n}{Number of samples to simulate (not necessary if \code{mod},
+\code{beta} are specified).}
 
-\item{mod}{Model matrix you would like to simulate from without an intercept}
+\item{mod}{Model matrix you would like to simulate from without an intercept.}
 
-\item{beta}{set of coefficients for the model matrix (must have same number
-of columns as mod)}
+\item{beta}{Set of coefficients for the model matrix (must have same number
+of columns as \code{mod}).}
 }
 \value{
-counts Data matrix with counts for genes in rows and samples in
-columns
+A list containing:
+\describe{
+\item{counts}{Data matrix with counts for genes in rows and
+samples in columns.}
+}
 }
 \description{
 Generate a simulated data set based on known model parameters

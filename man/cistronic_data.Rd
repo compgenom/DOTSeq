@@ -17,53 +17,76 @@ cistronic_data(
 )
 }
 \arguments{
-\item{results}{A data frame from \code{testDOT} containing DOU estimates and significance values.
-Must include columns for ORF IDs, gene IDs, effect size estimates, and LFSR values.}
+\item{results}{A data frame from \code{testDOT} containing DOU estimates
+and significance values. Must include columns for ORF IDs, gene IDs,
+effect size estimates, and LFSR values.}
 
-\item{rowdata}{A data frame containing ORF-level metadata, including ORF type (e.g., mORF, uORF).}
+\item{rowdata}{A data frame containing ORF-level metadata, including ORF
+type (e.g., mORF, uORF).}
 
 \item{id_mapping}{Optional data frame with gene symbols (e.g., from biomaRt).
 Used to label heatmap rows with gene symbols.}
 
-\item{estimates_col}{Character string specifying the column name for DOU effect size estimates.
-Default is \code{"PosteriorMean"}.}
+\item{estimates_col}{Character string specifying the column name for DOU
+effect size estimates. Default is \code{"PosteriorMean"}.}
 
-\item{padj_col}{Character string specifying the column name for significance values (LFSR).
-Default is \code{"lfsr"}.}
+\item{padj_col}{Character string specifying the column name for significance
+values (LFSR). Default is \code{"lfsr"}.}
 
-\item{padj_threshold}{Numeric threshold for filtering significant ORFs based on LFSR.
-Default is \code{0.05}.}
+\item{padj_threshold}{Numeric threshold for filtering significant ORFs
+based on LFSR. Default is \code{0.05}.}
 
-\item{top_genes}{Optional numeric. If specified, limits the heatmap to the top N genes
-ranked by effect size magnitude and significance.}
+\item{top_genes}{Optional numeric. If specified, limits the heatmap to the
+top N genes ranked by effect size magnitude and significance.}
 
-\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU estimates to align directionality
-with differential translation. Default is \code{TRUE}.}
+\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU estimates
+to align directionality with differential translation.
+Default is \code{TRUE}.}
 
-\item{sorf_type}{Character string specifying the short ORF type to compare with mORFs.
-Accepts \code{"uORF"} or \code{"dORF"}. Default is \code{"uORF"}.}
+\item{sorf_type}{Character string specifying the short ORF type to compare
+with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.
+Default is \code{"uORF"}.}
 }
 \value{
 A list containing:
 \describe{
-\item{ordered_matrix}{Matrix of DOU estimates for significant genes, ordered by hierarchical clustering.}
-\item{row_dend_clean}{Dendrogram object for clustered gene rows.}
-\item{highlight_df}{Data frame indicating which ORF-gene tiles to highlight in the heatmap.}
-\item{gene_labels}{Vector of gene symbols or Ensembl IDs for heatmap row labeling.}
-\item{color_palette}{Color palette used for heatmap visualization.}
-\item{color_breaks}{Breaks used for color scaling in the heatmap.}
-\item{abs_max}{Maximum absolute value used for symmetric color scaling.}
+\item{ordered_matrix}{
+Matrix of DOU estimates for significant genes, ordered by
+hierarchical clustering.
+}
+\item{row_dend_clean}{
+Dendrogram object for clustered gene rows.
+}
+\item{highlight_df}{
+Data frame indicating which ORF-gene tiles to highlight in
+the heatmap.
+}
+\item{gene_labels}{
+Vector of gene symbols or Ensembl IDs for heatmap row labeling.
+}
+\item{color_palette}{
+Color palette used for heatmap visualization.
+}
+\item{color_breaks}{
+Breaks used for color scaling in the heatmap.
+}
+\item{abs_max}{
+Maximum absolute value used for symmetric color scaling.
+}
 }
 }
 \description{
-Prepares a matrix of differential ORF usage (DOU) estimates for heatmap visualization,
-comparing mORFs with either uORFs or dORFs. Filters significant ORFs based on local false sign rate (LFSR),
-clusters genes based on DOU profiles, and retrieves gene symbols for labeling.
+Prepares a matrix of differential ORF usage (DOU) estimates for heatmap
+visualization, comparing mORFs with either uORFs or dORFs. Filters
+significant ORFs based on local false sign rate (LFSR), clusters genes
+based on DOU profiles, and retrieves gene symbols for labeling.
 }
 \details{
-This function supports visualization of differential ribosome loading across ORFs within genes.
-It compares mORFs with a specified short ORF type (e.g., uORFs), filters significant ORFs using
-local false sign rate (LFSR), and clusters genes based on DOU profiles. gene symbols are optionally
-retrieved from Ensembl and used for labeling. The output is designed for downstream heatmap plotting.
+This function supports visualization of differential ribosome loading
+across ORFs within genes. It compares mORFs with a specified short ORF
+type (e.g., uORFs), filters significant ORFs using local false sign rate
+(LFSR), and clusters genes based on DOU profiles. Gene symbols are
+optionally retrieved from Ensembl and used for labeling. The output is
+designed for downstream heatmap plotting.
 }
 \keyword{internal}

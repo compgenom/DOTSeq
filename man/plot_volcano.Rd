@@ -6,7 +6,9 @@
 \usage{
 plot_volcano(
   results,
+  rowdata = NULL,
   id_mapping = NULL,
+  color_by = c("significance", "orf_type"),
   dou_estimates_col = "PosteriorMean",
   dou_padj_col = "lfsr",
   dte_estimates_col = "log2FoldChange",
@@ -23,47 +25,79 @@ plot_volcano(
 )
 }
 \arguments{
-\item{results}{A data frame containing DOU and optionally DTE results. Must include columns
-for DOU estimates and LFSR, and optionally DTE significance indicators.}
+\item{results}{A data frame containing DOU and optionally DTE results.
+Must include columns for DOU estimates and LFSR.
+If \code{color_by = "orf_type"},
+must also include an \code{orf_type} column with values "uORF",
+"mORF", or "dORF".}
 
-\item{id_mapping}{Optional data frame with gene symbols. Used to label points with gene symbols.}
+\item{rowdata}{Optional data frame containing ORF metadata, with row names
+corresponding to \code{orf_id}. Used to merge ORF type information.}
 
-\item{dou_estimates_col}{Column name for DOU effect size estimates. Default is \code{"PosteriorMean"}.}
+\item{id_mapping}{Optional data frame with gene symbols. Used to label points
+with gene symbols. Must include \code{ensembl_gene_id} and symbol columns.}
 
-\item{dou_padj_col}{Column name for DOU significance values (LFSR). Default is \code{"lfsr"}.}
+\item{color_by}{Character string specifying how to color points:
+\itemize{
+\item{\code{"significance"}: Colors by DTE-only, DOU-only, both significant}
+\item{\code{"orf_type"}: Colors by ORF type (requires \code{orf_type} column)}
+}
+Default is \code{"significance"}.}
 
-\item{dte_estimates_col}{Column name for DTE effect size estimates. Default is \code{"log2FoldChange"}.}
+\item{dou_estimates_col}{Column name for DOU effect size estimates.
+Default is \code{"PosteriorMean"}.}
 
-\item{dte_padj_col}{Column name for DTE adjusted p-values. Default is \code{"padj"}.}
+\item{dou_padj_col}{Column name for DOU significance values (LFSR).
+Default is \code{"lfsr"}.}
 
-\item{flip_sign}{Logical. If \code{TRUE}, flips the sign of DOU estimates for plotting. Default is \code{TRUE}.}
+\item{dte_estimates_col}{Column name for DTE effect size estimates.
+Default is \code{"log2FoldChange"}.}
 
-\item{dou_estimates_threshold}{Numeric threshold for DOU effect size significance. Default is \code{1}.}
+\item{dte_padj_col}{Column name for DTE adjusted p-values.
+Default is \code{"padj"}.}
 
-\item{dou_padj_threshold}{Numeric threshold for DOU LFSR significance. Default is \code{0.05}.}
+\item{flip_sign}{Logical. If \code{TRUE}, flips the sign of DOU estimates
+for plotting. Default is \code{FALSE}.}
 
-\item{dou_padj_ceiling}{Numeric value to define the rounding ceiling for -log10(LFSR). The maximum y-axis value
-will be rounded up to the nearest multiple of this value. Default is \code{10}.}
+\item{dou_estimates_threshold}{Numeric threshold for DOU effect size
+significance. Default is \code{1}.}
 
-\item{dte_padj_threshold}{Numeric threshold for DTE adjusted p-value significance. Default is \code{0.05}.}
+\item{dou_padj_threshold}{Numeric threshold for DOU LFSR significance.
+Default is \code{0.05}.}
 
-\item{extreme_threshold}{Optional numeric threshold for labeling extreme points based on -log10(LFSR).}
+\item{dou_padj_ceiling}{Numeric value to define the rounding ceiling for
+-log10(LFSR). The maximum y-axis value will be rounded up to the nearest
+multiple of this value. Default is \code{10}.}
 
-\item{label_topn}{Optional numeric. If provided, labels the top N most significant points.}
+\item{dte_padj_threshold}{Numeric threshold for DTE adjusted p-value
+significance. Default is \code{0.05}.}
 
-\item{legend_position}{Position of the legend. Options include \code{"bottomright"}, \code{"bottom"},
-\code{"bottomleft"}, \code{"left"}, \code{"topleft"}, \code{"top"}, \code{"topright"}, \code{"right"}, \code{"center"}.}
+\item{extreme_threshold}{Optional numeric threshold for labeling extreme
+points based on -log10(LFSR).}
 
-\item{verbose}{Logical. If \code{TRUE}, prints messages about plot scaling and thresholds. Default is \code{TRUE}.}
+\item{label_topn}{Optional numeric. If provided, labels the top N most
+significant points.}
+
+\item{legend_position}{Position of the legend. Options include
+\code{"bottomright"}, \code{"bottom"}, \code{"bottomleft"},
+\code{"left"}, \code{"topleft"}, \code{"top"}, \code{"topright"},
+\code{"right"}, \code{"center"}.}
+
+\item{verbose}{Logical. If \code{TRUE}, prints messages about plot scaling
+and thresholds. Default is \code{TRUE}.}
 }
 \value{
-A volcano plot is displayed in a new graphics device.
+A volcano plot is displayed in a new graphics device. Points are
+colored by significance or ORF type, depending on the \code{color_by}
+argument. Optionally, top or extreme points are labeled.
 }
 \description{
 Generates a volcano plot to visualize differential ORF usage (DOU) results.
-The x-axis represents log-odds changes in ORF usage (effect sizes), and the y-axis
-shows the negative log10-transformed local false sign rate (LFSR). Points are colored
-based on significance in differential translation efficiency (DTE), DOU, or both.
-The y-axis is capped at the nearest multiple of \code{dou_padj_ceiling} for cleaner plotting.
+The x-axis represents log-odds changes in ORF usage (effect sizes), and the
+y-axis shows the negative log10-transformed local false sign rate (LFSR).
+Points can be colored either by significance in DTE/DOU or by ORF type
+(uORF, mORF, dORF). Optional gene labeling is supported via an ID mapping
+table. The y-axis is capped at the nearest multiple of
+\code{dou_padj_ceiling} for cleaner plotting.
 }
 \keyword{internal}

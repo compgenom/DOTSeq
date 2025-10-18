@@ -13,11 +13,12 @@ generate_coefficients(
 )
 }
 \arguments{
-\item{orfs}{A data frame containing ORF annotations. Row names must align with the
-filtered count matrices. Must include columns \code{gene_id} and \code{orf_type}.}
+\item{orfs}{A data frame containing ORF annotations. Row names must align
+with the filtered count matrices. Must include columns
+\code{gene_id} and \code{orf_type}.}
 
-\item{scenario}{A character string specifying the regulatory scenario to simulate.
-Must be one of:
+\item{scenario}{A character string specifying the regulatory scenario to
+simulate. Must be one of:
 \itemize{
 \item \code{"uORF_up_mORF_down"}
 \item \code{"dORF_up_mORF_up"}
@@ -36,28 +37,36 @@ Must be one of:
 \item \code{"dORF_flat_mORF_down"}
 }}
 
-\item{gcoeff}{Numeric. The log-fold change magnitude to apply to regulated ORFs.}
+\item{gcoeff}{Numeric. The log-fold change magnitude to apply to regulated
+ORFs.}
 
-\item{shape}{Numeric. Shape parameter for the gamma distribution used to simulate baseline coefficients.}
+\item{shape}{Numeric. Shape parameter for the gamma distribution used to
+simulate baseline coefficients.}
 
-\item{scale}{Numeric. Scale parameter for the gamma distribution used to simulate baseline coefficients.}
+\item{scale}{Numeric. Scale parameter for the gamma distribution used to
+simulate baseline coefficients.}
 }
 \value{
 A list with the following components:
 \describe{
-\item{gcoeffs_ribo}{Named numeric vector of log-fold change coefficients for ribosome profiling data.}
-\item{gcoeffs_rna}{Named numeric vector of baseline log-fold change coefficients for RNA-seq data.}
-\item{labels}{Named binary vector indicating truly regulated ORFs (\code{1}) vs. non-regulated (\code{0}).}
+\item{gcoeffs_ribo}{Named numeric vector of log-fold change
+coefficients for ribosome profiling data.}
+\item{gcoeffs_rna}{Named numeric vector of baseline log-fold
+change coefficients for RNA-seq data.}
+\item{labels}{Named binary vector indicating truly regulated
+ORFs (\code{1}) vs. non-regulated (\code{0}).}
 }
 }
 \description{
-Simulates log-fold change coefficients for differential ORF translation (DOT) analysis.
-This function assigns baseline coefficients to all ORFs and applies specific log-fold
-changes to multi-cistronic ORFs based on a selected regulatory scenario.
+Simulates log-fold change coefficients for differential ORF translation
+(DOT) analysis. This function assigns baseline coefficients to all ORFs
+and applies specific log-fold changes to multi-cistronic ORFs based on a
+selected regulatory scenario.
 }
 \examples{
 \dontrun{
-# generate_coefficients(orfs_df, scenario = "uORF_up_mORF_down")
+    generate_coefficients(orfs_df, scenario = "uORF_up_mORF_down")
 }
+
 }
 \keyword{internal}

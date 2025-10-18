@@ -23,55 +23,63 @@ simDOT(
   scale = 0.5,
   batch_scenario = "balanced",
   diagplot_ribo = FALSE,
-  diagplot_rna = FALSE,
-  seed = NULL
+  diagplot_rna = FALSE
 )
 }
 \arguments{
-\item{ribo}{A matrix or data frame of ribosome profiling counts (genes x samples).}
+\item{ribo}{A matrix or data frame of ribosome profiling counts
+(genes x samples).}
 
 \item{rna}{A matrix or data frame of RNA-seq counts (genes x samples).}
 
-\item{regulation_type}{Character. Specifies the type of DOT effect to simulate.
-Passed to the \code{scenario} argument of \code{generate_coefficients}.}
+\item{regulation_type}{Character. Specifies the type of DOT effect to
+simulate. Passed to the \code{scenario} argument of
+\code{generate_coefficients}.}
 
-\item{orfs}{A data frame of ORF annotations. Must include \code{gene_id} and \code{orf_type} columns.}
+\item{orfs}{A data frame of ORF annotations. Must include \code{gene_id}
+and \code{orf_type} columns.}
 
-\item{te_genes}{Numeric. Percentage of genes to be assigned as differentially translated (default: 10).}
+\item{te_genes}{Numeric. Percentage of genes to be assigned as
+differentially translated (default: 10).}
 
-\item{bgenes}{Numeric. Percentage of genes to carry a batch effect (default: 10).}
+\item{bgenes}{Numeric. Percentage of genes to carry a batch effect
+(default: 10).}
 
-\item{num_samples}{Integer. Number of biological replicates per condition (default: 2).}
+\item{num_samples}{Integer. Number of biological replicates per condition
+(default: 2).}
 
 \item{conditions}{Integer. Number of experimental conditions (default: 2).}
 
-\item{gcoeff}{Numeric. Magnitude of log-fold change for DOT effects (default: 1.5).}
+\item{gcoeff}{Numeric. Magnitude of log-fold change for DOT effects
+(default: 1.5).}
 
 \item{bcoeff}{Numeric. Magnitude of batch effect coefficient (default: 0.9).}
 
 \item{num_batches}{Integer. Number of batches (default: 2).}
 
-\item{size_factor}{Numeric scalar. A \strong{multiplicative factor} applied to the
-estimated size parameter ($r$) for \emph{all} transcripts.
-Since dispersion \eqn{\phi = 1/r}, a value \strong{greater than 1}
-(e.g., 1.5) will \strong{decrease} the biological dispersion (noise),
-making the simulated data less variable. A value less than 1
-will increase dispersion (default: 1.5).}
+\item{size_factor}{Numeric scalar. A multiplicative factor applied to the
+estimated size parameter (\eqn{r}) for all transcripts. Since
+dispersion \eqn{\phi = 1/r}, a value greater than 1 (e.g., 1.5) will
+decrease biological dispersion (noise), making the simulated data
+less variable. A value less than 1 will increase dispersion
+(default: 1.5).}
 
-\item{min_size}{Numeric scalar. A \strong{lower bound} for the modified size parameter ($r$).
-Any transcript whose modified $r$ falls below this value will be
-set to \code{min_size}. This is used to \strong{cap the maximum dispersion}
-(noise) in the simulation, preventing transcripts with extremely
-low estimated $r$ values from introducing unrealistic or
-excessive biological variability (default: 5).}
+\item{min_size}{Numeric scalar. A lower bound for the modified size
+parameter (\eqn{r}). Any transcript whose modified \eqn{r} falls
+below this value will be set to \code{min_size}. This caps maximum
+dispersion and prevents unrealistic variability (default: 5).}
 
-\item{scale_p0}{Optional numeric scalar to scale the zero-inflation probabilities.}
+\item{scale_p0}{Optional numeric scalar to scale the zero-inflation
+probabilities.}
 
-\item{shape}{Numeric. Shape parameter for gamma distribution used to simulate baseline coefficients (default: 0.6).}
+\item{shape}{Numeric. Shape parameter for gamma distribution used to
+simulate baseline coefficients (default: 0.6).}
 
-\item{scale}{Numeric. Scale parameter for gamma distribution used to simulate baseline coefficients (default: 0.5).}
+\item{scale}{Numeric. Scale parameter for gamma distribution used to
+simulate baseline coefficients (default: 0.5).}
 
-\item{batch_scenario}{Character. Specifies the batch effect design. Must be one of:
+\item{batch_scenario}{Character. Specifies the batch effect design. Must be
+one of:
 \itemize{
 \item \code{"balanced"}
 \item \code{"confounded"}
@@ -81,73 +89,80 @@ excessive biological variability (default: 5).}
 \item \code{"modality_specific"}
 }}
 
-\item{diagplot_ribo}{Logical. If \code{TRUE}, generate diagnostic plots for ribo data (default: \code{FALSE}).}
+\item{diagplot_ribo}{Logical. If \code{TRUE}, generate diagnostic plots for
+ribo data (default: \code{FALSE}).}
 
-\item{diagplot_rna}{Logical. If \code{TRUE}, generate diagnostic plots for RNA data (default: \code{FALSE}).}
-
-\item{seed}{Optional integer. Sets the random seed for reproducibility (default: \code{NULL}).}
+\item{diagplot_rna}{Logical. If \code{TRUE}, generate diagnostic plots for
+RNA data (default: \code{FALSE}).}
 }
 \value{
 A list with the following components:
 \describe{
 \item{simData}{Combined simulated count matrix (genes x samples).}
-\item{colData}{Data frame containing sample-level metadata (condition, replicate, strategy, batch).}
-\item{labels}{Named binary vector indicating true positive (1) and negative (0) ORFs for DOT.}
-\item{logFC}{Named vector of true log-fold changes for the simulated DOT effect.}
+\item{colData}{Data frame containing sample-level metadata
+(condition, replicate, strategy, batch).}
+\item{labels}{Named binary vector indicating true positive (1)
+and negative (0) ORFs for DOT.}
+\item{logFC}{Named vector of true log-fold changes for the
+simulated DOT effect.}
 }
 }
 \description{
-Simulates ribosome profiling and matched RNA-seq count matrices with specified
-differential ORF translation (DOT) effects. The simulation can include batch effects
-and supports multiple experimental conditions and replicates.
+Simulates ribosome profiling and matched RNA-seq count matrices with
+specified differential ORF translation (DOT) effects. The simulation can
+include batch effects and supports multiple experimental conditions and
+replicates.
 }
 \examples{
-# Load \link[SummarizedExperiment]{SummarizedExperiment} to enable access to 
-# components like assay and rowData.
 library(SummarizedExperiment)
-
-# Read in count matrix, condition table, and annotation files.
 dir <- system.file("extdata", package = "DOTSeq")
 
-cnt <- read.table(file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), 
-  header=TRUE, 
-  comment.char ='#'
-  )
+cnt <- read.table(file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"),
+    header = TRUE, comment.char = "#"
+)
 names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\\\1", names(cnt))
 
 flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
 bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
 
 meta <- read.table(file.path(dir, "metadata.txt.gz"))
-names(meta) <-  c("run","strategy","replicate","treatment","condition")
-cond <- meta[meta$treatment=="chx",] # extract only samples processed using cyclohexamide 
-cond$treatment <- NULL # remove the treatment column
+names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
+cond <- meta[meta$treatment == "chx", ]
+cond$treatment <- NULL
 
-# Create SummarizedExperiment objects using \code{\link{DOTSeqDataSet}}.
 m <- DOTSeqDataSet(
-  count_table = cnt, 
-  condition_table = cond, 
-  flattened_gtf = flat, 
-  bed = bed
-  )
-  
-# Extract data as inputs for simDOT
-raw_counts <- assay(m$sumExp)[, grep("Cycling|Interphase", colnames(assay(m$sumExp)))]
+    count_table = cnt,
+    condition_table = cond,
+    flattened_gtf = flat,
+    bed = bed
+)
+
+raw_counts <- assay(m$sumExp)[, grep("Cycling|Interphase",
+    colnames(assay(m$sumExp)))]
 ribo <- raw_counts[, grep("ribo", colnames(raw_counts))]
 rna <- raw_counts[, grep("rna", colnames(raw_counts))]
 orfs <- rowData(m$sumExp)
 r <- "uORF_up_mORF_down"
 g <- 1.5
 simData <- simDOT(
-  ribo,
-  rna,
-  orfs = orfs,
-  regulation_type = r,
-  gcoeff = g,
-  num_samples = 1,
-  num_batches = 2,
-  seed = 42
-  )
+    ribo,
+    rna,
+    orfs = orfs,
+    regulation_type = r,
+    gcoeff = g,
+    num_samples = 1,
+    num_batches = 2
+)
 
+featCol <- cnt[, c("Geneid", "Chr", "Start", "End", "Strand", "Length")]
+cnt <- cbind(featCol, as.data.frame(simData$simData))
+cond <- as.data.frame(simData$colData)
+
+m <- DOTSeqDataSet(
+    count_table = cnt,
+    condition_table = cond,
+    flattened_gtf = flat,
+    bed = bed
+)
 
 }

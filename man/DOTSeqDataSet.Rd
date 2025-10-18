@@ -18,78 +18,100 @@ DOTSeqDataSet(
 )
 }
 \arguments{
-\item{count_table}{Path to a count table file or a data frame. Must contain columns:
-\code{Geneid}, \code{Chr}, \code{Start}, \code{End}, \code{Strand}, \code{Length},
-plus one column per sample.}
+\item{count_table}{Path to a count table file or a data frame. Must contain
+columns: \code{Geneid}, \code{Chr}, \code{Start}, \code{End},
+\code{Strand}, \code{Length}, plus one column per sample.}
 
-\item{condition_table}{Path to a sample metadata file or a data frame. Must include columns:
-\code{run}, \code{strategy}, \code{condition}, \code{replicate}.}
+\item{condition_table}{Path to a sample metadata file or a data frame.
+Must include columns: \code{run}, \code{strategy}, \code{condition},
+\code{replicate}.}
 
-\item{flattened_gtf}{Optional path to a flattened GFF/GTF file containing exon definitions.}
+\item{flattened_gtf}{Optional path to a flattened GFF/GTF file containing
+exon definitions.}
 
 \item{bed}{Path to a BED file with ORF annotations.}
 
-\item{formula}{A formula object specifying the design, e.g., \code{~ condition * strategy}.}
+\item{formula}{A formula object specifying the design.
+Default is \code{~ condition * strategy}.}
 
-\item{target}{Character string specifying the non-reference condition level to extract the corresponding interaction term.
-Contrasted against the baseline condition (default: \code{NULL}).}
+\item{target}{Character string specifying the non-reference condition level
+to extract the corresponding interaction term. Contrasted against the
+baseline condition. Default is \code{NULL}.}
 
-\item{baseline}{Character string specifying the desired reference level (default: \code{NULL}).}
+\item{baseline}{Character string specifying the desired reference level.
+Default is \code{NULL}.}
 
-\item{min_count}{Minimum count threshold for filtering ORFs (default: \code{1}).}
+\item{min_count}{Minimum count threshold for filtering ORFs.
+Default is \code{1}.}
 
 \item{stringent}{Logical or \code{NULL}; determines the filtering strategy:
 \describe{
-\item{\code{TRUE}}{Keep ORFs where all replicates in at least one condition pass \code{min_count}.}
-\item{\code{FALSE}}{Keep ORFs where all replicates in at least one condition-strategy group pass \code{min_count}.}
-\item{\code{NULL}}{Keep ORFs where total counts across replicates pass \code{min_count}.}
+\item{\code{TRUE}}{
+Keep ORFs where all replicates in at least one condition pass
+\code{min_count}.
+}
+\item{\code{FALSE}}{
+Keep ORFs where all replicates in at least one condition-strategy
+group pass \code{min_count}.
+}
+\item{\code{NULL}}{
+Keep ORFs where total counts across replicates pass
+\code{min_count}.
+}
 }}
 
-\item{verbose}{Logical; if \code{TRUE}, prints progress messages (default: \code{TRUE}).}
+\item{verbose}{Logical; if \code{TRUE}, prints progress messages.
+Default is \code{TRUE}.}
 }
 \value{
 A named \code{list} containing:
 \describe{
-\item{sumExp}{A \code{SummarizedExperiment} object containing pre-filtered raw counts and sample metadata,
-used for modeling Differential ORF Usage (DOU) within the DOTSeq framework.}
-\item{dds}{A \code{DESeqDataSet} object used for modeling Differential Translation Efficiency (DTE) within the DOTSeq framework via DESeq2.}
+\item{sumExp}{
+A \code{SummarizedExperiment} object containing pre-filtered raw
+counts and sample metadata, used for modeling Differential ORF
+Usage (DOU) within the DOTSeq framework.
+}
+\item{dds}{
+A \code{DESeqDataSet} object used for modeling Differential
+Translation Efficiency (DTE) within the DOTSeq framework via
+DESeq2.
+}
 }
 }
 \description{
-Internal function to initialize and construct the DOTSeq dataset object.
+This function initialize and construct the DOTSeq dataset object.
 This includes loading count and metadata tables, parsing ORF annotations,
-filtering ORFs based on count thresholds, and preparing objects for downstream
-differential translation analysis using beta-binomial and negative binomial models.
+filtering ORFs based on count thresholds, and preparing objects for
+downstream differential translation analysis using beta-binomial and
+negative binomial models.
 }
 \examples{
-# Read in count matrix, condition table, and annotation files.
+# Read in count matrix, condition table, and annotation files
 dir <- system.file("extdata", package = "DOTSeq")
 
 cnt <- read.table(
-  file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), 
-  header=TRUE, 
-  comment.char ='#'
-  )
+    file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"),
+    header = TRUE,
+    comment.char = "#"
+)
 names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\\\1", names(cnt))
 
 flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
 bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
 
 meta <- read.table(file.path(dir, "metadata.txt.gz"))
-names(meta) <-  c("run","strategy","replicate","treatment","condition")
-cond <- meta[meta$treatment=="chx",] # extract only samples processed using cyclohexamide 
-cond$treatment <- NULL # remove the treatment column
+names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
+cond <- meta[meta$treatment == "chx", ]
+cond$treatment <- NULL
 
-# Create \link[SummarizedExperiment]{SummarizedExperiment} objects.
-# These objects can be used as input for \code{\link{DOTSeq}} and \code{\link{fitDOU}}.
+# Create SummarizedExperiment object
 m <- DOTSeqDataSet(
-  count_table = cnt, 
-  condition_table = cond, 
-  flattened_gtf = flat, 
-  bed = bed
-  )
-  
-head(m$sumExp)
+    count_table = cnt,
+    condition_table = cond,
+    flattened_gtf = flat,
+    bed = bed
+)
 
+head(m$sumExp)
 
 }
