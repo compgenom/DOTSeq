@@ -15,26 +15,35 @@ author:
         University of Otago, Dunedin, New Zealand.  
       2 Genetics Otago, University of Otago, Dunedin, New Zealand.
 date: "2025"
-output: 
-  BiocStyle::html_document:
-      css: style.css
+output:
+    BiocStyle::html_document:
+        toc: true
+        toc_float: true
+        number_sections: true
+        fig_caption: true
+        css: style.css
 vignette: >
-  %\VignetteIndexEntry{DOTSeq}  
-  %\VignetteEngine{knitr::rmarkdown}  
-  %\VignetteEncoding{UTF-8}
+    %\VignetteIndexEntry{DOTSeq}  
+    %\VignetteEngine{knitr::rmarkdown}  
+    %\VignetteEncoding{UTF-8}
 package: DOTSeq
 bibliography: DOTSeq.bib
 ---
 
 ```{r opts-chunk, echo=FALSE, include=FALSE}
 knitr::opts_chunk$set(
+    echo = TRUE,
+    results = 'markup',
+    fig.align = 'center',
+    dev = "png",
+    fig.width = 4,
+    fig.height = 4,
     tidy = FALSE,
     cache = FALSE,
-    dev = "png",
     eval = TRUE,
-    message = FALSE,
+    message = TRUE,
     error = FALSE,
-    warning = FALSE
+    warning = TRUE
 )
 ```
 
@@ -69,10 +78,10 @@ library(SummarizedExperiment)
 ```
 
 # Example Dataset
-We demonstrate `DOTSeq` functionalities using data from [@ly2024nuclear], 
-where translation initiation and elongation were profiled in HeLa cells 
-synchronised at Mitotic Cycling, Mitotic Arrest, and Interphase.
-Each condition contains two biological replicates.
+We demonstrate `DOTSeq` functionalities using a cell cycle dataset 
+[@ly2024nuclear], where translation initiation and elongation were profiled 
+in HeLa cells synchronised at Mitotic Cycling, Mitotic Arrest, and 
+Interphase. Each condition contains two biological replicates.
 
 Raw sequencing reads are available at GEO accession number 
 [GSE230189](http://www.ncbi.nlm.nih.gov/projects/geo/query/acc.cgi?acc=GSE230189).
@@ -200,12 +209,15 @@ dte_results
 ```
 
 We can also inspect the `rowData` and `rowRanges` of the SummarizedExperiment 
-object with ORF level annotation.
+object with ORF level annotation. 
 
 ```{r rowdata}
 rowdata <- rowData(m$sumExp)
 rowdata
 ```
+
+These ranges correspond to ORFs, extending from the translational start (AUG) 
+to stop codons, and may include intronic regions.
 
 ```{r rowranges}
 rowRanges(m$sumExp)
@@ -222,14 +234,14 @@ dte_mci <- dte_results[dte_results$contrast == "Mitotic_Cycling - Interphase", ]
 results <- merge(dou_mci, dte_mci, by = "orf_id", all = TRUE)
 ```
 
-## 1. Venn diagram: 
+## Venn diagram: 
 Shows overlap between significant DOU and DTE ORFs.
 
 ```{r plot-venn}
 plotDOT(results = results, plot_types = "venn")
 ```
 
-## 2. Composite scatter plot: 
+## Composite scatter plot: 
 Compares DOU and DTE effect sizes with marginal density plots. Points are 
 colour-coded by significance.
 
@@ -243,7 +255,7 @@ Points can be colour-coded by ORF types if rowdata is given as an input.
 plotDOT(results = results, rowdata = rowdata, plot_types = "composite")
 ```
 
-## 3. Volcano plot: 
+## Volcano plot: 
 Displays significance versus DOU effect size.
 
 By default, generating these plots involve ID mapping from Ensembl gene IDs 
@@ -270,7 +282,7 @@ plotDOT(
 )
 ```
 
-## 4. Heatmap: 
+## Heatmap: 
 Visualises the top ORFs or genes (e.g., top 40 uORF-regulated genes).
 
 ```{r plot-heatmap, fig.width=4, fig.height=8, warning=FALSE}
@@ -284,7 +296,8 @@ plotDOT(
 
 DOTSeq includes the function `simDOT()` for generating simulated Ribo-seq 
 and RNA-seq count matrices. It enables benchmarking under controlled 
-scenarios with configurable effect sizes, batch effects, and ORF types.  
+scenarios with configurable effect sizes, batch effects, and ORF types. 
+
 Simulations in [@lim2025differential] show that:
 
 - The **DOU** module performs well at low-to-moderate effect sizes on 
@@ -294,6 +307,7 @@ RNA-seq counts for individual ORFs relative to other ORFs within the
 same gene* (i.e., changes in ORF usage). This module targets 
 *cis*-regulatory usage changes that alter relative ORF proportions 
 within genes.
+
 - The **DTE** module performs better at large-magnitude changes in 
 translation efficiency. This module captures ORF-level changes in ribosome 
 occupancy relative to RNA abundance.
@@ -311,3 +325,5 @@ picture of translational regulation.
 ```{r sessionInfo}
 sessionInfo()
 ```
+
+# References

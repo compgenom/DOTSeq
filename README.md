@@ -51,21 +51,8 @@ if (!require("BiocManager", quietly = TRUE))
 # Initialise usage of Bioconductor devel version
 BiocManager::install(version = "devel")
 
-# Install required Bioconductor packages with automatic update confirmation
-bioc_packages <- c("biomaRt", "SummarizedExperiment", "Bioc.gff", "DESeq2")
-BiocManager::install(bioc_packages, lib = package_dir, ask = FALSE)
-
-# If installation fails due to version or dependency issues, try installing individually
-BiocManager::install(version = "devel")
-BiocManager::install("Bioc.gff", lib = package_dir, ask = FALSE)
-
-# Install devtools if not already available
-install.packages("devtools")
-library(devtools)
-options(unzip = "internal")
-
-# Install DOTSeq from GitHub
-devtools::install_github("compgenom/DOTSeq")
+# Install DOTSeq and required packages with automatic update confirmation
+BiocManager::install("compgenom/DOTSeq", lib = package_dir, ask = FALSE)
 ```
 
 ## DOCUMENTATION
