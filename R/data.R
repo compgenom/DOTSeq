@@ -241,7 +241,7 @@ DOTSeqDataSet <- function(
     combined_cond <- combined_cond[, validCols]
 
 
-    cnt <- cnt[order(cnt$Geneid, cnt$Start, cnt$End), ]
+    # cnt <- cnt[order(cnt$Geneid, cnt$Start, cnt$End), ]
     dcounts <- cnt[c(1, 7:ncol(cnt))]
     colnames(dcounts) <- c("GeneID", rownames(cond))
     id <- as.character(dcounts[, 1])

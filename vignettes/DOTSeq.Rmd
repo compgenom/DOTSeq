@@ -72,7 +72,7 @@ Ribo-seq and RNA-seq reads were adapter-trimmed using Cutadapt
 [@dobin2013star], and summarised at the ORF level using featureCounts 
 [@liao2014featurecounts]. Flattened ORF-level annotations were generated 
 using the orf_to_gtf.py wrapper from RIBOSS [@lim2025riboss], analogous to 
-DEXSeq’s exon-flattening procedure [@anders2012detecting].
+`DEXSeq`’s exon-flattening procedure [@anders2012detecting].
 
 `DOTSeq` requires a count matrix formatted like the output from featureCounts, 
 with the first six columns representing ORF-level annotations and the 
@@ -113,8 +113,7 @@ We will focus on Mitotic Cycling and Interphase, using samples pre-treated by
 cycloheximide (chx) shortly before harvesting.
 
 ```{r extract-chx}
-cond <- meta[meta$treatment == "chx", ] # extract only samples processed using cyclohexamide
-cond$treatment <- NULL # remove the treatment column
+cond <- meta[meta$treatment == "chx", ]
 ```
 
 # Run DOTSeq
@@ -151,8 +150,8 @@ and `baseline = "Interphase"`.
 # Inspect results
 `DOTSeq` returns two main objects:
 
-- sumExp: DOU results (beta-binomial GLMs)
-- dds: DTE results (negative binomial GLMs)
+- sumExp: DOU results (beta-binomial GLMs).
+- dds: DTE results (negative binomial GLMs).
 
 ```{r dotseq-objects}
 names(m)
@@ -168,9 +167,9 @@ dte_results <- metadata(m$dds)$interaction_results
 Key metrics include:
 
 - PosteriorMean - shrunk log-odds fold change (PosteriorMean) and
-- lfsr - Local False Sign Rate (lfsr) for DOU
+- lfsr - Local False Sign Rate (lfsr) for DOU.
 - log2FoldChange - shrunken log2-fold change and
-- padj - adjusted p-value for DTE
+- padj - adjusted p-value for DTE.
 
 PosteriorMean, lfsr and log2FoldChange were computed by `ashr`'s adaptive 
 shrinkage estimator.
@@ -194,8 +193,8 @@ rowdata <- rowData(m$sumExp)
 rowdata
 ```
 
-These ranges correspond to ORFs, extending from the translational start (AUG) 
-to stop codons, and may include intronic regions.
+These ranges correspond to ORFs, extending from the translational start 
+(AUG) to stop codons, and may include intronic regions.
 
 ```{r rowranges}
 rowRanges(m$sumExp)
