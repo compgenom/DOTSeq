@@ -59,7 +59,7 @@ in HeLa cells synchronised at Mitotic Cycling, Mitotic Arrest, and
 Interphase. Each condition contains two biological replicates.
 
 Raw sequencing reads are available at GEO accession number 
-[GSE230189](http://www.ncbi.nlm.nih.gov/projects/geo/query/acc.cgi?acc=GSE230189).
+[GSE230189](https://www.ncbi.nlm.nih.gov/projects/geo/query/acc.cgi?acc=GSE230189).
 
 ```{r dir}
 dir <- system.file("extdata", package = "DOTSeq")
@@ -288,7 +288,7 @@ Simulations in [@lim2025differential] show that:
 DOU-type scenarios. This module is specifically designed to detect 
 condition-dependent shifts in the expected proportion of Ribo-seq to 
 RNA-seq counts for individual ORFs relative to other ORFs within the 
-same gene* (i.e., changes in ORF usage). This module targets 
+same gene (i.e., changes in ORF usage). This module targets 
 *cis*-regulatory usage changes that alter relative ORF proportions 
 within genes.
 

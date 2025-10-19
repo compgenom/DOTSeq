@@ -13,15 +13,15 @@ loading relative to RNA level across conditions.
 
 `DOTSeq` models Ribo-seq and RNA-seq read counts using a 
 **beta-binomial generalised linear model (GLM)** implemented via 
-[`glmmTMB`](https://cran.r-project.org/web/packages/glmmTMB/index.html). 
+[`glmmTMB`](https://CRAN.R-project.org/package=glmmTMB). 
 It supports experimental designs with multiple conditions, and uses an 
 interaction term (`condition:strategy`) to isolate translation-specific 
 effects.
 
 Post hoc contrasts are computed using 
-[`emmeans`](https://cran.r-project.org/web/packages/emmeans/index.html), 
+[`emmeans`](https://CRAN.R-project.org/package=emmeans), 
 and empirical Bayes shrinkage is applied via 
-[`ashr`](https://cran.r-project.org/web/packages/ashr/index.html).
+[`ashr`](https://CRAN.R-project.org/package=ashr).
 
 
 ## DEPENDENCIES

@@ -1305,12 +1305,12 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' Durinck S, Spellman P, Birney E, Huber W (2009). Mapping identifiers for the
 #' integration of genomic datasets with the R/Bioconductor package biomaRt.
 #' Nature Protocols, 4, 1184–1191.
-#' \url{https://doi.org/10.1038/nprot.2009.97}
+#' \doi{10.1038/nprot.2009.97}
 #'
 #' Durinck S, Moreau Y, Kasprzyk A, Davis S, De Moor B, Brazma A, Huber W
 #' (2005). BioMart and Bioconductor: a powerful link between biological
 #' databases and microarray data analysis. Bioinformatics, 21, 3439–3440.
-#' \url{https://doi.org/10.1093/bioinformatics/bti525}
+#' \doi{10.1093/bioinformatics/bti525}
 #'
 #' Larsson J, Gustafsson P (2018). “A Case Study in Fitting Area-Proportional
 #' Euler Diagrams with Ellipses Using eulerr.” In Proceedings of International

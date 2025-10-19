@@ -129,7 +129,7 @@
 #' \url{https://rvlenth.github.io/emmeans/}
 #'
 #' Stephens, M. (2016) False discovery rates: a new deal.
-#' Biostatistics, 18:2. \url{https://doi.org/10.1093/biostatistics/kxw041}
+#' Biostatistics, 18:2. \doi{10.1093/biostatistics/kxw041}
 #'
 #'
 testDOU <- function(
@@ -435,7 +435,7 @@ testDOU <- function(
 #' @references
 #' Love, M.I., Huber, W., Anders, S. (2014) Moderated estimation of fold change
 #' and dispersion for RNA-seq data with DESeq2. Genome Biology, 15:550.
-#' \url{https://doi.org/10.1186/s13059-014-0550-8}
+#' \doi{10.1186/s13059-014-0550-8}
 #'
 contrast_vectors <- function(
     dds, 

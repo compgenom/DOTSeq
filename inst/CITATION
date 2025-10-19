@@ -1,6 +1,6 @@
 citEntry <- bibentry(
   bibtype = "Article",
-  title = "Differential analysis of translation efficiency and usage of open reading frames using DOTSeq",
+  title = "Differential Analysis of Translation Efficiency and Usage of Open Reading Frames using DOTSeq",
   author = c(
     person("Chun Shen", "Lim", role = c("aut", "cre")),
     person("Gabrielle SW", "Chieng", role = "aut")
@@ -9,7 +9,7 @@ citEntry <- bibentry(
   year = 2025,
   pages = "2025--09",
   publisher = "Cold Spring Harbor Laboratory",
-  doi = "https://doi.org/10.1101/2025.09.24.67820"
+  doi = "https://doi.org/10.1101/2025.09.24.678201"
 )
 
 citEntry
