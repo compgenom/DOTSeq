@@ -46,12 +46,12 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
         })
     )
     # Filter out successfully fitted ORFs using accessor
-    fitted_orfs <- Filter(function(x) type(x) == "glmmTMB", results)
+    fitted_orfs <- Filter(function(x) model_type(x) == "glmmTMB", results)
 
     expect_gt(length(fitted_orfs), 0)
 
     for (res in fitted_orfs) {
-        keys <- names(results(res)) # use accessor
+        keys <- names(fit_results(res)) # use accessor
 
         # Always expected
         expect_true("model_fit" %in% keys)
@@ -60,10 +60,10 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
 
         # Conditionally expected
         if ("tests" %in% keys) {
-            expect_type(results(res)$tests, "list")
+            expect_type(fit_results(res)$tests, "list")
         }
         if ("diagnostics" %in% keys) {
-            expect_type(results(res)$diagnostics, "list")
+            expect_type(fit_results(res)$diagnostics, "list")
         }
     }
 })
