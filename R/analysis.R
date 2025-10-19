@@ -686,7 +686,7 @@ plot_volcano <- function(
             legend_position, legend = c("DTE", "DOU", "Both"),
             col = c(col_dte, col_dou, col_both), 
             pch = 1, 
-            ty = "n", 
+            bty = "n", 
             inset = c(0.02, 0.05)
         )
     } else if (color_by == "orf_type" && "orf_type" %in% colnames(results)) {
