@@ -83,7 +83,8 @@ execution we will use a subset of input data.
 cnt <- read.table(
     file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"), 
     header = TRUE, 
-    comment.char = "#")
+    comment.char = "#"
+)
 names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
 head(cnt)
 ```
