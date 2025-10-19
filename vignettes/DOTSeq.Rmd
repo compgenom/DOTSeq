@@ -268,14 +268,15 @@ plotDOT(
 ```
 
 ## Heatmap: 
-Visualises the top ORFs or genes (e.g., top 40 uORF-regulated genes).
+Visualises the top ORFs or genes (e.g., top 20 uORF-regulated genes).
 
-```{r plot-heatmap, warning=FALSE, fig.width=4, fig.height=8, fig.align="center", out.width="350px"}
+```{r plot-heatmap, warning=FALSE, fig.width=4, fig.height=8, fig.align="center", out.width="325px"}
 plotDOT(
     results = results, 
     rowdata = rowdata, 
     id_mapping = id_mapping, 
     plot_types = "heatmap", 
+    top_genes = 20,
     force_new_device = FALSE
 )
 ```
