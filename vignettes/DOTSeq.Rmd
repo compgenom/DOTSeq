@@ -1,19 +1,15 @@
 ---
 title: "DOTSeq: Detecting Differential ORF Usage in Ribosome Profiling Data"
 author: 
-  - name: "Chun Shen Lim*"
-    affiliation: |
-      1 Department of Biochemistry, Faculty of Biomedical Sciences, 
-        University of Otago, Dunedin, New Zealand.  
-      2 Genetics Otago, University of Otago, Dunedin, New Zealand.  
-      3 Maurice Wilkins Centre for Molecular Biodiscovery, 
-        Centres of Research Excellence, New Zealand.  
-    email: "chunshen.lim@ieee.org"
-  - name: "Gabrielle S.W. Chieng"
-    affiliation: |
-      1 Department of Biochemistry, Faculty of Biomedical Sciences, 
-        University of Otago, Dunedin, New Zealand.  
-      2 Genetics Otago, University of Otago, Dunedin, New Zealand.
+    - name: "Chun Shen Lim"
+        affiliation: |
+            Department of Biochemistry, Faculty of Biomedical Sciences, 
+            University of Otago, Dunedin, New Zealand.  
+        email: "chunshen.lim@otago.ac.nz"
+    - name: "Gabrielle S.W. Chieng"
+        affiliation: |
+            Department of Biochemistry, Faculty of Biomedical Sciences, 
+            University of Otago, Dunedin, New Zealand.
 output:
     BiocStyle::html_document:
         toc_float: true
@@ -28,11 +24,12 @@ bibliography: DOTSeq.bib
 
 # Introduction
 DOTSeq is an R package for detecting differential translation of open 
-reading frames (ORFs) from matched Ribo-seq and RNA-seq datasets 
-[@lim2025differential]. Translation is a tightly regulated process, where 
-multiple ORFs within the same gene can modulate protein synthesis.
-Traditional gene-level approaches obscure these regulatory layers. DOTSeq 
-addresses this limitation by modelling translation at the ORF level.
+reading frames (ORFs) from matched ribosome Profiling (Ribo-seq) and 
+RNA-seq datasets [@lim2025differential]. Translation is a tightly 
+regulated process, where multiple ORFs within the same gene can modulate 
+protein synthesis. Traditional gene-level approaches obscure these 
+regulatory layers. DOTSeq addresses this limitation by modelling 
+translation at the ORF level.
 
 DOTSeq provides two complementary modules:
 
@@ -52,12 +49,12 @@ uORF-mediated repression.
 # Load Required Library
 
 ```{r setup, warning=FALSE}
-library(DOTSeq)
-library(SummarizedExperiment)
+library(DOTSeq, quietly = TRUE)
+library(SummarizedExperiment, quietly = TRUE)
 ```
 
 # Example Dataset
-We demonstrate `DOTSeq` functionalities using a cell cycle dataset 
+We demonstrate DOTSeq functionalities using a cell cycle dataset 
 [@ly2024nuclear], where translation initiation and elongation were profiled 
 in HeLa cells synchronised at Mitotic Cycling, Mitotic Arrest, and 
 Interphase. Each condition contains two biological replicates.
@@ -210,13 +207,13 @@ The following plots can be generated:
 dou_mci <- dou_results[dou_results$contrast == "Mitotic_Cycling - Interphase", ]
 dte_mci <- dte_results[dte_results$contrast == "Mitotic_Cycling - Interphase", ]
 
-results <- merge(dou_mci, dte_mci, by = "orf_id", all = TRUE)
+results <- merge(dou_mci, dte_mci, by = c("orf_id", "contrast"), all = TRUE)
 ```
 
 ## Venn diagram: 
 Shows overlap between significant DOU and DTE ORFs.
 
-```{r plot-venn}
+```{r plot-venn, fig.small = TRUE}
 plotDOT(results = results, plot_types = "venn", force_new_device = FALSE)
 ```
 
@@ -224,14 +221,19 @@ plotDOT(results = results, plot_types = "venn", force_new_device = FALSE)
 Compares DOU and DTE effect sizes with marginal density plots. Points are 
 colour-coded by significance.
 
-```{r plot-composite-by-significance}
+```{r plot-composite-by-significance, fig.small = TRUE}
 plotDOT(results = results, plot_types = "composite", force_new_device = FALSE)
 ```
 
 Points can be colour-coded by ORF types if rowdata is given as an input.
 
-```{r plot-composite-by-orfs}
-plotDOT(results = results, rowdata = rowdata, plot_types = "composite", force_new_device = FALSE)
+```{r plot-composite-by-orfs, fig.small = TRUE}
+plotDOT(
+    results = results, 
+    rowdata = rowdata, 
+    plot_types = "composite", 
+    force_new_device = FALSE
+)
 ```
 
 ## Volcano plot: 
@@ -242,7 +244,7 @@ to HGNC gene symbols using `biomaRt`. This mapping helps make the plot more
 accessible by showing gene symbols. The resulting ID mapping dataframe can 
 be stored for reuse in subsequent plots to avoid repeated downloads.
 
-```{r plot-volcano-by-significance}
+```{r plot-volcano-by-significance, fig.small = TRUE}
 id_mapping <- plotDOT(
     results = results,
     plot_types = "volcano",
@@ -266,7 +268,7 @@ plotDOT(
 ## Heatmap: 
 Visualises the top ORFs or genes (e.g., top 40 uORF-regulated genes).
 
-```{r plot-heatmap, fig.width=4, fig.height=8, warning=FALSE}
+```{r plot-heatmap, fig.width=3, fig.height=6, warning=FALSE}
 plotDOT(
     results = results, 
     rowdata = rowdata, 

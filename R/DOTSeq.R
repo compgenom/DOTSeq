@@ -358,9 +358,9 @@ DOTSeq <- function(
 
             contrast_results <- list()
             for (c_name in names(contrast_vectors_list)) {
-                if (verbose) {
-                    message("performing empirical Bayesian shrinkage on the effect size for ", c_name)
-                }
+                # if (verbose) {
+                #     message("performing empirical Bayesian shrinkage on the effect size for ", c_name)
+                # }
 
                 contrast_results_df <- lfcShrink(dot$dds, contrast = contrast_vectors_list[[c_name]], type = "ashr", quiet = TRUE)
                 contrast_results_df$orf_id <- rownames(contrast_results_df)
