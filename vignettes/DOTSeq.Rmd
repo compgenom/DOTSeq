@@ -1,23 +1,23 @@
 ---
 title: "DOTSeq: Detecting Differential ORF Usage in Ribosome Profiling Data"
 author: 
-    - name: "Chun Shen Lim"
-        affiliation: |
-            Department of Biochemistry, Faculty of Biomedical Sciences, 
-            University of Otago, Dunedin, New Zealand.  
-        email: "chunshen.lim@otago.ac.nz"
-    - name: "Gabrielle S.W. Chieng"
-        affiliation: |
-            Department of Biochemistry, Faculty of Biomedical Sciences, 
-            University of Otago, Dunedin, New Zealand.
+- name: "Chun Shen Lim"
+  affiliation: |
+    Department of Biochemistry, Faculty of Biomedical Sciences, 
+    University of Otago, Dunedin, New Zealand.  
+email: "chunshen.lim@otago.ac.nz"
+- name: "Gabrielle S.W. Chieng"
+  affiliation: |
+    Department of Biochemistry, Faculty of Biomedical Sciences, 
+    University of Otago, Dunedin, New Zealand.
 output:
-    BiocStyle::html_document:
-        toc_float: true
-    BiocStyle::pdf_document: default
+  BiocStyle::html_document:
+    toc_float: true
+  BiocStyle::pdf_document: default
 vignette: >
-    %\VignetteIndexEntry{DOTSeq}  
-    %\VignetteEngine{knitr::rmarkdown}  
-    %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{DOTSeq}  
+  %\VignetteEngine{knitr::rmarkdown}  
+  %\VignetteEncoding{UTF-8}
 package: DOTSeq
 bibliography: DOTSeq.bib
 ---
