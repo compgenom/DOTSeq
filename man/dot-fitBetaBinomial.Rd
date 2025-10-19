@@ -56,7 +56,8 @@ compare the full model (with interaction) against a reduced model
 Default is \code{FALSE}.}
 
 \item{diagnostic}{Logical; if \code{TRUE}, runs DHARMa diagnostics to assess
-model fit. Default is \code{FALSE}.}
+model fit. This requires \pkg{DHARMa} to be installed.
+Default is \code{FALSE}.}
 
 \item{optimizers}{Logical; if \code{TRUE}, enables brute-force optimization
 using multiple optimizers in \code{glmmTMB}. Default is \code{FALSE}.}

@@ -131,7 +131,7 @@ The main wrapper `DOTSeq()` performs three sequential steps:
 `DOTSeqDataSet()`, `fitDOU()`, and `testDOU()` can be ran separately. For 
 simplicity, here we will use the `DOTSeq()` wrapper. To capturing the 
 translation-specific interaction effect ($\beta_{\text{int}}$), `DOTSeq()` 
-uses the conditional formula `~ condition * strategy` with 
+uses the conditional `formula = ~ condition * strategy` with 
 `dispersion_modeling = "auto"` by default. The conditional and dispersion 
 formulas can be customised to include batch and random effects.
 
