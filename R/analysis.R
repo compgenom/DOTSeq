@@ -685,13 +685,14 @@ plot_volcano <- function(
         legend(
             legend_position, legend = c("DTE", "DOU", "Both"),
             col = c(col_dte, col_dou, col_both), 
-            pch = 1, bty = "n", 
+            pch = 1, 
+            ty = "n", 
             inset = c(0.02, 0.05)
         )
     } else if (color_by == "orf_type" && "orf_type" %in% colnames(results)) {
-        col_uorfs <- adjustcolor("#4575B4", alpha.f = 1)
-        col_morfs <- adjustcolor("#D73027", alpha.f = 0.2)
-        col_dorfs <- adjustcolor("#A6A6A6", alpha.f = 1)
+        col_uorfs <- adjustcolor("#4575B4", alpha.f = 0.5)
+        col_morfs <- adjustcolor("#D73027", alpha.f = 0.5)
+        col_dorfs <- adjustcolor("#A6A6A6", alpha.f = 0.5)
         
         is_uorfs <- results$orf_type == "uORF"
         is_morfs <- results$orf_type == "mORF"
@@ -700,7 +701,7 @@ plot_volcano <- function(
         plot(
             results[[dou_estimates_col]][is_dorfs],
             results$loglfsr[is_dorfs],
-            pch = 20,
+            pch = 1,
             col = col_dorfs,
             xlab = "log-odds change in ORF usage",
             ylab = expression(paste("-log"[10], "(LFSR)")),
@@ -712,20 +713,20 @@ plot_volcano <- function(
             results[[dou_estimates_col]][is_uorfs], 
             results$loglfsr[is_uorfs], 
             col = col_uorfs, 
-            pch = 20
+            pch = 1
         )
         points(
             results[[dou_estimates_col]][is_morfs], 
             results$loglfsr[is_morfs], 
             col = col_morfs, 
-            pch = 20
+            pch = 1
         )
         
         legend(
             legend_position, 
             legend = c("uORF", "mORF", "dORF"),
             col = c(col_uorfs, col_morfs, col_dorfs), 
-            pch = 20, 
+            pch = 1, 
             bty = "n", 
             inset = c(0.02, 0.05)
         )
