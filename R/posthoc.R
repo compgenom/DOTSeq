@@ -169,9 +169,9 @@ testDOU <- function(
     all_contrast_names <- unique(as.character(contrast_df_template$contrast))
 
     for (c_name in all_contrast_names) {
-        if (verbose) {
-            message("calculating the effect size and se for ", c_name)
-        }
+        # if (verbose) {
+        #     message("calculating the effect size and se for ", c_name)
+        # }
 
         # Use lapply to iterate through all genes and extract the betas and SEs
         all_contrasts <- pblapply(emm_list, function(emm) {
@@ -232,9 +232,9 @@ testDOU <- function(
 
         # Run ashr on the full set of data for this contrast
         if (any(!is.na(betas_for_ashr))) {
-            if (verbose) {
-                message("performing empirical Bayesian shrinkage on the effect size for ", c_name)
-            }
+            # if (verbose) {
+            #     message("performing empirical Bayesian shrinkage on the effect size for ", c_name)
+            # }
 
             ash_result <- ash(
                 betas_for_ashr, 
@@ -270,9 +270,9 @@ testDOU <- function(
         c_name <- as.character(strategy_combos$contrast[i])
         by_name <- as.character(strategy_combos$strategy[i])
 
-        if (verbose) {
-            message("calculating the effect size and se for contrast: ", c_name, ", strategy: ", by_name)
-        }
+        # if (verbose) {
+        #     message("calculating the effect size and se for contrast: ", c_name, ", strategy: ", by_name)
+        # }
 
         # Check if the list for the current contrast name exists
         if (is.null(all_results[["strategy_specific"]][[c_name]])) {
@@ -307,9 +307,9 @@ testDOU <- function(
 
         pvalues <- 2 * (1 - pnorm(abs(betas / ses)))
 
-        if (verbose) {
-            message("performing empirical Bayesian shrinkage on the effect size for ", c_name)
-        }
+        # if (verbose) {
+        #     message("performing empirical Bayesian shrinkage on the effect size for ", c_name)
+        # }
 
         if (any(!is.na(betas))) {
             ash_result <- ash(betas, ses)
@@ -369,6 +369,10 @@ testDOU <- function(
 
     metadata(sumExp)$interaction_results <- interaction_df
     metadata(sumExp)$strategy_results <- strategy_df
+    
+    if (verbose) {
+        message("effect sizes calculated and shrunk successfully")
+    }
 
     return(sumExp)
 }

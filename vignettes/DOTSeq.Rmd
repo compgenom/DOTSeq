@@ -14,14 +14,10 @@ author:
       1 Department of Biochemistry, Faculty of Biomedical Sciences, 
         University of Otago, Dunedin, New Zealand.  
       2 Genetics Otago, University of Otago, Dunedin, New Zealand.
-date: "2025"
 output:
     BiocStyle::html_document:
-        toc: true
         toc_float: true
-        number_sections: true
-        fig_caption: true
-        css: style.css
+    BiocStyle::pdf_document: default
 vignette: >
     %\VignetteIndexEntry{DOTSeq}  
     %\VignetteEngine{knitr::rmarkdown}  
@@ -30,26 +26,9 @@ package: DOTSeq
 bibliography: DOTSeq.bib
 ---
 
-```{r opts-chunk, echo=FALSE, include=FALSE}
-knitr::opts_chunk$set(
-    echo = TRUE,
-    results = 'markup',
-    fig.align = 'center',
-    dev = "png",
-    fig.width = 4,
-    fig.height = 4,
-    tidy = FALSE,
-    cache = FALSE,
-    eval = TRUE,
-    message = TRUE,
-    error = FALSE,
-    warning = TRUE
-)
-```
-
 # Introduction
-DOTSeq is an R package for detecting differential translation of open reading 
-frames (ORFs) from matched Ribo-seq and RNA-seq datasets 
+DOTSeq is an R package for detecting differential translation of open 
+reading frames (ORFs) from matched Ribo-seq and RNA-seq datasets 
 [@lim2025differential]. Translation is a tightly regulated process, where 
 multiple ORFs within the same gene can modulate protein synthesis.
 Traditional gene-level approaches obscure these regulatory layers. DOTSeq 
@@ -95,9 +74,9 @@ list.files(dir)
 Ribo-seq and RNA-seq reads were adapter-trimmed using Cutadapt 
 [@martin2011cutadapt], aligned to the reference genome using STAR 
 [@dobin2013star], and summarised at the ORF level using featureCounts 
-[@liao2014featurecounts]. Flattened ORF-level annotations were generated with 
-the orf_to_gtf.py wrapper from RIBOSS [@lim2025riboss], analogous to DEXSeq’s 
-exon-flattening procedure [@anders2012detecting].
+[@liao2014featurecounts]. Flattened ORF-level annotations were generated 
+with the orf_to_gtf.py wrapper from RIBOSS [@lim2025riboss], analogous to 
+DEXSeq’s exon-flattening procedure [@anders2012detecting].
 
 DOTSeq requires a counts matrix formatted like the output from featureCounts, 
 with the first six columns representing ORF-level annotations and the 
@@ -238,7 +217,7 @@ results <- merge(dou_mci, dte_mci, by = "orf_id", all = TRUE)
 Shows overlap between significant DOU and DTE ORFs.
 
 ```{r plot-venn}
-plotDOT(results = results, plot_types = "venn")
+plotDOT(results = results, plot_types = "venn", force_new_device = FALSE)
 ```
 
 ## Composite scatter plot: 
@@ -246,13 +225,13 @@ Compares DOU and DTE effect sizes with marginal density plots. Points are
 colour-coded by significance.
 
 ```{r plot-composite-by-significance}
-plotDOT(results = results, plot_types = "composite")
+plotDOT(results = results, plot_types = "composite", force_new_device = FALSE)
 ```
 
 Points can be colour-coded by ORF types if rowdata is given as an input.
 
 ```{r plot-composite-by-orfs}
-plotDOT(results = results, rowdata = rowdata, plot_types = "composite")
+plotDOT(results = results, rowdata = rowdata, plot_types = "composite", force_new_device = FALSE)
 ```
 
 ## Volcano plot: 
@@ -266,7 +245,8 @@ be stored for reuse in subsequent plots to avoid repeated downloads.
 ```{r plot-volcano-by-significance}
 id_mapping <- plotDOT(
     results = results,
-    plot_types = "volcano"
+    plot_types = "volcano",
+    force_new_device = FALSE
 )
 ```
 
@@ -278,7 +258,8 @@ plotDOT(
     results = results,
     rowdata = rowdata,
     id_mapping = id_mapping,
-    plot_types = "volcano"
+    plot_types = "volcano", 
+    force_new_device = FALSE
 )
 ```
 
@@ -290,7 +271,9 @@ plotDOT(
     results = results, 
     rowdata = rowdata, 
     id_mapping = id_mapping, 
-    plot_types = "heatmap")
+    plot_types = "heatmap", 
+    force_new_device = FALSE
+)
 ```
 # Simulation and benchmarking
 
@@ -315,15 +298,16 @@ occupancy relative to RNA abundance.
 # Summary
 
 DOTSeq offers a unified framework for modelling translational control at 
-the ORF level. DOTSeq has two modules capturing distinct biological signals: 
-**DOU** tests for shifts in relative usage within genes (cis-regulation), 
-whereas **DTE** tests for changes in per-ORF translation efficiency relative 
-to transcript abundance. They can be used together to provide a fuller 
-picture of translational regulation.
+the ORF level. DOTSeq has two modules capturing distinct biological 
+signals: **DOU** tests for shifts in relative usage within genes 
+(cis-regulation), whereas **DTE** tests for changes in per-ORF translation 
+efficiency relative to transcript abundance. They can be used together to 
+provide a fuller picture of translational regulation.
+
+# References
 
 # Session Info
 ```{r sessionInfo}
 sessionInfo()
 ```
 
-# References
