@@ -45,14 +45,14 @@ Together, **DOU** and **DTE** modules allow global identification of
 translation-specific effects, revealing regulatory events such as 
 uORF-mediated repression.
 
-# Load Required Library
+# Load required library
 
 ```{r setup, warning=FALSE}
 library(DOTSeq, quietly = TRUE)
 library(SummarizedExperiment, quietly = TRUE)
 ```
 
-# Example Dataset
+# Example dataset
 We demonstrate DOTSeq functionalities using a cell cycle dataset 
 [@ly2024nuclear], where translation initiation and elongation were profiled 
 in HeLa cells synchronised at Mitotic Cycling, Mitotic Arrest, and 
@@ -97,7 +97,7 @@ flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
 bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
 ```
 
-# Prepare Condition Table
+# Prepare condition table
 DOTSeq requires a condition table defining the experimental design for both 
 Ribo-seq and RNA-seq samples.The table must include four essential columns:
 run, strategy ("ribo" or "rna", or "0" or "1"), replicate, and condition.
@@ -117,7 +117,7 @@ cond <- meta[meta$treatment == "chx", ] # extract only samples processed using c
 cond$treatment <- NULL # remove the treatment column
 ```
 
-# Running DOTSeq
+# Run DOTSeq
 The main wrapper `DOTSeq()` performs three sequential steps:
 - Construction of two SummarizedExperiment objects (`DOTSeqDataSet()`)
 - model fitting of DOU (`glmmTMB` beta-binomial GLM via `fitDOU()`) and DTE 
@@ -145,7 +145,7 @@ In this case Interphase was automatically assigned as the baseline. The target
 and baseline conditions can explicitly defined as `target = "Mitotic_Cycling"` 
 and `baseline = "Interphase"`.
 
-# Accessing results
+# Inspect results
 DOTSeq returns two main objects:
 
 - sumExp: DOU results (beta-binomial GLMs)
@@ -267,7 +267,7 @@ plotDOT(
 ## Heatmap: 
 Visualises the top ORFs or genes (e.g., top 40 uORF-regulated genes).
 
-```{r plot-heatmap, warning=FALSE, fig.width=4, fig.height=8, fig.align="center", out.width="400px"}
+```{r plot-heatmap, warning=FALSE, fig.width=4, fig.height=8, fig.align="center", out.width="350px"}
 plotDOT(
     results = results, 
     rowdata = rowdata, 
@@ -307,7 +307,7 @@ provide a fuller picture of translational regulation.
 
 # References
 
-# Session Info
+# Session info
 ```{r sessionInfo}
 sessionInfo()
 ```
