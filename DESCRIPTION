@@ -22,9 +22,9 @@ Description:
     A flexible beta-binomial generalized linear model (GLM) framework for 
     modeling the expected proportion of ribosome profiling (Ribo-seq) to 
     RNA-seq counts for individual open reading frames (ORFs) relative to 
-    other ORFs within the same gene. A complementary a 
-    negative binomial GLM framework for capturing changes in 
-    translation efficiency for individual ORFs across conditions. 
+    other ORFs within the same gene. This is complemented by a negative 
+    binomial GLM framework that captures changes in translation efficiency 
+    of individual ORFs across experimental conditions.
 URL: https://github.com/compgenom/DOTSeq
 BugReports: https://github.com/compgenom/DOTSeq/issues
 Encoding: UTF-8
