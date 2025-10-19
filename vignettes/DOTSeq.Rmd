@@ -4,8 +4,7 @@ author:
 - name: "Chun Shen Lim"
   affiliation: |
     Department of Biochemistry, Faculty of Biomedical Sciences, 
-    University of Otago, Dunedin, New Zealand.  
-email: "chunshen.lim@otago.ac.nz"
+    University of Otago, Dunedin, New Zealand.
 - name: "Gabrielle S.W. Chieng"
   affiliation: |
     Department of Biochemistry, Faculty of Biomedical Sciences, 
