@@ -13,7 +13,8 @@ cistronic_data(
   padj_threshold = 0.05,
   top_genes = NULL,
   flip_sign = FALSE,
-  sorf_type = "uORF"
+  sorf_type = "uORF",
+  colors = list(low = "blue", middle = "white", high = "red")
 )
 }
 \arguments{
@@ -46,6 +47,13 @@ Default is \code{TRUE}.}
 \item{sorf_type}{Character string specifying the short ORF type to compare
 with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.
 Default is \code{"uORF"}.}
+
+\item{colors}{A named list of three colors for heatmap gradient:
+\itemize{
+\item{\code{low}: color for low values (e.g., "blue")}
+\item{\code{middle}: color for mid values (e.g., "white")}
+\item{\code{high}: color for high values (e.g., "red")}
+}}
 }
 \value{
 A list containing:

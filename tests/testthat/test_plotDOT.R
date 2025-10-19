@@ -1,26 +1,64 @@
-test_that("plotDOT generates a Venn diagram without error", {
-    # Example ORF-level results
+test_that("plotDOT generates all plot types without error", {
+    set.seed(42)
+    
+    # Helper to generate random strings
+    random_string <- function(n, length = 12) {
+        replicate(n, paste0(sample(c(LETTERS, 0:9), length, replace = TRUE), collapse = ""))
+    }
+    
+    # Generate 50 random ORF IDs
+    gene_ids <- random_string(50, 12)
+    orf_suffixes <- random_string(50, 4)
+    orf_ids <- paste0(gene_ids, ":", orf_suffixes)
+    
+    # Create results_df
     results_df <- data.frame(
-        orf_id = c("ENSG00000139618.19:O001", "ENSG00000139618.19:O002", "ENSG00000157764.15:O003"),
-        lfsr = c(0.01, 0.2, 0.03),
-        padj = c(0.02, 0.01, 0.1)
+        orf_id = orf_ids,
+        lfsr = runif(50, 0, 0.1),
+        padj = runif(50, 0, 0.1),
+        PosteriorMean = rnorm(50),
+        log2FoldChange = rnorm(50)
     )
-
-    # Example rowData
+    
+    # Create rowdata_df
+    orf_types <- sample(c("uORF", "mORF", "dORF"), 50, replace = TRUE)
     rowdata_df <- data.frame(
-        orf_id = c("ENSG00000139618.19:O001", "ENSG00000139618.19:O002", "ENSG00000157764.15:O003"),
-        gene_id = c("ENSG00000139618.19", "ENSG00000139618.19", "ENSG00000157764.15"),
-        orf_type = c("mORF", "dORF", "mORF")
+        orf_id = orf_ids,
+        gene_id = gene_ids,
+        orf_type = orf_types,
+        row.names = orf_ids
     )
-
-    # Suppress plotting to avoid opening a device during tests
-    expect_silent(
+    
+    # Plot Venn diagram and composite plots
+    expect_message(
         plotDOT(
             results = results_df,
             rowdata = rowdata_df,
+            plot_types = "composite",
+            verbose = FALSE,
+            force_new_device = TRUE
+        ),
+        regexp = "Spearman"
+    )
+    
+    expect_message(
+        plotDOT(
+            results = results_df,
+            rowdata = rowdata_df,
+            plot_types = "composite",
+            verbose = FALSE,
+            force_new_device = TRUE
+        ),
+        regexp = "Spearman"
+    )
+    
+    expect_message(
+        plotDOT(
+            results = results_df,
             plot_types = "venn",
             verbose = FALSE,
-            force_new_device = FALSE
-        )
+            force_new_device = TRUE
+        ),
+        regexp = "resetting graphics device"
     )
 })

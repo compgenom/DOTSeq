@@ -18,8 +18,8 @@ row names corresponding to ORF identifiers, and columns for adjusted
 p-values from both tests.}
 
 \item{dou_padj_col}{Character string specifying the column name for DOU
-significance values. Should correspond to local false sign rate (lfsr).
-Default is \code{"lfsr"}.}
+significance values. Should correspond to local false sign rate
+(lfsr). Default is \code{"lfsr"}.}
 
 \item{dte_padj_col}{Character string specifying the column name for DTE
 adjusted p-values. Default is \code{"padj"}.}
@@ -31,8 +31,8 @@ Default is \code{0.05}.}
 significance. Default is \code{0.05}.}
 }
 \value{
-A Venn diagram (Euler plot) showing the number of ORFs significant
-in DTE only, DOU only, or both.
+A Venn diagram (Euler plot) showing the number of ORFs
+significant in DTE only, DOU only, or both.
 }
 \description{
 Generates a Venn diagram (Euler diagram) showing the overlap of
@@ -47,8 +47,8 @@ counts for each region.
 }
 \references{
 Larsson J, Gustafsson P (2018). “A Case Study in Fitting Area-Proportional
-Euler Diagrams with Ellipses Using eulerr.” In Proceedings of International
-Workshop on Set Visualization and Reasoning, volume 2116, 84–91.
-\url{https://ceur-ws.org/Vol-2116/paper7.pdf}
+Euler Diagrams with Ellipses Using eulerr.” In Proceedings of
+International Workshop on Set Visualization and Reasoning, volume 2116,
+84–91. \url{https://ceur-ws.org/Vol-2116/paper7.pdf}
 }
 \keyword{internal}

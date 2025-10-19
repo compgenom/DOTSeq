@@ -20,13 +20,18 @@ plotDOT(
   extreme_threshold = NULL,
   label_topn = 3,
   top_genes = 20,
-  flip_sign = FALSE,
   sorf_type = "uORF",
   dataset = "hsapiens_gene_ensembl",
   symbol_col = "hgnc_symbol",
   mart_source = "ensembl",
-  verbose = TRUE,
-  force_new_device = TRUE
+  colors = list(dte = adjustcolor("#0072B2", alpha.f = 0.6), dou = adjustcolor("#E69F00",
+    alpha.f = 0.6), both = adjustcolor("#CC79A7", alpha.f = 0.6), none =
+    adjustcolor("grey80", alpha.f = 0.6), uorf = adjustcolor("#D73027", alpha.f = 0.6),
+    morf = adjustcolor("#4575B4", alpha.f = 0.6), dorf = adjustcolor("#A6A6A6", alpha.f =
+    0.6), low = "blue", middle = "white", high = "red"),
+  flip_sign = FALSE,
+  force_new_device = TRUE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -79,9 +84,6 @@ significant points in the volcano plot.}
 \item{top_genes}{Optional numeric. If specified, limits the heatmap to the
 top N genes ranked by DOU magnitude and significance.}
 
-\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU estimates
-to align directionality with DTE. Default is \code{TRUE}.}
-
 \item{sorf_type}{Character string specifying the short ORF type to compare
 with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.}
 
@@ -95,11 +97,24 @@ symbols in the annotation data. Default is \code{"hgnc_symbol"}.}
 \code{"ensembl"}, \code{"plants"}, \code{"fungi"}, \code{"protists"},
 \code{"metazoa"}, or \code{"bacteria"}.}
 
-\item{verbose}{Logical; if \code{TRUE}, prints progress messages.
-Default is \code{TRUE}.}
+\item{colors}{A named list of colors used across plots:
+\itemize{
+\item{\code{dte}, \code{dou}, \code{both}, \code{none}:
+for significance-based coloring}
+\item{\code{uorf}, \code{morf}, \code{dorf}: for ORF
+type-based coloring}
+\item{\code{low}, \code{middle}, \code{high}: for
+heatmap gradient}
+}}
+
+\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU estimates
+to align directionality with DTE. Default is \code{TRUE}.}
 
 \item{force_new_device}{Logical; if \code{TRUE}, detects graphics
 error and resets graphics state unconditionally.
+Default is \code{TRUE}.}
+
+\item{verbose}{Logical; if \code{TRUE}, prints progress messages.
 Default is \code{TRUE}.}
 }
 \value{

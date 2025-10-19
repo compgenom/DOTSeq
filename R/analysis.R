@@ -1,26 +1,26 @@
 #' Calculate Translational Efficiency and Shifts in ORF Usage
 #'
-#' This function computes translational efficiency (TE) and shifts in ORF usage
-#' for a set of normalized RNA-seq and Ribo-seq counts. TE is calculated as the
-#' ratio of Ribo-seq counts to RNA-seq counts. Shifts in ORF usage are computed
-#' as the log2 ratio of Ribo-seq proportion to RNA-seq proportion within each
-#' gene.
+#' This function computes translational efficiency (TE) and shifts in ORF 
+#' usage for a set of normalized RNA-seq and Ribo-seq counts. TE is 
+#' calculated as the ratio of Ribo-seq counts to RNA-seq counts. Shifts 
+#' in ORF usage are computed as the log2 ratio of Ribo-seq proportion to 
+#' RNA-seq proportion within each gene.
 #'
-#' @param counts A numeric matrix or data frame of normalized counts, where rows
-#'     correspond to ORFs and columns correspond to samples. RNA-seq and
-#'     Ribo-seq reads are distinguished by suffixes.
+#' @param counts A numeric matrix or data frame of normalized counts, where 
+#'     rows correspond to ORFs and columns correspond to samples. RNA-seq 
+#'     and Ribo-seq reads are distinguished by suffixes.
 #'
 #' @param sample_delim Character. Delimiter used in sample names.
 #'     Default is \code{"."}.
 #'
-#' @param rna_suffix Character string indicating the suffix of RNA-seq samples
-#'     in the column names. Default is \code{".rna"}.
+#' @param rna_suffix Character string indicating the suffix of RNA-seq 
+#'     samples in the column names. Default is \code{".rna"}.
 #'
-#' @param ribo_suffix Character string indicating the suffix of Ribo-seq samples
-#'     in the column names. Default is \code{".ribo"}.
+#' @param ribo_suffix Character string indicating the suffix of Ribo-seq 
+#'     samples in the column names. Default is \code{".ribo"}.
 #'
-#' @param pseudocount Numeric value added to counts to avoid division by zero.
-#'     Default is \code{1e-6}.
+#' @param pseudocount Numeric value added to counts to avoid division by 
+#'     zero. Default is \code{1e-6}.
 #'
 #' @return A list with two elements:
 #'     \describe{
@@ -132,8 +132,8 @@ calculateTE <- function(
 #'     p-values from both tests.
 #'
 #' @param dou_padj_col Character string specifying the column name for DOU
-#'     significance values. Should correspond to local false sign rate (lfsr).
-#'     Default is \code{"lfsr"}.
+#'     significance values. Should correspond to local false sign rate 
+#'     (lfsr). Default is \code{"lfsr"}.
 #'
 #' @param dte_padj_col Character string specifying the column name for DTE
 #'     adjusted p-values. Default is \code{"padj"}.
@@ -144,8 +144,8 @@ calculateTE <- function(
 #' @param dte_padj_threshold Numeric threshold for DTE adjusted p-value
 #'     significance. Default is \code{0.05}.
 #'
-#' @return A Venn diagram (Euler plot) showing the number of ORFs significant
-#'     in DTE only, DOU only, or both.
+#' @return A Venn diagram (Euler plot) showing the number of ORFs 
+#'     significant in DTE only, DOU only, or both.
 #'
 #' @details
 #' Significance is determined using a threshold of 0.05 on the adjusted
@@ -159,9 +159,9 @@ calculateTE <- function(
 #'
 #' @references
 #' Larsson J, Gustafsson P (2018). “A Case Study in Fitting Area-Proportional
-#' Euler Diagrams with Ellipses Using eulerr.” In Proceedings of International
-#' Workshop on Set Visualization and Reasoning, volume 2116, 84–91.
-#' \url{https://ceur-ws.org/Vol-2116/paper7.pdf}
+#' Euler Diagrams with Ellipses Using eulerr.” In Proceedings of 
+#' International Workshop on Set Visualization and Reasoning, volume 2116, 
+#' 84–91. \url{https://ceur-ws.org/Vol-2116/paper7.pdf}
 #'
 plot_venn <- function(
         results,
@@ -210,79 +210,100 @@ plot_venn <- function(
 #' Plot Composite Scatter and Marginal Plots for DTE vs DOU
 #'
 #' @description
-#' Visualizes the relationship between differential translation efficiency (DTE)
-#' and differential ORF usage (DOU) using a scatter plot with marginal histograms
-#' or density curves. Points can be colored by significance (DTE, DOU, both) or
-#' by ORF type (uORF, mORF, dORF). This plot helps assess overlap and divergence
-#' between DTE and DOU signals across ORFs.
+#' Visualizes the relationship between differential translation efficiency 
+#' (DTE) and differential ORF usage (DOU) using a scatter plot with 
+#' marginal histograms or density curves. Points can be colored by 
+#' significance (DTE, DOU, both) or by ORF type (uORF, mORF, dORF). 
+#' This plot helps assess overlap and divergence between DTE and DOU 
+#' signals across ORFs.
 #'
-#' @param results A data frame containing DTE and DOU post hoc contrast results.
-#'     Must include columns for DTE and DOU estimates and their significance values.
+#' @param results A data frame containing DTE and DOU post hoc
+#'     contrast results. Must include columns for DTE and DOU
+#'     estimates and their significance values.
 #'
-#' @param rowdata Optional data frame containing ORF metadata, with row names
-#'     corresponding to \code{orf_id}. Must include an \code{orf_type} column
-#'     with values "uORF", "mORF", or "dORF" if \code{color_by = "orf_type"}.
+#' @param rowdata Optional data frame containing ORF metadata,
+#'     with row names corresponding to \code{orf_id}. Must
+#'     include an \code{orf_type} column with values "uORF",
+#'     "mORF", or "dORF" if \code{color_by = "orf_type"}.
 #'
-#' @param color_by Character string specifying how to color points:
+#' @param color_by Character string specifying how to color
+#'     points:
 #'     \itemize{
-#'         \item{\code{"significance"}: Colors by DTE-only, DOU-only, both significant}
-#'         \item{\code{"orf_type"}: Colors by ORF type (requires \code{rowdata})}
+#'         \item{\code{"significance"}: Colors by DTE-only,
+#'         DOU-only, both significant}
+#'         \item{\code{"orf_type"}: Colors by ORF type (requires
+#'         \code{rowdata})}
 #'     }
 #'     Default is \code{"significance"}.
 #'
-#' @param marginal_plot_type Character string specifying the type of marginal plot:
-#'     \code{"histogram"} or \code{"density"}. Default is \code{"density"}.
+#' @param marginal_plot_type Character string specifying the
+#'     type of marginal plot: \code{"histogram"} or \code{"density"}. 
+#'     Default is \code{"density"}.
 #'
-#' @param dou_estimates_col Column name for DOU posterior estimates.
-#'     Default is \code{"PosteriorMean"}.
+#' @param dou_estimates_col Column name for DOU posterior
+#'     estimates. Default is \code{"PosteriorMean"}.
 #'
-#' @param dou_padj_col Column name for DOU significance values (e.g., local false sign rate).
-#'     Default is \code{"lfsr"}.
+#' @param dou_padj_col Column name for DOU significance values
+#'     (e.g., local false sign rate). Default is \code{"lfsr"}.
 #'
-#' @param dte_estimates_col Column name for DTE estimates (e.g., log2 fold-change).
-#'     Default is \code{"log2FoldChange"}.
+#' @param dte_estimates_col Column name for DTE estimates
+#'     (e.g., log2 fold-change). Default is \code{"log2FoldChange"}.
 #'
 #' @param dte_padj_col Column name for DTE adjusted p-values.
 #'     Default is \code{"padj"}.
 #'
-#' @param dou_padj_threshold Numeric threshold for DOU significance.
+#' @param dou_padj_threshold Numeric threshold for DOU significance. 
 #'     Default is \code{0.05}.
 #'
-#' @param dte_padj_threshold Numeric threshold for DTE significance.
+#' @param dte_padj_threshold Numeric threshold for DTE significance. 
 #'     Default is \code{0.05}.
 #'
-#' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates
-#'     to align directionality with DTE. Default is \code{FALSE}.
+#' @param flip_sign Logical; if \code{TRUE}, flips the sign of
+#'     DOU estimates to align directionality with DTE. Default
+#'     is \code{FALSE}.
 #'
 #' @param lhist Integer; number of bins for marginal histograms.
 #'     Default is \code{20}.
 #'
+#' @param colors A named list of colors used for plotting. Must include:
+#'     \itemize{
+#'         \item{\code{dte}, \code{dou}, \code{both},
+#'         \code{none}: for significance-based coloring}
+#'         \item{\code{uorf}, \code{morf}, \code{dorf}: for ORF
+#'         type-based coloring}
+#'     }
+#'     Each value should be a valid color string or result of
+#'     \code{adjustcolor()}.
+#'
 #' @return A composite plot consisting of:
-#' \describe{
-#'     \item{Scatter plot}{
-#'         Displays DTE (log2 fold-change) vs DOU (log-odds change) estimates,
-#'         colored by significance or ORF type.
+#'     \describe{
+#'         \item{Scatter plot}{
+#'             Displays DTE (log2 fold-change) vs DOU
+#'             (log-odds change) estimates, colored by
+#'             significance or ORF type.
+#'         }
+#'         \item{Marginal plots}{
+#'             Show the distribution of DTE and DOU estimates
+#'             along the top and right margins, using either
+#'             histograms or density curves.
+#'         }
 #'     }
-#'     \item{Marginal plots}{
-#'         Show the distribution of DTE and DOU estimates along the top and right
-#'         margins, using either histograms or density curves.
-#'     }
-#' }
-#' Additionally, the function returns the Spearman correlation between DTE and DOU
-#' estimates.
+#'     Additionally, the function returns the Spearman correlation 
+#'     between DTE and DOU estimates.
 #'
 #' @details
-#' The function uses base R graphics and a custom layout matrix to arrange the
-#' scatter and marginal plots. Coloring by significance requires DTE and DOU
-#' significance columns. Coloring by ORF type requires a metadata table with
-#' \code{orf_type} values.
+#' The function uses base R graphics and a custom layout matrix to 
+#' arrange the scatter and marginal plots. Coloring by significance 
+#' requires DTE and DOU significance columns. Coloring by ORF type 
+#' requires a metadata table with \code{orf_type} values.
 #'
-#' @importFrom graphics plot points legend par layout barplot plot.new
-#' @importFrom graphics plot.window hist text lines
+#' @importFrom graphics plot points legend par layout barplot
+#' @importFrom graphics plot.new plot.window hist text lines
 #' @importFrom grDevices adjustcolor
 #' @importFrom stats cor.test density na.omit
 #'
 #' @keywords internal
+#' 
 plot_composite <- function(
         results,
         rowdata = NULL,
@@ -295,7 +316,16 @@ plot_composite <- function(
         dou_padj_threshold = 0.05,
         dte_padj_threshold = 0.05,
         flip_sign = FALSE,
-        lhist = 20
+        lhist = 20,
+        colors = list(
+            dte = adjustcolor("#0072B2", alpha.f = 0.6),
+            dou = adjustcolor("#E69F00", alpha.f = 0.6),
+            both = adjustcolor("#CC79A7", alpha.f = 0.6),
+            none = adjustcolor("grey80", alpha.f = 0.6),
+            uorf = adjustcolor("#D73027", alpha.f = 0.6),
+            morf = adjustcolor("#4575B4", alpha.f = 0.6),
+            dorf = adjustcolor("#A6A6A6", alpha.f = 0.6)
+        )
 ) {
     
     layout(1)
@@ -329,14 +359,14 @@ plot_composite <- function(
     fdr_only <- fdr_sig & !padj_sig
     
     # Colors
-    col_dte <- adjustcolor("#0072B2", alpha.f = 0.6)
-    col_dou <- adjustcolor("#E69F00", alpha.f = 0.6)
-    col_both <- adjustcolor("#CC79A7", alpha.f = 0.6)
-    col_none <- adjustcolor("grey80", alpha.f = 0.6)
+    col_dte <- colors$dte
+    col_dou <- colors$dou
+    col_both <- colors$both
+    col_none <- colors$none
     
-    col_uorfs <- adjustcolor("#4575B4", alpha.f = 0.5)
-    col_morfs <- adjustcolor("#D73027", alpha.f = 0.5)
-    col_dorfs <- adjustcolor("#A6A6A6", alpha.f = 0.5)
+    col_uorfs <- colors$uorf
+    col_morfs <- colors$morf
+    col_dorfs <- colors$dorf
     
     # Layout
     layMat <- matrix(c(1, 4, 3, 2), ncol = 2)
@@ -424,8 +454,6 @@ plot_composite <- function(
     # Placeholder
     par(mar = c(0, 0, 0, 0))
     plot.new()
-    # text(0.5, 0.6, paste0("Spearman rho = ", round(correlation_results$estimate, 3)), cex = 0.8)
-    # text(0.5, 0.4, paste0("p-value = ", format.pval(correlation_results$p.value, digits = 3)), cex = 0.8)
     
     # Main scatter plot
     par(mar = c(pext, pext, 0, 0))
@@ -508,78 +536,94 @@ plot_composite <- function(
 #' Volcano Plot for Differential ORF Usage (DOU)
 #'
 #' @description
-#' Generates a volcano plot to visualize differential ORF usage (DOU) results.
-#' The x-axis represents log-odds changes in ORF usage (effect sizes), and the
-#' y-axis shows the negative log10-transformed local false sign rate (LFSR).
-#' Points can be colored either by significance in DTE/DOU or by ORF type
-#' (uORF, mORF, dORF). Optional gene labeling is supported via an ID mapping
-#' table. The y-axis is capped at the nearest multiple of 
-#' \code{dou_padj_ceiling} for cleaner plotting.
+#' Generates a volcano plot to visualize differential ORF usage (DOU) 
+#' results. The x-axis represents log-odds changes in ORF usage 
+#' (effect sizes), and the y-axis shows the negative log10-transformed 
+#' local false sign rate (LFSR). Points can be colored either by 
+#' significance in DTE/DOU or by ORF type (uORF, mORF, dORF). Optional 
+#' gene labeling is supported via an ID mapping table. The y-axis is 
+#' capped at the nearest multiple of \code{dou_padj_ceiling} for 
+#' cleaner plotting.
 #'
-#' @param results A data frame containing DOU and optionally DTE results.
-#'     Must include columns for DOU estimates and LFSR. 
-#'     If \code{color_by = "orf_type"},
-#'     must also include an \code{orf_type} column with values "uORF", 
-#'     "mORF", or "dORF".
+#' @param results A data frame containing DOU and optionally DTE
+#'     results. Must include columns for DOU estimates and LFSR.
+#'     If \code{color_by = "orf_type"}, must also include an
+#'     \code{orf_type} column with values "uORF", "mORF", or "dORF".
 #'
-#' @param rowdata Optional data frame containing ORF metadata, with row names
-#'     corresponding to \code{orf_id}. Used to merge ORF type information.
+#' @param rowdata Optional data frame containing ORF metadata,
+#'     with row names corresponding to \code{orf_id}. Used to
+#'     merge ORF type information.
 #'
-#' @param id_mapping Optional data frame with gene symbols. Used to label points
-#'     with gene symbols. Must include \code{ensembl_gene_id} and symbol columns.
+#' @param id_mapping Optional data frame with gene symbols. Used
+#'     to label points with gene symbols. Must include
+#'     \code{ensembl_gene_id} and symbol columns.
 #'
 #' @param color_by Character string specifying how to color points:
 #'     \itemize{
-#'         \item{\code{"significance"}: Colors by DTE-only, DOU-only, both significant}
-#'         \item{\code{"orf_type"}: Colors by ORF type (requires \code{orf_type} column)}
+#'         \item{\code{"significance"}: Colors by DTE-only,
+#'         DOU-only, both significant}
+#'         \item{\code{"orf_type"}: Colors by ORF type (requires
+#'         \code{orf_type} column)}
 #'     }
 #'     Default is \code{"significance"}.
 #'
-#' @param dou_estimates_col Column name for DOU effect size estimates.
+#' @param dou_estimates_col Column name for DOU effect size estimates. 
 #'     Default is \code{"PosteriorMean"}.
 #'
-#' @param dou_padj_col Column name for DOU significance values (LFSR).
+#' @param dou_padj_col Column name for DOU significance values (LFSR). 
 #'     Default is \code{"lfsr"}.
 #'
-#' @param dte_estimates_col Column name for DTE effect size estimates.
+#' @param dte_estimates_col Column name for DTE effect size estimates. 
 #'     Default is \code{"log2FoldChange"}.
 #'
 #' @param dte_padj_col Column name for DTE adjusted p-values.
 #'     Default is \code{"padj"}.
 #'
-#' @param flip_sign Logical. If \code{TRUE}, flips the sign of DOU estimates
-#'     for plotting. Default is \code{FALSE}.
+#' @param flip_sign Logical. If \code{TRUE}, flips the sign of DOU 
+#'     estimates for plotting. Default is \code{FALSE}.
 #'
-#' @param dou_estimates_threshold Numeric threshold for DOU effect size
-#'     significance. Default is \code{1}.
+#' @param dou_estimates_threshold Numeric threshold for DOU
+#'     effect size significance. Default is \code{1}.
 #'
 #' @param dou_padj_threshold Numeric threshold for DOU LFSR significance.
 #'     Default is \code{0.05}.
 #'
-#' @param dou_padj_ceiling Numeric value to define the rounding ceiling for
-#'     -log10(LFSR). The maximum y-axis value will be rounded up to the nearest
-#'     multiple of this value. Default is \code{10}.
+#' @param dou_padj_ceiling Numeric value to define the rounding ceiling
+#'     for -log10(LFSR). The maximum y-axis value will be rounded up 
+#'     to the nearest multiple of this value. Default is \code{10}.
 #'
-#' @param dte_padj_threshold Numeric threshold for DTE adjusted p-value
-#'     significance. Default is \code{0.05}.
+#' @param dte_padj_threshold Numeric threshold for DTE adjusted
+#'     p-value significance. Default is \code{0.05}.
 #'
-#' @param extreme_threshold Optional numeric threshold for labeling extreme
-#'     points based on -log10(LFSR).
+#' @param extreme_threshold Optional numeric threshold for
+#'     labeling extreme points based on -log10(LFSR).
 #'
-#' @param label_topn Optional numeric. If provided, labels the top N most
-#'     significant points.
+#' @param label_topn Optional numeric. If provided, labels the
+#'     top N most significant points.
 #'
 #' @param legend_position Position of the legend. Options include
 #'     \code{"bottomright"}, \code{"bottom"}, \code{"bottomleft"},
-#'     \code{"left"}, \code{"topleft"}, \code{"top"}, \code{"topright"},
-#'     \code{"right"}, \code{"center"}.
+#'     \code{"left"}, \code{"topleft"}, \code{"top"},
+#'     \code{"topright"}, \code{"right"}, \code{"center"}.
 #'
-#' @param verbose Logical. If \code{TRUE}, prints messages about plot scaling
-#'     and thresholds. Default is \code{TRUE}.
+#' @param colors A named list of colors used for plotting. Must
+#'     include:
+#'     \itemize{
+#'         \item{\code{dte}, \code{dou}, \code{both},
+#'         \code{none}: for significance-based coloring}
+#'         \item{\code{uorf}, \code{morf}, \code{dorf}: for ORF
+#'         type-based coloring}
+#'     }
+#'     Each value should be a valid color string or result of
+#'     \code{adjustcolor()}.
 #'
-#' @return A volcano plot is displayed in a new graphics device. Points are
-#'     colored by significance or ORF type, depending on the \code{color_by}
-#'     argument. Optionally, top or extreme points are labeled.
+#' @param verbose Logical. If \code{TRUE}, prints messages about
+#'     plot scaling and thresholds. Default is \code{TRUE}.
+#'
+#' @return A volcano plot is displayed in a new graphics device.
+#'     Points are colored by significance or ORF type, depending
+#'     on the \code{color_by} argument. Optionally, top or
+#'     extreme points are labeled.
 #'
 #' @importFrom graphics plot points abline legend text
 #' @importFrom grDevices adjustcolor
@@ -604,6 +648,15 @@ plot_volcano <- function(
         extreme_threshold = NULL,
         label_topn = NULL,
         legend_position = "right",
+        colors = list(
+            dte = adjustcolor("#0072B2", alpha.f = 0.6),
+            dou = adjustcolor("#E69F00", alpha.f = 0.6),
+            both = adjustcolor("#CC79A7", alpha.f = 0.6),
+            none = adjustcolor("grey80", alpha.f = 0.6),
+            uorf = adjustcolor("#D73027", alpha.f = 0.6),
+            morf = adjustcolor("#4575B4", alpha.f = 0.6),
+            dorf = adjustcolor("#A6A6A6", alpha.f = 0.6)
+        ),
         verbose = TRUE
 ) {
     color_by <- match.arg(color_by)
@@ -650,10 +703,10 @@ plot_volcano <- function(
         both_sig <- padj_sig & fdr_sig
         padj_only <- padj_sig & !fdr_sig
         fdr_only <- fdr_sig & !padj_sig
-        col_dte <- "#0072B2"
-        col_dou <- "#E69F00"
-        col_both <- "#CC79A7"
-        col_none <- "grey80"
+        col_dte <- colors$dte
+        col_dou <- colors$dou
+        col_both <- colors$both
+        col_none <- colors$none
         
         plot(
             results[[dou_estimates_col]],
@@ -690,9 +743,9 @@ plot_volcano <- function(
             inset = c(0.02, 0.05)
         )
     } else if (color_by == "orf_type" && "orf_type" %in% colnames(results)) {
-        col_uorfs <- adjustcolor("#4575B4", alpha.f = 0.5)
-        col_morfs <- adjustcolor("#D73027", alpha.f = 0.5)
-        col_dorfs <- adjustcolor("#A6A6A6", alpha.f = 0.5)
+        col_uorfs <- colors$uorf
+        col_morfs <- colors$morf
+        col_dorfs <- colors$dorf
         
         is_uorfs <- results$orf_type == "uORF"
         is_morfs <- results$orf_type == "mORF"
@@ -801,7 +854,13 @@ plot_volcano <- function(
 #' @param sorf_type Character string specifying the short ORF type to compare
 #'     with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.
 #'     Default is \code{"uORF"}.
-#'
+#' @param colors A named list of three colors for heatmap gradient:
+#'     \itemize{
+#'         \item{\code{low}: color for low values (e.g., "blue")}
+#'         \item{\code{middle}: color for mid values (e.g., "white")}
+#'         \item{\code{high}: color for high values (e.g., "red")}
+#'     }
+#'     
 #' @return A list containing:
 #'     \describe{
 #'         \item{ordered_matrix}{
@@ -853,7 +912,12 @@ cistronic_data <- function(
         padj_threshold = 0.05,
         top_genes = NULL,
         flip_sign = FALSE,
-        sorf_type = "uORF"
+        sorf_type = "uORF",
+        colors = list(
+            low = "blue", 
+            middle = "white", 
+            high = "red"
+        )
 ) {
     results <- na.omit(results)
     results$gene_id <- sub("\\..*", "", results$orf_id)
@@ -918,7 +982,9 @@ cistronic_data <- function(
     abs_max <- max(abs(min_val), abs(max_val))
     
     color_breaks <- seq(-abs_max, abs_max, length.out = 101)
-    color_palette <- colorRampPalette(c("blue", "white", "red"))(100)
+    color_palette <- colorRampPalette(
+        c(colors$low, colors$middle, colors$high)
+    )(100)
     
     row_order <- order.dendrogram(row_dend_clean)
     ordered_matrix <- sig_mat_clean[row_order, ]
@@ -1245,9 +1311,6 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' @param top_genes Optional numeric. If specified, limits the heatmap to the
 #'     top N genes ranked by DOU magnitude and significance.
 #'
-#' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates
-#'     to align directionality with DTE. Default is \code{TRUE}.
-#'
 #' @param sorf_type Character string specifying the short ORF type to compare
 #'     with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.
 #'
@@ -1260,7 +1323,20 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' @param mart_source Character string specifying the BioMart source. One of
 #'     \code{"ensembl"}, \code{"plants"}, \code{"fungi"}, \code{"protists"},
 #'     \code{"metazoa"}, or \code{"bacteria"}.
+#'     
+#' @param colors A named list of colors used across plots:
+#'     \itemize{
+#'         \item{\code{dte}, \code{dou}, \code{both}, \code{none}:
+#'         for significance-based coloring}
+#'         \item{\code{uorf}, \code{morf}, \code{dorf}: for ORF
+#'         type-based coloring}
+#'         \item{\code{low}, \code{middle}, \code{high}: for
+#'         heatmap gradient}
+#'     }
 #'
+#' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates
+#'     to align directionality with DTE. Default is \code{TRUE}.
+#'     
 #' @param force_new_device Logical; if \code{TRUE}, detects graphics
 #'     error and resets graphics state unconditionally. 
 #'     Default is \code{TRUE}.
@@ -1334,13 +1410,26 @@ plotDOT <- function(
         extreme_threshold = NULL,
         label_topn = 3,
         top_genes = 20,
-        flip_sign = FALSE,
         sorf_type = "uORF",
         dataset = "hsapiens_gene_ensembl",
         symbol_col = "hgnc_symbol",
         mart_source = "ensembl",
-        verbose = TRUE,
-        force_new_device = TRUE
+        colors = list(
+            dte = adjustcolor("#0072B2", alpha.f = 0.6),
+            dou = adjustcolor("#E69F00", alpha.f = 0.6),
+            both = adjustcolor("#CC79A7", alpha.f = 0.6),
+            none = adjustcolor("grey80", alpha.f = 0.6),
+            uorf = adjustcolor("#D73027", alpha.f = 0.6),
+            morf = adjustcolor("#4575B4", alpha.f = 0.6),
+            dorf = adjustcolor("#A6A6A6", alpha.f = 0.6),
+            low = "blue", 
+            middle = "white", 
+            high = "red"
+        ),
+        flip_sign = FALSE,
+        force_new_device = TRUE,
+        verbose = TRUE
+        
 ) {
 
     plot_types <- match.arg(plot_types)
@@ -1377,18 +1466,6 @@ plotDOT <- function(
         }
     }
     
-    # old_par <- par(no.readonly = TRUE)
-    # on.exit(
-    #     {
-    #         try(par(old_par), silent = TRUE)
-    #         try(layout(1), silent = TRUE)
-    #         try(par(mfrow = c(1, 1)), silent = TRUE)
-    #     },
-    #     add = TRUE
-    # )
-    
-    par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
-    
     # Venn plot
     if ("venn" %in% plot_types) {
         reset_graphics(function() {
@@ -1414,7 +1491,8 @@ plotDOT <- function(
                 dte_estimates_col = dte_estimates_col,
                 dte_padj_col = dte_padj_col,
                 flip_sign = flip_sign,
-                lhist = 20
+                lhist = 20,
+                colors = colors
             )
             
             message(
@@ -1440,7 +1518,8 @@ plotDOT <- function(
                 dte_estimates_col = dte_estimates_col,
                 dte_padj_col = dte_padj_col,
                 flip_sign = flip_sign,
-                lhist = 20
+                lhist = 20,
+                colors = colors
             )
             
             message(
@@ -1470,6 +1549,7 @@ plotDOT <- function(
                 dou_padj_ceiling = dou_padj_ceiling,
                 extreme_threshold = extreme_threshold,
                 label_topn = label_topn,
+                colors = colors,
                 verbose = TRUE
             )
             if (verbose) message("volcano plot colored by significance plotted")
@@ -1492,6 +1572,7 @@ plotDOT <- function(
                 dou_padj_ceiling = dou_padj_ceiling,
                 extreme_threshold = extreme_threshold,
                 label_topn = label_topn,
+                colors = colors,
                 verbose = TRUE
             )
             if (verbose) message("volcano plot colored by ORF types plotted")
@@ -1514,7 +1595,8 @@ plotDOT <- function(
                     padj_threshold = dou_padj_threshold,
                     flip_sign = flip_sign,
                     sorf_type = sorf_type,
-                    top_genes = top_genes
+                    top_genes = top_genes,
+                    colors = colors
                 )
             },
             error = function(e) {
