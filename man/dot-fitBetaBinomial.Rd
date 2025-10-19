@@ -83,7 +83,7 @@ Brooks, M. E., Kristensen, K., van Benthem, K. J., Magnusson, A., Berg, C. W.,
 Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M. (2017).
 glmmTMB balances speed and flexibility among packages for zero-inflated
 generalized linear mixed modeling. The R Journal, 378–400.
-\url{https://doi.org/10.32614/RJ-2017-066}
+\doi{10.32614/RJ-2017-066}
 
 Lenth R, Piaskowski J (2025). emmeans: Estimated Marginal Means, aka
 Least-Squares Means. R package version 2.0.0.

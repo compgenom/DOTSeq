@@ -193,11 +193,11 @@ Brooks, M. E., Kristensen, K., van Benthem, K. J., Magnusson, A., Berg, C. W.,
 Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M. (2017).
 glmmTMB balances speed and flexibility among packages for zero-inflated
 generalized linear mixed modeling. The R Journal, 378–400.
-\url{https://doi.org/10.32614/RJ-2017-066}
+\doi{10.32614/RJ-2017-066}
 
 Love, M. I., Huber, W., Anders, S. (2014).
 Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2.
-Genome Biology, 15:550. \url{https://doi.org/10.1186/s13059-014-0550-8}
+Genome Biology, 15:550. \doi{10.1186/s13059-014-0550-8}
 
 Lenth, R., Piaskowski, J. (2025).
 emmeans: Estimated Marginal Means, aka Least-Squares Means.
@@ -205,7 +205,7 @@ R package version 2.0.0. \url{https://rvlenth.github.io/emmeans/}
 
 Stephens, M. (2016).
 False discovery rates: a new deal. Biostatistics, 18(2).
-\url{https://doi.org/10.1093/biostatistics/kxw041}
+\doi{10.1093/biostatistics/kxw041}
 
 Hartig, F. (2025).
 DHARMa: Residual Diagnostics for Hierarchical (Multi-Level / Mixed)

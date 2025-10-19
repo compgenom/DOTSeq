@@ -54,6 +54,6 @@ Brooks, M. E., Kristensen, K., van Benthem, K. J., Magnusson, A., Berg, C. W.,
 Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M. (2017).
 glmmTMB balances speed and flexibility among packages for zero-inflated
 generalized linear mixed modeling. The R Journal, 378–400.
-\url{https://doi.org/10.32614/RJ-2017-066}
+\doi{10.32614/RJ-2017-066}
 }
 \keyword{internal}
