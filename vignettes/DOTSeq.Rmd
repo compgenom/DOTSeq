@@ -59,7 +59,7 @@ in HeLa cells synchronised at Mitotic Cycling, Mitotic Arrest, and
 Interphase. Each condition contains two biological replicates.
 
 Raw sequencing reads are available at GEO accession number 
-[GSE230189](https://www.ncbi.nlm.nih.gov/projects/geo/query/acc.cgi?acc=GSE230189).
+[GSE230189](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE230189).
 
 ```{r dir}
 dir <- system.file("extdata", package = "DOTSeq")

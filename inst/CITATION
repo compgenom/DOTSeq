@@ -9,7 +9,7 @@ citEntry <- bibentry(
   year = 2025,
   pages = "2025--09",
   publisher = "Cold Spring Harbor Laboratory",
-  doi = "https://doi.org/10.1101/2025.09.24.678201"
+  doi = "10.1101/2025.09.24.678201"
 )
 
 citEntry
