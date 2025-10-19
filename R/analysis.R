@@ -1334,6 +1334,12 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #'         heatmap gradient}
 #'     }
 #'
+#' @param volcano_legend_position Character string specifying the
+#'     position of the legend in the volcano plot. Options include:
+#'     \code{"bottomright"}, \code{"bottom"}, \code{"bottomleft"},
+#'     \code{"left"}, \code{"topleft"}, \code{"top"},
+#'     \code{"topright"}, \code{"right"}, \code{"center"}.
+#'     Default is \code{"topright"}.
 #' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates
 #'     to align directionality with DTE. Default is \code{TRUE}.
 #'     
@@ -1426,10 +1432,10 @@ plotDOT <- function(
             middle = "white", 
             high = "red"
         ),
+        volcano_legend_position = "topright",
         flip_sign = FALSE,
         force_new_device = TRUE,
         verbose = TRUE
-        
 ) {
 
     plot_types <- match.arg(plot_types)
@@ -1550,6 +1556,7 @@ plotDOT <- function(
                 extreme_threshold = extreme_threshold,
                 label_topn = label_topn,
                 colors = colors,
+                legend_position = volcano_legend_position,
                 verbose = TRUE
             )
             if (verbose) message("volcano plot colored by significance plotted")
@@ -1573,6 +1580,7 @@ plotDOT <- function(
                 extreme_threshold = extreme_threshold,
                 label_topn = label_topn,
                 colors = colors,
+                legend_position = volcano_legend_position,
                 verbose = TRUE
             )
             if (verbose) message("volcano plot colored by ORF types plotted")

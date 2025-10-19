@@ -250,6 +250,7 @@ be stored for reuse in subsequent plots to avoid repeated downloads.
 id_mapping <- plotDOT(
     results = results,
     plot_types = "volcano",
+    volcano_legend_position = "topright",
     force_new_device = FALSE
 )
 ```
@@ -263,6 +264,7 @@ plotDOT(
     rowdata = rowdata,
     id_mapping = id_mapping,
     plot_types = "volcano", 
+    volcano_legend_position = "topright",
     force_new_device = FALSE
 )
 ```

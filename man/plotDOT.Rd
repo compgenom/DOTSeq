@@ -29,6 +29,7 @@ plotDOT(
     adjustcolor("grey80", alpha.f = 0.6), uorf = adjustcolor("#D73027", alpha.f = 0.6),
     morf = adjustcolor("#4575B4", alpha.f = 0.6), dorf = adjustcolor("#A6A6A6", alpha.f =
     0.6), low = "blue", middle = "white", high = "red"),
+  volcano_legend_position = "topright",
   flip_sign = FALSE,
   force_new_device = TRUE,
   verbose = TRUE
@@ -106,6 +107,13 @@ type-based coloring}
 \item{\code{low}, \code{middle}, \code{high}: for
 heatmap gradient}
 }}
+
+\item{volcano_legend_position}{Character string specifying the
+position of the legend in the volcano plot. Options include:
+\code{"bottomright"}, \code{"bottom"}, \code{"bottomleft"},
+\code{"left"}, \code{"topleft"}, \code{"top"},
+\code{"topright"}, \code{"right"}, \code{"center"}.
+Default is \code{"topright"}.}
 
 \item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU estimates
 to align directionality with DTE. Default is \code{TRUE}.}
