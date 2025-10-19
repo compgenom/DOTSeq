@@ -119,9 +119,12 @@ cond$treatment <- NULL # remove the treatment column
 
 # Run DOTSeq
 The main wrapper `DOTSeq()` performs three sequential steps:
-- Construction of two SummarizedExperiment objects (`DOTSeqDataSet()`)
+
+- Construction of two SummarizedExperiment objects (`DOTSeqDataSet()`).
+
 - model fitting of DOU (`glmmTMB` beta-binomial GLM via `fitDOU()`) and DTE 
 (negative-binomial GLM via `DESeq2`).
+
 - Post hoc contrasts and adaptive shrinkage of effect sizes via `emmeans` 
 [@emmeans] and `ashr` (`testDOU()`). 
 
