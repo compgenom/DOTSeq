@@ -606,8 +606,7 @@ fit_glmm <- function(
                         }
                         if (isTRUE(diagnostic)) {
                             if (!requireNamespace("DHARMa", quietly=TRUE)) {
-                                stop("Model diagnostics require the 'DHARMa' package. ",
-                                     "Please install it by running: install.packages('DHARMa')")
+                                stop("Model diagnostics require the 'DHARMa' package. Please install it by running: install.packages('DHARMa')")
                             }
                             
                             sim_out <- DHARMa::simulateResiduals(fittedModel = model_strategy, plot = FALSE)
@@ -632,8 +631,7 @@ fit_glmm <- function(
 
                         if (isTRUE(diagnostic)) {
                             if (!requireNamespace("DHARMa", quietly=TRUE)) {
-                                stop("Model diagnostics require the 'DHARMa' package. ",
-                                     "Please install it by running: install.packages('DHARMa')")
+                                stop("Model diagnostics require the 'DHARMa' package. Please install it by running: install.packages('DHARMa')")
                             }
                             
                             sim_out <- DHARMa::simulateResiduals(fittedModel = model_strategy, plot = FALSE)
@@ -670,8 +668,7 @@ fit_glmm <- function(
                         }
                         if (isTRUE(diagnostic)) {
                             if (!requireNamespace("DHARMa", quietly=TRUE)) {
-                                stop("Model diagnostics require the 'DHARMa' package. ",
-                                     "Please install it by running: install.packages('DHARMa')")
+                                stop("Model diagnostics require the 'DHARMa' package. Please install it by running: install.packages('DHARMa')")
                             }
                             
                             sim_out <- DHARMa::simulateResiduals(fittedModel = model_strategy, plot = FALSE)
@@ -695,8 +692,7 @@ fit_glmm <- function(
                         }
                         if (isTRUE(diagnostic)) {
                             if (!requireNamespace("DHARMa", quietly=TRUE)) {
-                                stop("Model diagnostics require the 'DHARMa' package. ",
-                                     "Please install it by running: install.packages('DHARMa')")
+                                stop("Model diagnostics require the 'DHARMa' package. Please install it by running: install.packages('DHARMa')")
                             }
                             
                             sim_out <- DHARMa::simulateResiduals(fittedModel = model_strategy, plot = FALSE)
