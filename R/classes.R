@@ -97,12 +97,12 @@ PostHoc <- function(
 #' @export
 #' @examples
 #' ph <- PostHoc(type = "glmmTMB")
-#' type(ph)
-setGeneric("type", function(object) standardGeneric("type"))
+#' model_type(ph)
+setGeneric("model_type", function(object) standardGeneric("model_type"))
 
 #' @describeIn PostHoc-accessors Access the model type from a PostHoc object.
 #' @export
-setMethod("type", "PostHoc", function(object) object@type)
+setMethod("model_type", "PostHoc", function(object) object@type)
 
 
 #' @title Access the results list from a PostHoc object
@@ -113,12 +113,12 @@ setMethod("type", "PostHoc", function(object) object@type)
 #' @export
 #' @examples 
 #' ph <- PostHoc(results = list(aic = 100))
-#' results(ph)
-setGeneric("results", function(object) standardGeneric("results"))
+#' fit_results(ph)
+setGeneric("fit_results", function(object) standardGeneric("fit_results"))
 
 #' @describeIn PostHoc-accessors Access the results list.
 #' @export
-setMethod("results", "PostHoc", function(object) object@results)
+setMethod("fit_results", "PostHoc", function(object) object@results)
 
 
 #' @title Access the post hoc summary from a PostHoc object
