@@ -1,6 +1,6 @@
 citEntry <- bibentry(
   bibtype = "Article",
-  title = "Differential Analysis of Translation Efficiency and Usage of Open Reading Frames using DOTSeq",
+  title = "Differential analysis of translation efficiency and usage of open reading frames using DOTSeq",
   author = c(
     person("Chun Shen", "Lim", role = c("aut", "cre")),
     person("Gabrielle SW", "Chieng", role = "aut")

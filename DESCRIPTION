@@ -1,6 +1,6 @@
 Package: DOTSeq
 Type: Package
-Title: Differential analysis of translation efficiency and usage of open reading frames
+Title: Differential Analysis of Translation Efficiency and Usage of Open Reading Frames
 Version: 0.99.0
 Authors@R: c(
     person(
