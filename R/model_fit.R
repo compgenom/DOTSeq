@@ -154,6 +154,59 @@ fit_glmm <- function(
 }
 
 
+#' @title Run DHARMa Diagnostics on a Fitted Model
+#'
+#' @description
+#' This function performs residual diagnostics on a fitted \code{glmmTMB} model
+#' using the \pkg{DHARMa} package. It simulates residuals and tests for
+#' overdispersion, zero inflation, uniformity, residual dispersion, and outliers.
+#' The results are stored in the \code{diagnostics_strategy} slot of the provided
+#' results list.
+#'
+#' @param fitted_model A fitted \code{glmmTMB} model object.
+#' @param results_list A named list to which diagnostic results will be added.
+#'     Must contain a \code{diagnostics} element.
+#' @param plot Logical; if \code{TRUE}, diagnostic plots will be generated.
+#'     Default is \code{FALSE}.
+#'
+#' @return A modified version of \code{results_list} with diagnostic results
+#'     added under \code{results_list$diagnostics$diagnostics_strategy}.
+#'
+#' @note This function requires the \pkg{DHARMa} package. If it is not installed,
+#'     the function will stop with an informative error message.
+#'
+#' @importFrom DHARMa simulateResiduals testDispersion testZeroInflation testResiduals
+#' 
+#' @keywords internal
+#' 
+run_diagnostic <- function(
+    fitted_model, 
+    results_list, 
+    diagnostics_name, 
+    plot = FALSE
+) {
+    
+    if (!requireNamespace("DHARMa", quietly=TRUE)) {
+        stop(
+            "Model diagnostics require the 'DHARMa' package. ", 
+            "Please install it by running: install.packages('DHARMa')"
+        )
+    }
+    
+    sim_out <- DHARMa::simulateResiduals(fittedModel = fitted_model, plot = plot)
+    
+    results_list$diagnostics[[diagnostics_name]] <- list(
+        overdispersion = DHARMa::testDispersion(sim_out, plot = plot)$p.value,
+        zeroInflation = DHARMa::testZeroInflation(sim_out, plot = plot)$p.value,
+        uniformity = DHARMa::testResiduals(sim_out, plot = plot)$uniformity$p.value,
+        residualsDispersion = DHARMa::testResiduals(sim_out, plot = plot)$dispersion$p.value,
+        outliers = DHARMa::testResiduals(sim_out, plot = plot)$outliers$p.value
+    )
+    
+    return(results_list)
+}
+
+
 #' @title Fit Beta-Binomial Models for a Single Gene
 #'
 #' @description
@@ -350,20 +403,6 @@ fit_glmm <- function(
         #   print(levels(model_data_this_orf$condition))
         # }
 
-        # # Construct random effects string
-        # fixed_part <- as.character(formula)[2]
-        # if (is.null(randomEffects)) {
-        #   random_part <- ""
-        # } else {
-        #   random_part <- paste0(" + ", paste0(paste0("(1|", randomEffects, ")"), collapse = " + "))
-        # }
-        #
-        # full_formula_str <- paste0("cbind(success, failure) ~", fixed_part, random_part)
-        # null_formula_str <- paste0("cbind(success, failure) ~", fixed_part, " - condition:strategy", random_part)
-        #
-        # full_formula <- as.formula(full_formula_str)
-        # null_formula <- as.formula(null_formula_str)
-
         full_formula <- as.formula(paste("cbind(success, failure) ~", as.character(formula)[2]))
 
         if (isTRUE(lrt)) {
@@ -394,7 +433,7 @@ fit_glmm <- function(
 
                 if (isTRUE(optimizers)) {
                     # Fit Models based on dispersion_modeling
-                    if (dispersion_modeling %in% c("auto")) { # , "strategy"
+                    if (dispersion_modeling %in% c("auto")) {
                         model_strategy <- fit_glmm(
                             formula = full_formula, 
                             dispformula = ~strategy, 
@@ -438,7 +477,7 @@ fit_glmm <- function(
                         }
                     }
 
-                    if (dispersion_modeling %in% c("shared")) { # "auto",
+                    if (dispersion_modeling %in% c("shared")) {
                         model_shared <- fit_glmm(
                             formula = full_formula, 
                             dispformula = ~1, 
@@ -486,7 +525,7 @@ fit_glmm <- function(
                         }
                     }
                 } else {
-                    if (dispersion_modeling %in% c("auto")) { # , "strategy"
+                    if (dispersion_modeling %in% c("auto")) {
                         model_strategy <- glmmTMB(
                             full_formula, 
                             dispformula = ~strategy, 
@@ -537,7 +576,7 @@ fit_glmm <- function(
                         }
                     }
 
-                    if (dispersion_modeling %in% c("shared")) { # "auto",
+                    if (dispersion_modeling %in% c("shared")) {
                         model_shared <- glmmTMB(
                             full_formula, dispformula = ~1, 
                             family = betabinomial, 
@@ -605,17 +644,11 @@ fit_glmm <- function(
                             results$tests$pvalue <- anova(model_strategy, model_null)$P[2]
                         }
                         if (isTRUE(diagnostic)) {
-                            if (!requireNamespace("DHARMa", quietly=TRUE)) {
-                                stop("Model diagnostics require the 'DHARMa' package. Please install it by running: install.packages('DHARMa')")
-                            }
-                            
-                            sim_out <- DHARMa::simulateResiduals(fittedModel = model_strategy, plot = FALSE)
-                            results$diagnostics$diagnostics_strategy <- list(
-                                overdispersion = DHARMa::testDispersion(sim_out, plot = FALSE)$p.value,
-                                zeroInflation = DHARMa::testZeroInflation(sim_out, plot = FALSE)$p.value,
-                                uniformity = DHARMa::testResiduals(sim_out, plot = FALSE)$uniformity$p.value,
-                                residualsDispersion = DHARMa::testResiduals(sim_out, plot = FALSE)$dispersion$p.value,
-                                outliers = DHARMa::testResiduals(sim_out, plot = FALSE)$outliers$p.value
+                            results <- run_diagnostic(
+                                fitted_model = model_strategy, 
+                                results_list = results, 
+                                diagnostics_name = "model_strategy", 
+                                plot = FALSE
                             )
                         }
                     }
@@ -630,17 +663,11 @@ fit_glmm <- function(
                         }
 
                         if (isTRUE(diagnostic)) {
-                            if (!requireNamespace("DHARMa", quietly=TRUE)) {
-                                stop("Model diagnostics require the 'DHARMa' package. Please install it by running: install.packages('DHARMa')")
-                            }
-                            
-                            sim_out <- DHARMa::simulateResiduals(fittedModel = model_strategy, plot = FALSE)
-                            results$diagnostics$diagnostics_strategy <- list(
-                                overdispersion = DHARMa::testDispersion(sim_out, plot = FALSE)$p.value,
-                                zeroInflation = DHARMa::testZeroInflation(sim_out, plot = FALSE)$p.value,
-                                uniformity = DHARMa::testResiduals(sim_out, plot = FALSE)$uniformity$p.value,
-                                residualsDispersion = DHARMa::testResiduals(sim_out, plot = FALSE)$dispersion$p.value,
-                                outliers = DHARMa::testResiduals(sim_out, plot = FALSE)$outliers$p.value
+                            results <- run_diagnostic(
+                                fitted_model = model_shared, 
+                                results_list = results, 
+                                diagnostics_name = "model_shared", 
+                                plot = FALSE
                             )
                         }
                     }
@@ -648,12 +675,10 @@ fit_glmm <- function(
                     valid_strategy <- !is.null(model_strategy) && model_strategy$fit$convergence == 0 && isTRUE(model_strategy$sdr$pdHess)
                     valid_shared <- !is.null(model_shared) && model_shared$fit$convergence == 0 && isTRUE(model_shared$sdr$pdHess)
 
-                    if (valid_strategy) { # isTRUE(lrt) && !is.na(results$tests$lrt_shared_disp) && results$tests$lrt_shared_disp < 0.05 &&
+                    if (valid_strategy) {
                         model_to_return <- model_strategy
                     } else if (valid_shared) {
                         model_to_return <- model_shared
-                        # } else if (valid_strategy) {
-                        #   model_to_return <- model_strategy
                     } else {
                         model_to_return <- NULL
                     }
@@ -664,20 +689,13 @@ fit_glmm <- function(
                         results$model_fit$aic <- AIC(model_to_return)
                         if (isTRUE(lrt) && !is.null(model_null_shared) && model_null_shared$fit$convergence == 0 && isTRUE(model_null_shared$sdr$pdHess)) {
                             results$tests$pvalue <- anova(model_to_return, model_null_shared)$P[2]
-                            # results$tests$pvalue_best <- results$tests$pvalue
                         }
                         if (isTRUE(diagnostic)) {
-                            if (!requireNamespace("DHARMa", quietly=TRUE)) {
-                                stop("Model diagnostics require the 'DHARMa' package. Please install it by running: install.packages('DHARMa')")
-                            }
-                            
-                            sim_out <- DHARMa::simulateResiduals(fittedModel = model_strategy, plot = FALSE)
-                            results$diagnostics$diagnostics_strategy <- list(
-                                overdispersion = DHARMa::testDispersion(sim_out, plot = FALSE)$p.value,
-                                zeroInflation = DHARMa::testZeroInflation(sim_out, plot = FALSE)$p.value,
-                                uniformity = DHARMa::testResiduals(sim_out, plot = FALSE)$uniformity$p.value,
-                                residualsDispersion = DHARMa::testResiduals(sim_out, plot = FALSE)$dispersion$p.value,
-                                outliers = DHARMa::testResiduals(sim_out, plot = FALSE)$outliers$p.value
+                            results <- run_diagnostic(
+                                fitted_model = model_shared, 
+                                results_list = results, 
+                                diagnostics_name = "model_shared", 
+                                plot = FALSE
                             )
                         }
                     }
@@ -688,20 +706,13 @@ fit_glmm <- function(
                         results$model_fit$aic <- AIC(model_to_return)
                         if (isTRUE(lrt) && !is.null(model_null) && model_null$fit$convergence == 0 && isTRUE(model_null$sdr$pdHess)) {
                             results$tests$pvalue <- anova(model_to_return, model_null)$P[2]
-                            # results$tests$pvalue_best <- results$tests$pvalue
                         }
                         if (isTRUE(diagnostic)) {
-                            if (!requireNamespace("DHARMa", quietly=TRUE)) {
-                                stop("Model diagnostics require the 'DHARMa' package. Please install it by running: install.packages('DHARMa')")
-                            }
-                            
-                            sim_out <- DHARMa::simulateResiduals(fittedModel = model_strategy, plot = FALSE)
-                            results$diagnostics$diagnostics_strategy <- list(
-                                overdispersion = DHARMa::testDispersion(sim_out, plot = FALSE)$p.value,
-                                zeroInflation = DHARMa::testZeroInflation(sim_out, plot = FALSE)$p.value,
-                                uniformity = DHARMa::testResiduals(sim_out, plot = FALSE)$uniformity$p.value,
-                                residualsDispersion = DHARMa::testResiduals(sim_out, plot = FALSE)$dispersion$p.value,
-                                outliers = DHARMa::testResiduals(sim_out, plot = FALSE)$outliers$p.value
+                            results <- run_diagnostic(
+                                fitted_model = model_custom, 
+                                results_list = results, 
+                                diagnostics_name = "model_custom", 
+                                plot = FALSE
                             )
                         }
                     }
@@ -731,7 +742,7 @@ fit_glmm <- function(
                 disp_intercept <- disp_coefs["disp~(Intercept)"]
                 results$dispersion$fitted_disp_rna <- exp(disp_intercept)
 
-                if ((dispersion_modeling == "auto" && !is.null(model_strategy))) { # dispersion_modeling == "strategy" ||
+                if ((dispersion_modeling == "auto" && !is.null(model_strategy))) {
                     disp_ribo_effect <- disp_coefs["disp~strategy1"]
                     results$dispersion$fitted_disp_ribo <- exp(disp_intercept + disp_ribo_effect)
                 } else {
