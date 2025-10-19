@@ -122,8 +122,8 @@ The main wrapper `DOTSeq()` performs three sequential steps:
 - Construction of two SummarizedExperiment objects (`DOTSeqDataSet()`)
 - model fitting of DOU (`glmmTMB` beta-binomial GLM via `fitDOU()`) and DTE 
 (negative-binomial GLM via `DESeq2`).
-- Post hoc contrasts and adaptive shrinkage of effect sizes via `emmmeans` 
-and `ashr` (`testDOU()`). 
+- Post hoc contrasts and adaptive shrinkage of effect sizes via `emmeans` 
+[@emmeans] and `ashr` (`testDOU()`). 
 
 `DOTSeqDataSet()`, `fitDOU()`, and `testDOU()` can be ran separately. For 
 simplicity, here we will use the `DOTSeq()` wrapper. To capturing the 
@@ -184,7 +184,7 @@ dte_results
 ```
 
 We can also inspect the `rowData` and `rowRanges` of the SummarizedExperiment 
-object with ORF level annotation. 
+objects with ORF level annotation. 
 
 ```{r rowdata}
 rowdata <- rowData(m$sumExp)
@@ -254,7 +254,7 @@ id_mapping <- plotDOT(
 Similarly, volcano plots can be colour-coded by significance or ORF types, 
 depending on whether rowdata is given as an input. 
 
-```{r plot-volcano-by-orfs}
+```{r plot-volcano-by-orfs, fig.small = TRUE}
 plotDOT(
     results = results,
     rowdata = rowdata,
@@ -267,7 +267,7 @@ plotDOT(
 ## Heatmap: 
 Visualises the top ORFs or genes (e.g., top 40 uORF-regulated genes).
 
-```{r plot-heatmap, fig.width=3, fig.height=6, warning=FALSE}
+```{r plot-heatmap, warning=FALSE}
 plotDOT(
     results = results, 
     rowdata = rowdata, 
