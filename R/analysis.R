@@ -1299,7 +1299,7 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' including Venn diagrams, volcano plots, composite scatter plots with
 #' marginal distributions, and heatmaps. It integrates Ensembl gene 
 #' symbols and highlights significant ORFs based on empirical Bayes 
-#' shrinkage (via the \code{\link{ashr}} package).
+#' shrinkage (via the \code{\link[ashr]{ash}} package).
 #'
 #' @seealso \code{\link{DOTSeq}}
 #' 
@@ -1400,7 +1400,7 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' This function orchestrates multiple visualization components to 
 #' explore differential translation across ORFs. It uses 
 #' \code{\link{testDOU}} output to identify significant ORFs, 
-#' retrieves gene symbols via  \code{\link{biomaRt}}, and generates 
+#' retrieves gene symbols via  \code{\link[biomaRt]{getBM}}, and generates 
 #' plots to summarize DOU and DTE relationships. The composite scatter 
 #' plot includes marginal distributions by ORF type, helping to 
 #' visualize the overlap and divergence between DTE and DOU signals. 

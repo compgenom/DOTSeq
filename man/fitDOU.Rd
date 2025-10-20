@@ -61,15 +61,16 @@ compare the full model (with interaction) against a reduced model
 (without interaction) to assess translation-specific effects.
 Default is \code{FALSE}.}
 
-\item{diagnostic}{Logical; if \code{TRUE}, runs DHARMa diagnostics to assess
-model fit. Default is \code{FALSE}.}
+\item{diagnostic}{Logical; if \code{TRUE}, runs \pkg{DHARMa}
+diagnostics to assess model fit. Default is \code{FALSE}.}
 
-\item{parallel}{A list passed to \code{glmmTMBControl} to configure parallel
-optimization, e.g., \code{list(parallel = TRUE, ncpus = 4)}.
+\item{parallel}{A list passed to \code{glmmTMBControl} to configure
+parallel optimization, e.g., \code{list(parallel = TRUE, ncpus = 4)}.
 Default is \code{list(n = 4L, autopar = TRUE)}.}
 
-\item{optimizers}{Logical; if \code{TRUE}, enables brute-force optimization
-using multiple optimizers in \code{glmmTMB}. Default is \code{FALSE}.}
+\item{optimizers}{Logical; if \code{TRUE}, enables brute-force
+optimization using multiple optimizers in
+\code{\link[glmmTMB]{glmmTMBControl}}. Default is \code{FALSE}.}
 
 \item{verbose}{Logical; if \code{TRUE}, prints progress messages.
 Default is \code{TRUE}.}
@@ -78,10 +79,10 @@ Default is \code{TRUE}.}
 A named \code{list} of \code{PostHoc} objects, one per ORF.
 }
 \description{
-This function fits beta-binomial models for differential ORF usage
-(DOU) across all genes. It supports multiple dispersion modeling strategies
-and optional diagnostics using DHARMa. This function is adapted from the
-\code{satuRn} package to support beta-binomial GLM/GLMMs via \code{glmmTMB}.
+This function fits beta-binomial generalized (mixed) linear models
+(GLM or GLMM) for differential ORF usage (DOU) across all genes
+(via \code{\link[glmmTMB]{glmmTMB}}). It supports multiple dispersion
+modeling approaches and optional diagnostics using \pkg{DHARMa}.
 }
 \examples{
 # Load SummarizedExperiment to enable subsetting and access to components
@@ -137,18 +138,18 @@ rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
 
 }
 \references{
-Brooks, M. E., Kristensen, K., van Benthem, K. J., Magnusson, A., Berg, C. W.,
-Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M. (2017).
-glmmTMB balances speed and flexibility among packages for zero-inflated
-generalized linear mixed modeling. The R Journal, 378–400.
+Brooks, M. E., Kristensen, K., van Benthem, K. J., Magnusson, A.,
+Berg, C. W., Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M.
+(2017). glmmTMB balances speed and flexibility among packages for
+zero-inflated generalized linear mixed modeling. The R Journal, 378–400.
 \doi{10.32614/RJ-2017-066}
 
 Lenth R, Piaskowski J (2025). emmeans: Estimated Marginal Means, aka
 Least-Squares Means. R package version 2.0.0.
 \url{https://rvlenth.github.io/emmeans/}
 
-Hartig F (2025). DHARMa: Residual Diagnostics for Hierarchical (Multi-Level /
-Mixed) Regression Models. R package version 0.4.7.
+Hartig F (2025). DHARMa: Residual Diagnostics for Hierarchical
+(Multi-Level / Mixed) Regression Models. R package version 0.4.7.
 \url{https://github.com/florianhartig/dharma}
 }
 \seealso{

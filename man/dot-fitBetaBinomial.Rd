@@ -26,8 +26,9 @@
 \item{rna_mat}{A numeric matrix of RNA-seq counts for the same gene
 (same dimensions as \code{ribo_mat}).}
 
-\item{anno}{A data frame containing sample annotations. Must include columns
-such as \code{condition}, \code{strategy}, and \code{replicate}.}
+\item{anno}{A data frame containing sample annotations. Must include
+columns such as \code{condition}, \code{strategy}, and
+\code{replicate}.}
 
 \item{formula}{A formula object specifying the model design,
 e.g., \code{~ condition * strategy}.}
@@ -36,8 +37,8 @@ e.g., \code{~ condition * strategy}.}
 modeling strategy. Options are:
 \describe{
 \item{\code{"auto"}}{
-Fit both strategy-dependent and shared dispersion models, and
-select the best via likelihood ratio test.
+Fit both strategy-dependent and shared dispersion models,
+and select the best via likelihood ratio test.
 }
 \item{\code{"shared"}}{
 Assume constant dispersion across all predictor levels.
@@ -55,43 +56,45 @@ compare the full model (with interaction) against a reduced model
 (without interaction) to assess translation-specific effects.
 Default is \code{FALSE}.}
 
-\item{diagnostic}{Logical; if \code{TRUE}, runs DHARMa diagnostics to assess
-model fit. This requires \pkg{DHARMa} to be installed.
+\item{diagnostic}{Logical; if \code{TRUE}, runs \pkg{DHARMa} diagnostics to
+assess model fit. This requires \pkg{DHARMa} to be installed.
 Default is \code{FALSE}.}
 
-\item{optimizers}{Logical; if \code{TRUE}, enables brute-force optimization
-using multiple optimizers in \code{glmmTMB}. Default is \code{FALSE}.}
+\item{optimizers}{Logical; if \code{TRUE}, enables brute-force
+optimization using multiple optimizers in
+\code{\link[glmmTMB]{glmmTMBControl}}. Default is \code{FALSE}.}
 
-\item{parallel}{A list passed to \code{glmmTMBControl} to configure parallel
-optimization, e.g., \code{list(parallel = TRUE, ncpus = 4)}.
+\item{parallel}{A list passed to \code{\link[glmmTMB]{glmmTMBControl}}
+to configure parallel optimization, e.g.,
+\code{list(parallel = TRUE, ncpus = 4)}.
 Default is \code{list(n = 4L, autopar = TRUE)}.}
 
 \item{verbose}{Logical; if \code{TRUE}, prints progress messages.
 Default is \code{FALSE}.}
 }
 \value{
-A named \code{list} of \code{PostHoc} objects, one for each ORF in
-the gene.
+A named \code{list} of \code{PostHoc} objects, one for each ORF
+in the gene.
 }
 \description{
-This internal worker function fits beta-binomial generalized linear models
-(GLMs) or generalized linear mixed models (GLMMs) for all ORFs within a
-single gene using \code{glmmTMB}. It supports multiple dispersion modeling
-strategies and optional model diagnostics.
+This internal worker function fits beta-binomial generalized (mixed)
+linear models (GLM or GLMM) for all ORFs within a
+single gene using \code{\link[glmmTMB]{glmmTMB}}. It supports multiple
+dispersion modeling approaches and optional model diagnostics.
 }
 \references{
-Brooks, M. E., Kristensen, K., van Benthem, K. J., Magnusson, A., Berg, C. W.,
-Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M. (2017).
-glmmTMB balances speed and flexibility among packages for zero-inflated
-generalized linear mixed modeling. The R Journal, 378–400.
+Brooks, M. E., Kristensen, K., van Benthem, K. J., Magnusson, A.,
+Berg, C. W., Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M.
+(2017). glmmTMB balances speed and flexibility among packages for
+zero-inflated generalized linear mixed modeling. The R Journal, 378–400.
 \doi{10.32614/RJ-2017-066}
 
 Lenth R, Piaskowski J (2025). emmeans: Estimated Marginal Means, aka
 Least-Squares Means. R package version 2.0.0.
 \url{https://rvlenth.github.io/emmeans/}
 
-Hartig F (2025). DHARMa: Residual Diagnostics for Hierarchical (Multi-Level /
-Mixed) Regression Models. R package version 0.4.7.
+Hartig F (2025). DHARMa: Residual Diagnostics for Hierarchical
+(Multi-Level / Mixed) Regression Models. R package version 0.4.7.
 \url{https://github.com/florianhartig/dharma}
 }
 \keyword{internal}

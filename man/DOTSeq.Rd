@@ -100,11 +100,11 @@ Default is \code{FALSE}.}
 \item{diagnostic}{Logical; if \code{TRUE}, enables model diagnostics in DOU.
 Default is \code{FALSE}.}
 
-\item{parallel}{A list passed to \code{glmmTMBControl} to configure parallel
+\item{parallel}{A list passed to \code{\link[glmmTMB]{glmmTMBControl}} to configure parallel
 optimization in DOU. Default is \code{list(n = 4L, autopar = TRUE)}.}
 
 \item{optimizers}{Logical; if \code{TRUE}, enables brute-force optimization
-using multiple optimizers in \code{glmmTMB}.
+using multiple optimizers in \code{\link[glmmTMB]{glmmTMBControl}}.
 Default is \code{FALSE}.}
 
 \item{nullweight}{Numeric. Prior weight on the null hypothesis for empirical

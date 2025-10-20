@@ -11,8 +11,8 @@ runtime(end_time, start_time, units = "secs")
 
 \item{start_time}{POSIXct. The start time of the process.}
 
-\item{units}{Character. Units for \code{difftime()} calculation. Default is
-\code{"secs"}.}
+\item{units}{Character. Units for \code{difftime()} calculation.
+Default is \code{"secs"}.}
 }
 \value{
 A named list containing:
@@ -22,10 +22,10 @@ A named list containing:
 }
 }
 \description{
-Computes the elapsed time between a start and end timestamp, returning a
-list with minutes and seconds. If the duration is less than one minute,
-only seconds are returned. Useful for logging runtimes in a human-readable
-format.
+Computes the elapsed time between a start and end timestamp, returning
+a list with minutes and seconds. If the duration is less than one
+minute, only seconds are returned. Useful for logging runtimes in a
+human-readable format.
 }
 \examples{
 \dontrun{

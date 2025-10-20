@@ -73,10 +73,10 @@
 #' @title Fit a Beta-Binomial GLMM with Multiple Optimizers
 #'
 #' @description
-#' This internal function fits a beta-binomial generalized linear mixed model
-#' (GLMM) using \code{glmmTMB}, with support for multiple optimizers to improve
-#' convergence. It is used as a backend for fitting models to ORF-level count
-#' data in DOTSeq.
+#' This internal function fits a beta-binomial GLM or GLMM using 
+#' \code{\link[glmmTMB]{glmmTMB}}, with support for multiple optimizers to 
+#' improve convergence. It is used as a backend for fitting models to 
+#' ORF-level count data in DOTSeq.
 #'
 #' @param formula A formula object specifying the fixed effects structure of
 #'     the model.
@@ -94,7 +94,7 @@
 #' @param max_iter An integer specifying the maximum number of iterations for
 #'     the optimizer. Default is \code{1000}.
 #'
-#' @return A fitted \code{glmmTMB} model object if convergence is successful.
+#' @return A fitted \code{\link[glmmTMB]{glmmTMB}} model object if convergence is successful.
 #'     If all optimizers fail, the last attempted model (with convergence
 #'     failure) is returned.
 #'
@@ -157,24 +157,29 @@ fit_glmm <- function(
 #' @title Run DHARMa Diagnostics on a Fitted Model
 #'
 #' @description
-#' This function performs residual diagnostics on a fitted \code{glmmTMB} 
-#' model using the \pkg{DHARMa} package. It simulates residuals and tests 
-#' for overdispersion, zero inflation, uniformity, residual dispersion, 
-#' and outliers. The results are stored in the \code{diagnostics} 
-#' element of the provided results list.
+#' This function performs residual diagnostics on a fitted 
+#' \code{\link[glmmTMB]{glmmTMB}} model using the \pkg{DHARMa} package. 
+#' It simulates residuals and tests for overdispersion, zero inflation, 
+#' uniformity, residual dispersion, and outliers. The results are stored 
+#' in the \code{diagnostics} element of the provided results list.
 #'
-#' @param fitted_model A fitted \code{glmmTMB} model object.
+#' @param fitted_model A fitted \code{\link[glmmTMB]{glmmTMB}} model object.
 #' @param results_list A named list to which diagnostic results will be 
 #'     added. Must contain a \code{diagnostics} element.
+#' @param diagnostics_name A character string specifying the name under 
+#'     which diagnostic results will be stored in 
+#'     \code{results_list$diagnostics}.
 #' @param plot Logical; if \code{TRUE}, diagnostic plots will be generated.
 #'     Default is \code{FALSE}.
 #'
 #' @return A modified version of \code{results_list} with diagnostic 
-#'     results added under \code{results_list$diagnostics$diagnostics_strategy}.
+#'     results added under 
+#'     \code{results_list$diagnostics[[diagnostics_name]]}.
 #'
-#' @note This function requires the \pkg{DHARMa} package. If it is not installed,
-#'     the function will stop with an informative error message.
-#' 
+#' @note This function requires the \pkg{DHARMa} package. If it is not 
+#'     installed, the function will stop with an informative error message.
+#'
+#' @importFrom glmmTMB glmmTMB
 #' @keywords internal
 #' 
 run_diagnostic <- function(
@@ -208,10 +213,10 @@ run_diagnostic <- function(
 #' @title Fit Beta-Binomial Models for a Single Gene
 #'
 #' @description
-#' This internal worker function fits beta-binomial generalized linear models
-#' (GLMs) or generalized linear mixed models (GLMMs) for all ORFs within a
-#' single gene using \code{glmmTMB}. It supports multiple dispersion modeling
-#' strategies and optional model diagnostics.
+#' This internal worker function fits beta-binomial generalized (mixed) 
+#' linear models (GLM or GLMM) for all ORFs within a
+#' single gene using \code{\link[glmmTMB]{glmmTMB}}. It supports multiple 
+#' dispersion modeling approaches and optional model diagnostics.
 #'
 #' @param ribo_mat A numeric matrix of Ribo-seq counts for a single gene
 #'     (rows = ORFs, columns = samples).
@@ -219,8 +224,9 @@ run_diagnostic <- function(
 #' @param rna_mat A numeric matrix of RNA-seq counts for the same gene
 #'     (same dimensions as \code{ribo_mat}).
 #'
-#' @param anno A data frame containing sample annotations. Must include columns
-#'     such as \code{condition}, \code{strategy}, and \code{replicate}.
+#' @param anno A data frame containing sample annotations. Must include 
+#'     columns such as \code{condition}, \code{strategy}, and 
+#'     \code{replicate}.
 #'
 #' @param formula A formula object specifying the model design,
 #'     e.g., \code{~ condition * strategy}.
@@ -229,8 +235,8 @@ run_diagnostic <- function(
 #'     modeling strategy. Options are:
 #'     \describe{
 #'         \item{\code{"auto"}}{
-#'             Fit both strategy-dependent and shared dispersion models, and
-#'             select the best via likelihood ratio test.
+#'             Fit both strategy-dependent and shared dispersion models, 
+#'             and select the best via likelihood ratio test.
 #'         }
 #'         \item{\code{"shared"}}{
 #'             Assume constant dispersion across all predictor levels.
@@ -248,22 +254,24 @@ run_diagnostic <- function(
 #'     (without interaction) to assess translation-specific effects.
 #'     Default is \code{FALSE}.
 #'
-#' @param diagnostic Logical; if \code{TRUE}, runs DHARMa diagnostics to assess
-#'     model fit. This requires \pkg{DHARMa} to be installed. 
+#' @param diagnostic Logical; if \code{TRUE}, runs \pkg{DHARMa} diagnostics to 
+#'     assess model fit. This requires \pkg{DHARMa} to be installed. 
 #'     Default is \code{FALSE}.
 #'
-#' @param optimizers Logical; if \code{TRUE}, enables brute-force optimization
-#'     using multiple optimizers in \code{glmmTMB}. Default is \code{FALSE}.
+#' @param optimizers Logical; if \code{TRUE}, enables brute-force 
+#'     optimization using multiple optimizers in 
+#'     \code{\link[glmmTMB]{glmmTMBControl}}. Default is \code{FALSE}.
 #'
-#' @param parallel A list passed to \code{glmmTMBControl} to configure parallel
-#'     optimization, e.g., \code{list(parallel = TRUE, ncpus = 4)}.
+#' @param parallel A list passed to \code{\link[glmmTMB]{glmmTMBControl}} 
+#'     to configure parallel optimization, e.g., 
+#'     \code{list(parallel = TRUE, ncpus = 4)}.
 #'     Default is \code{list(n = 4L, autopar = TRUE)}.
 #'
 #' @param verbose Logical; if \code{TRUE}, prints progress messages.
 #'     Default is \code{FALSE}.
 #'
-#' @return A named \code{list} of \code{PostHoc} objects, one for each ORF in
-#'     the gene.
+#' @return A named \code{list} of \code{PostHoc} objects, one for each ORF
+#'     in the gene.
 #'
 #' @importFrom stats AIC aggregate anova as.formula order.dendrogram p.adjust
 #' @importFrom stats pnorm predict rbinom relevel rgamma
@@ -273,18 +281,18 @@ run_diagnostic <- function(
 #' @keywords internal
 #'
 #' @references
-#' Brooks, M. E., Kristensen, K., van Benthem, K. J., Magnusson, A., Berg, C. W.,
-#' Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M. (2017).
-#' glmmTMB balances speed and flexibility among packages for zero-inflated
-#' generalized linear mixed modeling. The R Journal, 378–400.
+#' Brooks, M. E., Kristensen, K., van Benthem, K. J., Magnusson, A., 
+#' Berg, C. W., Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M. 
+#' (2017). glmmTMB balances speed and flexibility among packages for 
+#' zero-inflated generalized linear mixed modeling. The R Journal, 378–400.
 #' \doi{10.32614/RJ-2017-066}
 #'
 #' Lenth R, Piaskowski J (2025). emmeans: Estimated Marginal Means, aka
 #' Least-Squares Means. R package version 2.0.0.
 #' \url{https://rvlenth.github.io/emmeans/}
 #'
-#' Hartig F (2025). DHARMa: Residual Diagnostics for Hierarchical (Multi-Level /
-#' Mixed) Regression Models. R package version 0.4.7.
+#' Hartig F (2025). DHARMa: Residual Diagnostics for Hierarchical 
+#' (Multi-Level / Mixed) Regression Models. R package version 0.4.7.
 #' \url{https://github.com/florianhartig/dharma}
 #'
 .fitBetaBinomial <- function(
@@ -778,10 +786,10 @@ run_diagnostic <- function(
 #' @title Fit Differential ORF Usage Models
 #'
 #' @description
-#' This function fits beta-binomial models for differential ORF usage
-#' (DOU) across all genes. It supports multiple dispersion modeling strategies
-#' and optional diagnostics using DHARMa. This function is adapted from the
-#' \code{satuRn} package to support beta-binomial GLM/GLMMs via \code{glmmTMB}.
+#' This function fits beta-binomial generalized (mixed) linear models 
+#' (GLM or GLMM) for differential ORF usage (DOU) across all genes 
+#' (via \code{\link[glmmTMB]{glmmTMB}}). It supports multiple dispersion 
+#' modeling approaches and optional diagnostics using \pkg{DHARMa}.
 #'
 #' @seealso \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSet}}, 
 #' \code{\link{testDOU}}
@@ -827,15 +835,16 @@ run_diagnostic <- function(
 #'     (without interaction) to assess translation-specific effects.
 #'     Default is \code{FALSE}.
 #'
-#' @param diagnostic Logical; if \code{TRUE}, runs DHARMa diagnostics to assess
-#'     model fit. Default is \code{FALSE}.
+#' @param diagnostic Logical; if \code{TRUE}, runs \pkg{DHARMa} 
+#'     diagnostics to assess model fit. Default is \code{FALSE}.
 #'
-#' @param parallel A list passed to \code{glmmTMBControl} to configure parallel
-#'     optimization, e.g., \code{list(parallel = TRUE, ncpus = 4)}.
+#' @param parallel A list passed to \code{glmmTMBControl} to configure 
+#'     parallel optimization, e.g., \code{list(parallel = TRUE, ncpus = 4)}.
 #'     Default is \code{list(n = 4L, autopar = TRUE)}.
 #'
-#' @param optimizers Logical; if \code{TRUE}, enables brute-force optimization
-#'     using multiple optimizers in \code{glmmTMB}. Default is \code{FALSE}.
+#' @param optimizers Logical; if \code{TRUE}, enables brute-force 
+#'     optimization using multiple optimizers in 
+#'     \code{\link[glmmTMB]{glmmTMBControl}}. Default is \code{FALSE}.
 #'
 #' @param verbose Logical; if \code{TRUE}, prints progress messages.
 #'     Default is \code{TRUE}.
@@ -900,18 +909,18 @@ run_diagnostic <- function(
 #' )
 #'
 #' @references
-#' Brooks, M. E., Kristensen, K., van Benthem, K. J., Magnusson, A., Berg, C. W.,
-#' Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M. (2017).
-#' glmmTMB balances speed and flexibility among packages for zero-inflated
-#' generalized linear mixed modeling. The R Journal, 378–400.
+#' Brooks, M. E., Kristensen, K., van Benthem, K. J., Magnusson, A., 
+#' Berg, C. W., Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M. 
+#' (2017). glmmTMB balances speed and flexibility among packages for 
+#' zero-inflated generalized linear mixed modeling. The R Journal, 378–400.
 #' \doi{10.32614/RJ-2017-066}
 #'
 #' Lenth R, Piaskowski J (2025). emmeans: Estimated Marginal Means, aka
 #' Least-Squares Means. R package version 2.0.0.
 #' \url{https://rvlenth.github.io/emmeans/}
 #'
-#' Hartig F (2025). DHARMa: Residual Diagnostics for Hierarchical (Multi-Level /
-#' Mixed) Regression Models. R package version 0.4.7.
+#' Hartig F (2025). DHARMa: Residual Diagnostics for Hierarchical 
+#' (Multi-Level / Mixed) Regression Models. R package version 0.4.7.
 #' \url{https://github.com/florianhartig/dharma}
 #'
 #'

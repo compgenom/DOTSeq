@@ -86,11 +86,11 @@
 #' @param diagnostic Logical; if \code{TRUE}, enables model diagnostics in DOU.
 #'     Default is \code{FALSE}.
 #'
-#' @param parallel A list passed to \code{glmmTMBControl} to configure parallel
+#' @param parallel A list passed to \code{\link[glmmTMB]{glmmTMBControl}} to configure parallel
 #'     optimization in DOU. Default is \code{list(n = 4L, autopar = TRUE)}.
 #'
 #' @param optimizers Logical; if \code{TRUE}, enables brute-force optimization
-#'     using multiple optimizers in \code{glmmTMB}.
+#'     using multiple optimizers in \code{\link[glmmTMB]{glmmTMBControl}}.
 #'     Default is \code{FALSE}.
 #'
 #' @param nullweight Numeric. Prior weight on the null hypothesis for empirical

@@ -7,25 +7,30 @@
 extract_results(sumExp, verbose = TRUE)
 }
 \arguments{
-\item{sumExp}{A SummarizedExperiment object containing fitted model objects
-stored in \code{rowData(sumExp)[['DOUResults']]}.}
+\item{sumExp}{A SummarizedExperiment object containing fitted model
+objects stored in \code{rowData(sumExp)[['DOUResults']]}.}
 
-\item{verbose}{Logical. If \code{TRUE}, messages will be printed for skipped or failed models.}
+\item{verbose}{Logical. If \code{TRUE}, messages will be printed
+for skipped or failed models.}
 }
 \value{
-A data frame where each row corresponds to an ORF and its associated model results.
-Columns include scalar parameters extracted from the model, \code{orf_id}, and \code{model_type}.
+A data frame where each row corresponds to an ORF and its
+associated model results. Columns include scalar parameters
+extracted from the model, \code{orf_id}, and \code{model_type}.
 }
 \description{
-Extracts scalar results from a named list of model objects (typically from \code{glmmTMB} fits)
-into a tidy data frame. Handles nested lists, missing or \code{NULL} models, and ensures
-consistent columns across all entries.
+Extracts scalar results from a named list of model objects
+from \code{glmmTMB} fits into a tidy data frame. Handles nested lists,
+missing or \code{NULL} models, and ensures consistent columns across
+all entries.
 }
 \details{
-The function uses a recursive helper (\code{flatten_scalars}) to extract scalar values
-from nested lists. It supports models of type \code{"glmmTMB"} and \code{"glmmTMB_joint"},
-and gracefully handles \code{NULL} or unsupported model types by returning minimal rows.
+The function uses a recursive helper (\code{flatten_scalars}) to extract
+scalar values from nested lists. It supports model type
+\code{"glmmTMB"}, and gracefully handles \code{NULL} or unsupported
+model types by returning minimal rows.
 
-Missing columns across models are filled with \code{NA} to ensure a consistent structure.
+Missing columns across models are filled with \code{NA} to ensure a
+consistent structure.
 }
 \keyword{internal}

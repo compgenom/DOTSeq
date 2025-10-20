@@ -32,15 +32,15 @@ Supported values include \code{"nlminb"}, \code{"bobyqa"}, and
 the optimizer. Default is \code{1000}.}
 }
 \value{
-A fitted \code{glmmTMB} model object if convergence is successful.
+A fitted \code{\link[glmmTMB]{glmmTMB}} model object if convergence is successful.
 If all optimizers fail, the last attempted model (with convergence
 failure) is returned.
 }
 \description{
-This internal function fits a beta-binomial generalized linear mixed model
-(GLMM) using \code{glmmTMB}, with support for multiple optimizers to improve
-convergence. It is used as a backend for fitting models to ORF-level count
-data in DOTSeq.
+This internal function fits a beta-binomial GLM or GLMM using
+\code{\link[glmmTMB]{glmmTMB}}, with support for multiple optimizers to
+improve convergence. It is used as a backend for fitting models to
+ORF-level count data in DOTSeq.
 }
 \details{
 The function attempts to fit the model using each optimizer in the specified

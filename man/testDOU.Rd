@@ -2,7 +2,8 @@
 % Please edit documentation in R/posthoc.R
 \name{testDOU}
 \alias{testDOU}
-\title{Compute Differential ORF Usage (DOU) Contrasts Using Estimated Marginal Means}
+\title{Compute Differential ORF Usage (DOU) Contrasts Using Estimated Marginal
+Means}
 \usage{
 testDOU(
   sumExp,
@@ -27,9 +28,9 @@ Default is \code{TRUE}.}
 }
 \value{
 A \code{SummarizedExperiment} object (the input \code{sumExp} or
-\code{m$sumExp}) with two new \code{S4Vectors::DataFrame} objects stored
-in its \code{metadata} slot. These tables contain the long-format results
-for all computed contrasts:
+\code{m$sumExp}) with two new \code{S4Vectors::DataFrame} objects
+stored in its \code{metadata} slot. These tables contain the
+long-format results for all computed contrasts:
 \describe{
 \item{\code{interaction_results}}{
 A long-format \code{S4Vectors::DataFrame} containing the
@@ -42,18 +43,19 @@ and unshrunken metrics (e.g., \code{betahat}, \code{sebetahat},
 \item{\code{strategy_results}}{
 A long-format \code{S4Vectors::DataFrame} containing the
 strategy-specific effect sizes (e.g., estimates for Ribo-seq
-only) for all computed contrasts. Columns include \code{strategy}
-(e.g., "ribo", "rna"), \code{contrast}, and the full set of
-shrunken and unshrunken metrics.
+only) for all computed contrasts. Columns include
+\code{strategy} (e.g., "ribo", "rna"), \code{contrast}, and
+the full set of shrunken and unshrunken metrics.
 }
 }
 }
 \description{
 Performs Differential ORF Usage (DOU) analysis by computing contrasts
-between ribosome profiling and RNA-seq modalities using estimated marginal
-means (EMMs) from fitted GLMM models. Supports both interaction-specific
-and strategy-specific contrasts, and applies empirical Bayes shrinkage via
-the \code{ashr} package to stabilize effect size estimates.
+between ribosome profiling and RNA-seq modalities using estimated
+marginal means (EMMs) from fitted models (via
+\code{\link[emmeans]{emmeans}}). Supports both interaction-specific
+and strategy-specific contrasts, and applies empirical Bayes shrinkage
+via \code{\link[ashr]{ash}} to stabilize effect size estimates.
 }
 \details{
 The results for post hoc contrasts are stored in long format via explicit
@@ -61,8 +63,8 @@ The results for post hoc contrasts are stored in long format via explicit
 omitted.
 }
 \examples{
-# Load SummarizedExperiment to enable subsetting and access to components
-# like rowRanges and rowData
+# Load SummarizedExperiment to enable subsetting and access to 
+# components like rowRanges and rowData
 library(SummarizedExperiment)
 
 # Read in count matrix, condition table, and annotation files
@@ -84,8 +86,8 @@ names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
 cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL # remove the treatment column
 
-# Create SummarizedExperiment objects.These objects can be used as input for
-# DOTSeq and fitDOU
+# Create SummarizedExperiment objects.These objects can be used as input
+# for DOTSeq and fitDOU
 m <- DOTSeqDataSet(
     count_table = cnt,
     condition_table = cond,

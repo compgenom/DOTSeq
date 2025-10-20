@@ -7,27 +7,32 @@
 run_diagnostic(fitted_model, results_list, diagnostics_name, plot = FALSE)
 }
 \arguments{
-\item{fitted_model}{A fitted \code{glmmTMB} model object.}
+\item{fitted_model}{A fitted \code{\link[glmmTMB]{glmmTMB}} model object.}
 
 \item{results_list}{A named list to which diagnostic results will be
 added. Must contain a \code{diagnostics} element.}
+
+\item{diagnostics_name}{A character string specifying the name under
+which diagnostic results will be stored in
+\code{results_list$diagnostics}.}
 
 \item{plot}{Logical; if \code{TRUE}, diagnostic plots will be generated.
 Default is \code{FALSE}.}
 }
 \value{
 A modified version of \code{results_list} with diagnostic
-results added under \code{results_list$diagnostics$diagnostics_strategy}.
+results added under
+\code{results_list$diagnostics[[diagnostics_name]]}.
 }
 \description{
-This function performs residual diagnostics on a fitted \code{glmmTMB}
-model using the \pkg{DHARMa} package. It simulates residuals and tests
-for overdispersion, zero inflation, uniformity, residual dispersion,
-and outliers. The results are stored in the \code{diagnostics}
-element of the provided results list.
+This function performs residual diagnostics on a fitted
+\code{\link[glmmTMB]{glmmTMB}} model using the \pkg{DHARMa} package.
+It simulates residuals and tests for overdispersion, zero inflation,
+uniformity, residual dispersion, and outliers. The results are stored
+in the \code{diagnostics} element of the provided results list.
 }
 \note{
-This function requires the \pkg{DHARMa} package. If it is not installed,
-the function will stop with an informative error message.
+This function requires the \pkg{DHARMa} package. If it is not
+installed, the function will stop with an informative error message.
 }
 \keyword{internal}
