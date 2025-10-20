@@ -1,4 +1,6 @@
 test_that("fitDOU returns expected structure for successfully fitted ORFs", {
+    testthat::skip_if_not_installed("DHARMa")
+    
     # Load test data
     dir <- system.file("extdata", package = "DOTSeq")
     
@@ -28,9 +30,6 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
     set.seed(42)
     m$sumExp <- m$sumExp[sample(seq_len(nrow(m$sumExp)), size = 50), ]
     
-    # Check if DHARMa is installed before running diagnostics
-    has_dharma <- requireNamespace("DHARMa", quietly = TRUE)
-    
     suppressMessages(
         suppressWarnings({
             results <- fitDOU(
@@ -42,7 +41,7 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
                 dispersion_modeling = "auto",
                 lrt = FALSE,
                 optimizers = FALSE,
-                diagnostic = has_dharma,
+                diagnostic = TRUE,
                 parallel = list(n = 2L, autopar = TRUE),
                 verbose = FALSE
             )
