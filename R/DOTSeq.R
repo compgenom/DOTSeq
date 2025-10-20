@@ -276,7 +276,7 @@ DOTSeq <- function(
             rowData(dot$sumExp)[["DOUResults"]] <- fitDOU(
                 count_table = assay(dot$sumExp),
                 rowdata = rowData(dot$sumExp),
-                anno = colData(dot$sumExp),
+                coldata = colData(dot$sumExp),
                 formula = metadata(dot$sumExp)$formula,
                 emm_specs = metadata(dot$sumExp)$emm_specs,
                 dispersion_modeling = dispersion_modeling,

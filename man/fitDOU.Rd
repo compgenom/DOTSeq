@@ -7,7 +7,7 @@
 fitDOU(
   count_table,
   rowdata,
-  anno,
+  coldata,
   formula = ~condition * strategy,
   emm_specs = ~condition * strategy,
   dispformula = NULL,
@@ -26,7 +26,7 @@ columns = samples).}
 \item{rowdata}{A data frame mapping ORF IDs to gene IDs. Must contain
 columns \code{orf_id} and \code{gene_id}.}
 
-\item{anno}{A data frame containing sample annotations. Must include columns
+\item{coldata}{A data frame containing sample annotations. Must include columns
 such as \code{condition}, \code{strategy}, and \code{replicate}.}
 
 \item{formula}{A formula object specifying the model design,
@@ -125,7 +125,7 @@ m$sumExp <- m$sumExp[random_rows, ]
 rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
     count_table = assay(m$sumExp),
     rowdata = rowData(m$sumExp),
-    anno = colData(m$sumExp),
+    coldata = colData(m$sumExp),
     formula = ~ condition * strategy,
     emm_specs = ~ condition * strategy,
     dispersion_modeling = "auto",

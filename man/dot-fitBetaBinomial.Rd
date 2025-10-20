@@ -7,7 +7,7 @@
 .fitBetaBinomial(
   ribo_mat,
   rna_mat,
-  anno,
+  coldata,
   formula = ~condition * strategy,
   emm_specs = ~condition * strategy,
   dispersion_modeling = c("auto", "shared", "custom"),
@@ -26,7 +26,7 @@
 \item{rna_mat}{A numeric matrix of RNA-seq counts for the same gene
 (same dimensions as \code{ribo_mat}).}
 
-\item{anno}{A data frame containing sample annotations. Must include
+\item{coldata}{A data frame containing sample annotations. Must include
 columns such as \code{condition}, \code{strategy}, and
 \code{replicate}.}
 

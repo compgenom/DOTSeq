@@ -224,7 +224,7 @@ run_diagnostic <- function(
 #' @param rna_mat A numeric matrix of RNA-seq counts for the same gene
 #'     (same dimensions as \code{ribo_mat}).
 #'
-#' @param anno A data frame containing sample annotations. Must include 
+#' @param coldata A data frame containing sample annotations. Must include 
 #'     columns such as \code{condition}, \code{strategy}, and 
 #'     \code{replicate}.
 #'
@@ -298,7 +298,7 @@ run_diagnostic <- function(
 .fitBetaBinomial <- function(
     ribo_mat,
     rna_mat,
-    anno,
+    coldata,
     formula = ~ condition * strategy,
     emm_specs = ~ condition * strategy,
     dispersion_modeling = c("auto", "shared", "custom"),
@@ -330,11 +330,11 @@ run_diagnostic <- function(
     num_orfs <- length(orf_names)
     num_samples <- ncol(ribo_mat)
 
-    # Extract the condition levels from anno
-    condition_levels <- levels(anno$condition)
+    # Extract the condition levels from coldata
+    condition_levels <- levels(coldata$condition)
 
-    # Extract the strategy levels from anno
-    strategy_levels <- levels(anno$strategy)
+    # Extract the strategy levels from coldata
+    strategy_levels <- levels(coldata$strategy)
 
     # Define a flexible regex pattern: matches "rna", "RNA", "RNA-seq", and "0"
     rna_pattern <- "(?i)rna|^0$"
@@ -358,7 +358,7 @@ run_diagnostic <- function(
     }
 
     # Replicate the design variables for each ORF
-    long_design <- as.data.frame(anno[rep(seq_len(nrow(anno)), each = num_orfs), ])
+    long_design <- as.data.frame(coldata[rep(seq_len(nrow(coldata)), each = num_orfs), ])
 
     # Bind the replicated design matrix to the long data frame
     long_data <- cbind(long_data, long_design)
@@ -805,7 +805,7 @@ run_diagnostic <- function(
 #' @param rowdata A data frame mapping ORF IDs to gene IDs. Must contain
 #'     columns \code{orf_id} and \code{gene_id}.
 #'
-#' @param anno A data frame containing sample annotations. Must include columns
+#' @param coldata A data frame containing sample annotations. Must include columns
 #'     such as \code{condition}, \code{strategy}, and \code{replicate}.
 #'
 #' @param formula A formula object specifying the model design,
@@ -902,7 +902,7 @@ run_diagnostic <- function(
 #' rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
 #'     count_table = assay(m$sumExp),
 #'     rowdata = rowData(m$sumExp),
-#'     anno = colData(m$sumExp),
+#'     coldata = colData(m$sumExp),
 #'     formula = ~ condition * strategy,
 #'     emm_specs = ~ condition * strategy,
 #'     dispersion_modeling = "auto",
@@ -932,7 +932,7 @@ run_diagnostic <- function(
 fitDOU <- function(
     count_table,
     rowdata,
-    anno,
+    coldata,
     formula = ~ condition * strategy,
     emm_specs = ~ condition * strategy,
     dispformula = NULL,
@@ -960,14 +960,14 @@ fitDOU <- function(
     geneForEachOrf <- as.character(geneForEachOrf)
     stopifnot(length(geneForEachOrf) == nrow(count_table))
 
-    # Get the logical indices from the 'strategy' column of the sample annotation (anno)
-    strategy_levels <- levels(anno$strategy)
+    # Get the logical indices from the 'strategy' column of the sample annotation (coldata)
+    strategy_levels <- levels(coldata$strategy)
     if (length(strategy_levels) != 2) {
         warning("Expected two strategy levels, got: ", paste(strategy_levels, collapse = ", "))
         warning("Assuming ", strategy_levels[1], " is RNA-seq and ", strategy_levels[2], " is Ribo-seq")
     }
-    ribo_idx <- anno$strategy == strategy_levels[2]
-    rna_idx <- anno$strategy == strategy_levels[1]
+    ribo_idx <- coldata$strategy == strategy_levels[2]
+    rna_idx <- coldata$strategy == strategy_levels[1]
 
     # Subset the count_table matrix using these indices
     count_table_ribo <- count_table[, ribo_idx]
@@ -998,7 +998,7 @@ fitDOU <- function(
                 .fitBetaBinomial(
                     ribo_mat = ribo_mat, 
                     rna_mat = rna_mat, 
-                    anno = anno,
+                    coldata = coldata,
                     formula = formula, 
                     emm_specs = emm_specs,
                     dispersion_modeling = dispersion_modeling, 

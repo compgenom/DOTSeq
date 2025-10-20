@@ -111,7 +111,7 @@
 #' rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
 #'     count_table = assay(m$sumExp),
 #'     rowdata = rowData(m$sumExp),
-#'     anno = colData(m$sumExp),
+#'     coldata = colData(m$sumExp),
 #'     formula = ~ condition * strategy,
 #'     emm_specs = ~ condition * strategy,
 #'     dispersion_modeling = "auto",
@@ -447,12 +447,12 @@ contrast_vectors <- function(
 ) {
     
     # Build design matrix
-    anno <- colData(dds)
+    coldata <- colData(dds)
     if (is.null(baseline)) {
-        baseline <- levels(anno$condition)[1]
+        baseline <- levels(coldata$condition)[1]
     }
 
-    strategy_levels <- levels(anno$strategy)
+    strategy_levels <- levels(coldata$strategy)
     if (length(strategy_levels) > 2) {
         stop("Expect two strategy levels got: ", paste(strategy_levels, collapse = ", "))
     } else if (length(strategy_levels) == 1) {
@@ -467,9 +467,9 @@ contrast_vectors <- function(
     contrast_factors <- grep(paste0("\\", delim), all_terms, value = TRUE)
 
     if (!is.null(formula)) {
-        design <- model.matrix(formula, data = anno)
+        design <- model.matrix(formula, data = coldata)
     } else if ("formula" %in% names(metadata(dds))) {
-        design <- model.matrix(metadata(dds)$formula, data = anno)
+        design <- model.matrix(metadata(dds)$formula, data = coldata)
     } else {
         stop("Please provide design formula.")
     }

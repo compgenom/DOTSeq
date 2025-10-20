@@ -111,7 +111,7 @@ m$sumExp <- m$sumExp[random_rows, ]
 rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
     count_table = assay(m$sumExp),
     rowdata = rowData(m$sumExp),
-    anno = colData(m$sumExp),
+    coldata = colData(m$sumExp),
     formula = ~ condition * strategy,
     emm_specs = ~ condition * strategy,
     dispersion_modeling = "auto",
