@@ -1,4 +1,5 @@
 test_that("fitDOU returns expected structure for successfully fitted ORFs", {
+    # Skip test if DHARMa not installed
     testthat::skip_if_not_installed("DHARMa")
     
     # Load test data
@@ -26,10 +27,12 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
         bed = bed
     )
     
+    # Subset for speed
     m$sumExp <- m$sumExp[rowRanges(m$sumExp)$is_kept == TRUE, ]
     set.seed(42)
     m$sumExp <- m$sumExp[sample(seq_len(nrow(m$sumExp)), size = 50), ]
     
+    # Fit models (with diagnostics enabled because DHARMa is available)
     suppressMessages(
         suppressWarnings({
             results <- fitDOU(
@@ -48,6 +51,7 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
         })
     )
     
+    # Filter successfully fitted models
     fitted_orfs <- Filter(function(x) model_type(x) == "glmmTMB", results)
     expect_gt(length(fitted_orfs), 0)
     
@@ -58,14 +62,10 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
         expect_true("estimates" %in% keys)
         expect_true("dispersion" %in% keys)
         
-        if ("tests" %in% keys) {
+        if ("tests" %in% keys)
             expect_type(fit_results(res)$tests, "list")
-        }
-        if (has_dharma) {
-            expect_true("diagnostics" %in% keys)
-            expect_type(fit_results(res)$diagnostics, "list")
-        } else {
-            expect_false("diagnostics" %in% keys)
-        }
+        
+        expect_true("diagnostics" %in% keys)
+        expect_type(fit_results(res)$diagnostics, "list")
     }
 })
