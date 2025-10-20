@@ -90,7 +90,8 @@ PostHoc <- function(
 
 
 #' @title Access the model type from a PostHoc object
-#' @description Retrieves the model type string from a \code{PostHoc} object.
+#' @description 
+#' Retrieves the model type string from a \code{PostHoc} object.
 #' @param object A \code{PostHoc} object.
 #' @return A \code{character(1)} string indicating the model type.
 #' @rdname PostHoc-accessors
@@ -106,7 +107,8 @@ setMethod("model_type", "PostHoc", function(object) object@type)
 
 
 #' @title Access the results list from a PostHoc object
-#' @description Retrieves model results, parameters, and diagnostics.
+#' @description 
+#' Retrieves model results, parameters, and diagnostics.
 #' @param object A \code{PostHoc} object.
 #' @return A \code{list} containing model results and diagnostics.
 #' @rdname PostHoc-accessors
@@ -122,7 +124,8 @@ setMethod("fit_results", "PostHoc", function(object) object@results)
 
 
 #' @title Access the post hoc summary from a PostHoc object
-#' @description Retrieves the post hoc summary object (e.g. from \code{emmeans}).
+#' @description 
+#' Retrieves the post hoc summary object (e.g. from \code{emmeans}).
 #' @param object A \code{PostHoc} object.
 #' @return A post hoc summary object.
 #' @rdname PostHoc-accessors

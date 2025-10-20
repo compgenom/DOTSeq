@@ -37,34 +37,36 @@ plotDOT(
 }
 \arguments{
 \item{results}{A data frame containing DOU and DTE estimates and
-significance values. Must include ORF-level identifiers and columns
-specified by \code{dou_estimates_col}, \code{dou_padj_col},
-\code{dte_estimates_col}, and \code{dte_padj_col}.}
+significance values. Must include ORF-level identifiers and
+columns specified by \code{dou_estimates_col},
+\code{dou_padj_col}, \code{dte_estimates_col}, and
+\code{dte_padj_col}.}
 
-\item{rowdata}{A data frame containing ORF-level metadata, including ORF
-type (e.g., mORF, uORF). Default is \code{NULL}.}
+\item{rowdata}{A data frame containing ORF-level metadata, including
+ORF type (e.g., mORF, uORF). Default is \code{NULL}.}
 
 \item{id_mapping}{A data frame containing gene symbols for the input
 Ensembl IDs. Default is \code{NULL}.}
 
 \item{include_go}{Logical; if \code{TRUE}, includes GO annotations
-(\code{go_id}, \code{name_1006}, \code{namespace_1003}) in the output.}
+(\code{go_id}, \code{name_1006}, \code{namespace_1003}) in the
+output.}
 
 \item{plot_types}{Character vector specifying which plots to generate.
 Options include \code{"venn"}, \code{"composite"}, \code{"volcano"},
 and \code{"heatmap"}.}
 
-\item{dou_estimates_col}{Character string specifying the column name for
-DOU effect size estimates. Default is \code{"PosteriorMean"}.}
+\item{dou_estimates_col}{Character string specifying the column name
+for DOU effect size estimates. Default is \code{"PosteriorMean"}.}
 
-\item{dou_padj_col}{Character string specifying the column name for DOU
-significance values (LFSR). Default is \code{"lfsr"}.}
+\item{dou_padj_col}{Character string specifying the column name for
+DOU significance values (LFSR). Default is \code{"lfsr"}.}
 
-\item{dte_estimates_col}{Character string specifying the column name for
-DTE effect size estimates. Default is \code{"log2FoldChange"}.}
+\item{dte_estimates_col}{Character string specifying the column name
+for DTE effect size estimates. Default is \code{"log2FoldChange"}.}
 
-\item{dte_padj_col}{Character string specifying the column name for DTE
-adjusted p-values. Default is \code{"padj"}.}
+\item{dte_padj_col}{Character string specifying the column name for
+DTE adjusted p-values. Default is \code{"padj"}.}
 
 \item{dou_estimates_threshold}{Numeric threshold for DOU effect size
 significance. Default is \code{1}.}
@@ -72,21 +74,21 @@ significance. Default is \code{1}.}
 \item{dou_padj_threshold}{Numeric threshold for DOU LFSR significance.
 Default is \code{0.05}.}
 
-\item{dou_padj_ceiling}{Numeric value to define the rounding ceiling for
--log10(LFSR). The maximum y-axis value will be rounded up to the
-nearest multiple of this value. Default is \code{10}.}
+\item{dou_padj_ceiling}{Numeric value to define the rounding ceiling
+for -log10(LFSR). The maximum y-axis value will be rounded up to
+the nearest multiple of this value. Default is \code{10}.}
 
-\item{extreme_threshold}{Optional numeric threshold for labeling extreme
-points in the volcano plot (based on -log10 LFSR).}
+\item{extreme_threshold}{Optional numeric threshold for labeling
+extreme points in the volcano plot (based on -log10 LFSR).}
 
-\item{label_topn}{Optional numeric. If specified, labels the top N most
-significant points in the volcano plot.}
+\item{label_topn}{Optional numeric. If specified, labels the top N
+most significant points in the volcano plot.}
 
-\item{top_genes}{Optional numeric. If specified, limits the heatmap to the
-top N genes ranked by DOU magnitude and significance.}
+\item{top_genes}{Optional numeric. If specified, limits the heatmap
+to the top N genes ranked by DOU magnitude and significance.}
 
-\item{sorf_type}{Character string specifying the short ORF type to compare
-with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.}
+\item{sorf_type}{Character string specifying the short ORF type to
+compare with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.}
 
 \item{dataset}{Character string specifying the Ensembl dataset name
 (e.g., \code{"hsapiens_gene_ensembl"}).}
@@ -94,9 +96,9 @@ with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.}
 \item{symbol_col}{Character string specifying the column name for gene
 symbols in the annotation data. Default is \code{"hgnc_symbol"}.}
 
-\item{mart_source}{Character string specifying the BioMart source. One of
-\code{"ensembl"}, \code{"plants"}, \code{"fungi"}, \code{"protists"},
-\code{"metazoa"}, or \code{"bacteria"}.}
+\item{mart_source}{Character string specifying the BioMart source.
+One of \code{"ensembl"}, \code{"plants"}, \code{"fungi"},
+\code{"protists"}, \code{"metazoa"}, or \code{"bacteria"}.}
 
 \item{colors}{A named list of colors used across plots:
 \itemize{
@@ -115,8 +117,8 @@ position of the legend in the volcano plot. Options include:
 \code{"topright"}, \code{"right"}, \code{"center"}.
 Default is \code{"topright"}.}
 
-\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU estimates
-to align directionality with DTE. Default is \code{TRUE}.}
+\item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU
+estimates to align directionality with DTE. Default is \code{TRUE}.}
 
 \item{force_new_device}{Logical; if \code{TRUE}, detects graphics
 error and resets graphics state unconditionally.
@@ -126,59 +128,72 @@ Default is \code{TRUE}.}
 Default is \code{TRUE}.}
 }
 \value{
-A data frame containing gene symbols retrieved from Ensembl, used
-for labeling and heatmap visualization.
+A data frame containing gene symbols retrieved from Ensembl,
+used for labeling and heatmap visualization.
 }
 \description{
 A high-level wrapper that visualizes differential ORF usage (DOU) and
 translation efficiency (DTE) relationships through a suite of plots
 including Venn diagrams, volcano plots, composite scatter plots with
-marginal distributions, and heatmaps. It integrates Ensembl gene symbols
-and highlights significant ORFs based on empirical Bayes shrinkage
-(via the \code{ashr} package).
+marginal distributions, and heatmaps. It integrates Ensembl gene
+symbols and highlights significant ORFs based on empirical Bayes
+shrinkage (via the \code{\link{ashr}} package).
 }
 \details{
-This function orchestrates multiple visualization components to explore
-differential translation across ORFs. It uses empirical Bayes shrinkage to
-identify significant ORFs, retrieves gene symbols via \code{biomaRt}, and
-generates plots to summarize DOU and DTE relationships. The composite
-scatter plot includes marginal distributions by ORF type, helping to
-visualize the overlap and divergence between DTE and DOU signals. The
-volcano plot highlights extreme and top-ranked ORFs, while the heatmap
-summarizes translation changes across top genes.
+This function orchestrates multiple visualization components to
+explore differential translation across ORFs. It uses
+\code{\link{testDOU}} output to identify significant ORFs,
+retrieves gene symbols via  \code{\link{biomaRt}}, and generates
+plots to summarize DOU and DTE relationships. The composite scatter
+plot includes marginal distributions by ORF type, helping to
+visualize the overlap and divergence between DTE and DOU signals.
+The volcano plot highlights extreme and top-ranked ORFs, while
+the heatmap summarizes DOU across top genes.
 }
 \examples{
-
 # Example ORF-level results
 results_df <- data.frame(
-    orf_id = c("ENSG00000139618.19:O001", "ENSG00000139618.19:O002", "ENSG00000157764.15:O003"),
-    lfsr = c(0.01, 0.2, 0.03),
-    padj = c(0.02, 0.01, 0.1)
+  orf_id = c(
+    "ENSG00000139618.19:O001",
+    "ENSG00000139618.19:O002",
+    "ENSG00000157764.15:O003"
+  ),
+  lfsr = c(0.01, 0.2, 0.03),
+  padj = c(0.02, 0.01, 0.1)
 )
 
 rowdata_df <- data.frame(
-    orf_id = c("ENSG00000139618.19:O001", "ENSG00000139618.19:O002", "ENSG00000157764.15:O003"),
-    gene_id = c("ENSG00000139618.19", "ENSG00000139618.19", "ENSG00000157764.15"),
-    orf_type = c("mORF", "dORF", "mORF")
+  orf_id = c(
+    "ENSG00000139618.19:O001",
+    "ENSG00000139618.19:O002",
+    "ENSG00000157764.15:O003"
+  ),
+  gene_id = c(
+    "ENSG00000139618.19",
+    "ENSG00000139618.19",
+    "ENSG00000157764.15"
+  ),
+  orf_type = c("mORF", "dORF", "mORF")
 )
 
 plotDOT(results_df, rowdata_df, plot_types = "venn")
 
 }
 \references{
-Durinck S, Spellman P, Birney E, Huber W (2009). Mapping identifiers for the
-integration of genomic datasets with the R/Bioconductor package biomaRt.
-Nature Protocols, 4, 1184–1191.
+Durinck S, Spellman P, Birney E, Huber W (2009). Mapping identifiers
+for the integration of genomic datasets with the R/Bioconductor
+package biomaRt. Nature Protocols, 4, 1184–1191.
 \doi{10.1038/nprot.2009.97}
 
-Durinck S, Moreau Y, Kasprzyk A, Davis S, De Moor B, Brazma A, Huber W
-(2005). BioMart and Bioconductor: a powerful link between biological
-databases and microarray data analysis. Bioinformatics, 21, 3439–3440.
-\doi{10.1093/bioinformatics/bti525}
+Durinck S, Moreau Y, Kasprzyk A, Davis S, De Moor B, Brazma A,
+Huber W (2005). BioMart and Bioconductor: a powerful link between
+biological databases and microarray data analysis. Bioinformatics,
+21, 3439–3440. \doi{10.1093/bioinformatics/bti525}
 
-Larsson J, Gustafsson P (2018). “A Case Study in Fitting Area-Proportional
-Euler Diagrams with Ellipses Using eulerr.” In Proceedings of International
-Workshop on Set Visualization and Reasoning, volume 2116, 84–91.
+Larsson J, Gustafsson P (2018). “A Case Study in Fitting
+Area-Proportional Euler Diagrams with Ellipses Using eulerr.”
+In Proceedings of International Workshop on Set Visualization
+and Reasoning, volume 2116, 84–91.
 \url{https://ceur-ws.org/Vol-2116/paper7.pdf}
 }
 \seealso{

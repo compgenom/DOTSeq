@@ -7,33 +7,33 @@
 get_significant_genes(results, padj_col = "lfsr", padj_threshold = 0.05)
 }
 \arguments{
-\item{results}{A data frame containing ORF-level DOU results. Must include
-columns \code{orf_id} and the specified \code{padj_col}.}
+\item{results}{A data frame containing ORF-level DOU results.
+Must include columns \code{orf_id} and the specified \code{padj_col}.}
 
-\item{padj_col}{Character string specifying the column name for LFSR values.
-Default is \code{"lfsr"}.}
+\item{padj_col}{Character string specifying the column name for
+LFSR values. Default is \code{"lfsr"}.}
 
-\item{padj_threshold}{Numeric threshold for filtering significant ORFs.
-Default is \code{0.05}.}
+\item{padj_threshold}{Numeric threshold for filtering significant
+ORFs. Default is \code{0.05}.}
 }
 \value{
-A character vector of Ensembl gene IDs corresponding to significant
-ORFs.
+A character vector of Ensembl gene IDs corresponding to
+significant ORFs.
 }
 \description{
-Identifies genes with significant differential ORF usage (DOU) based on a
-local false sign rate (LFSR) threshold. Extracts gene IDs from ORF-level
-results and filters those with LFSR below the specified threshold.
+Identifies genes with significant differential ORF usage (DOU)
+based on a local false sign rate (LFSR) threshold. Extracts gene
+IDs from ORF-level results and filters those with LFSR below the
+specified threshold.
 }
 \examples{
 \dontrun{
 sig_genes <- get_significant_genes(
-    results_df,
-    padj_col = "lfsr",
-    padj_threshold = 0.05
+  results_df,
+  padj_col = "lfsr",
+  padj_threshold = 0.05
 )
 }
-
 
 }
 \seealso{

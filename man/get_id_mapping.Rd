@@ -19,8 +19,8 @@ get_id_mapping(
 \item{dataset}{A string specifying the dataset name (e.g.,
 \code{"hsapiens_gene_ensembl"}, \code{"athaliana_eg_gene"}).}
 
-\item{symbol_col}{A string specifying the attribute to use as the gene
-symbol. Default is \code{"external_gene_name"}.}
+\item{symbol_col}{A string specifying the attribute to use as the
+gene symbol. Default is \code{"external_gene_name"}.}
 
 \item{include_go}{Logical; if \code{TRUE}, includes GO annotations
 (\code{go_id}, \code{name_1006}, \code{namespace_1003}) in the output.}
@@ -29,22 +29,23 @@ symbol. Default is \code{"external_gene_name"}.}
 \code{"ensembl"}, \code{"plants"}, \code{"fungi"}, \code{"protists"},
 \code{"metazoa"}, or \code{"bacteria"}.}
 
-\item{host}{Optional. A custom host URL (e.g., for archived Ensembl versions).}
+\item{host}{Optional. A custom host URL (e.g., for archived Ensembl
+versions).}
 }
 \value{
-A data frame containing gene symbols for the input Ensembl IDs.
-If \code{symbol_col} is unavailable, the \code{description} field is
-used instead and renamed to match \code{symbol_col}.
+A data frame containing gene symbols for the input Ensembl
+IDs. If \code{symbol_col} is unavailable, the \code{description}
+field is used instead and renamed to match \code{symbol_col}.
 }
 \description{
-Queries Ensembl or Ensembl Genomes BioMart databases to retrieve gene
-symbols, descriptions, and optionally Gene Ontology (GO) terms. Supports
-multiple organism groups including vertebrates, plants, fungi, protists,
-metazoa, and bacteria.
+Queries Ensembl or Ensembl Genomes BioMart databases to retrieve
+gene symbols, descriptions, and optionally Gene Ontology (GO)
+terms. Supports multiple organism groups including vertebrates,
+plants, fungi, protists, metazoa, and bacteria.
 
-If the specified \code{symbol_col} returns only \code{NA} values, the
-function automatically falls back to using the \code{description} field
-instead.
+If the specified \code{symbol_col} returns only \code{NA} values,
+the function automatically falls back to using the
+\code{description} field instead.
 }
 \examples{
 # Human gene example
@@ -71,13 +72,13 @@ get_id_mapping(
 
 }
 \references{
-Durinck S, Spellman P, Birney E, Huber W (2009). Mapping identifiers for the
-integration of genomic datasets with the R/Bioconductor package biomaRt.
-Nature Protocols, 4, 1184–1191.
+Durinck S, Spellman P, Birney E, Huber W (2009). Mapping identifiers
+for the integration of genomic datasets with the R/Bioconductor
+package biomaRt. Nature Protocols, 4, 1184–1191.
 \doi{10.1038/nprot.2009.97}
 
-Durinck S, Moreau Y, Kasprzyk A, Davis S, De Moor B, Brazma A, Huber W (2005).
-BioMart and Bioconductor: a powerful link between biological databases and
-microarray data analysis. Bioinformatics, 21, 3439–3440.
-\doi{10.1093/bioinformatics/bti525}
+Durinck S, Moreau Y, Kasprzyk A, Davis S, De Moor B, Brazma A,
+Huber W (2005). BioMart and Bioconductor: a powerful link between
+biological databases and microarray data analysis. Bioinformatics,
+21, 3439–3440. \doi{10.1093/bioinformatics/bti525}
 }

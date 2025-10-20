@@ -352,8 +352,10 @@ plot_composite <- function(
     results <- na.omit(results)
     
     # Significance flags
-    padj_sig <- !is.na(results[[dte_padj_col]]) & results[[dte_padj_col]] < dte_padj_threshold
-    fdr_sig <- !is.na(results[[dou_padj_col]]) & results[[dou_padj_col]] < dou_padj_threshold
+    padj_sig <- !is.na(results[[dte_padj_col]]) & 
+        results[[dte_padj_col]] < dte_padj_threshold
+    fdr_sig <- !is.na(results[[dou_padj_col]]) & 
+        results[[dou_padj_col]] < dou_padj_threshold
     both_sig <- padj_sig & fdr_sig
     padj_only <- padj_sig & !fdr_sig
     fdr_only <- fdr_sig & !padj_sig
@@ -668,7 +670,12 @@ plot_volcano <- function(
     if (!is.null(id_mapping)) {
         genes_unique <- id_mapping[!duplicated(id_mapping$ensembl_gene_id), ]
         results$ensembl_gene_id <- sub("\\..*", "", results$orf_id)
-        results <- merge(genes_unique, results, by = "ensembl_gene_id", all.x = TRUE)
+        results <- merge(
+            genes_unique, 
+            results, 
+            by = "ensembl_gene_id", 
+            all.x = TRUE
+        )
     }
     
     results <- na.omit(results)
@@ -679,11 +686,17 @@ plot_volcano <- function(
     
     results$loglfsr <- -log10(results[[dou_padj_col]])
     loglfsr_ceiling <- ceiling(
-        max(results$loglfsr[is.finite(results$loglfsr)], na.rm = TRUE) / dou_padj_ceiling
+        max(
+            results$loglfsr[is.finite(results$loglfsr)], 
+            na.rm = TRUE
+        ) / dou_padj_ceiling
     ) * dou_padj_ceiling
     
     if (verbose) {
-        message("Capping volcano plot y-axis at -log10(", dou_padj_col, ") = ", loglfsr_ceiling)
+        message(
+            "capping volcano plot y-axis at -log10(", dou_padj_col, ") = ", 
+            loglfsr_ceiling
+        )
     }
     
     results$loglfsr[results$loglfsr > loglfsr_ceiling] <- loglfsr_ceiling
@@ -698,8 +711,10 @@ plot_volcano <- function(
     par(mfrow = c(1, 1), mar = c(5, 4, 2, 2) + 0.1, fig = c(0, 1, 0, 1))
     
     if (color_by == "significance") {
-        padj_sig <- !is.na(results[[dte_padj_col]]) & results[[dte_padj_col]] < dte_padj_threshold
-        fdr_sig <- !is.na(results[[dou_padj_col]]) & results[[dou_padj_col]] < dou_padj_threshold
+        padj_sig <- !is.na(results[[dte_padj_col]]) & 
+            results[[dte_padj_col]] < dte_padj_threshold
+        fdr_sig <- !is.na(results[[dou_padj_col]]) & 
+            results[[dou_padj_col]] < dou_padj_threshold
         both_sig <- padj_sig & fdr_sig
         padj_only <- padj_sig & !fdr_sig
         fdr_only <- fdr_sig & !padj_sig
@@ -789,16 +804,26 @@ plot_volcano <- function(
     if (!is.null(extreme_threshold)) {
         idx_to_label <- which(results$loglfsr > extreme_threshold)
     } else if (is.numeric(label_topn)) {
-        idx_to_label <- head(order(results$loglfsr, decreasing = TRUE), label_topn)
+        idx_to_label <- head(
+            order(results$loglfsr, decreasing = TRUE), 
+            label_topn
+        )
     } else {
         idx_to_label <- NULL
     }
     
     if (!is.null(idx_to_label)) {
         x_offset <- rep(c(-0.1, 0, 0.1), length.out = length(idx_to_label))
-        y_offset <- rep(c(-y_range_step, 0, y_range_step), length.out = length(idx_to_label))
+        y_offset <- rep(
+            c(-y_range_step, 0, y_range_step), 
+            length.out = length(idx_to_label)
+        )
         
-        labels <- if (!is.null(id_mapping)) results[[2]][idx_to_label] else results$orf_id[idx_to_label]
+        labels <- if (!is.null(id_mapping)) {
+            results[[2]][idx_to_label]
+        } else {
+            results$orf_id[idx_to_label]
+        }
         
         text(
             x = results[[dou_estimates_col]][idx_to_label] + x_offset,
@@ -811,7 +836,11 @@ plot_volcano <- function(
     }
     
     abline(h = -log10(dou_padj_threshold), col = "black", lty = 2)
-    abline(v = c(-dou_estimates_threshold, dou_estimates_threshold), col = "black", lty = 2)
+    abline(
+        v = c(-dou_estimates_threshold, dou_estimates_threshold), 
+        col = "black", 
+        lty = 2
+    )
     
     par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1, fig = c(0, 1, 0, 1))
 }
@@ -938,7 +967,8 @@ cistronic_data <- function(
     sig_res <- sig_res[sig_res$orf_type %in% c("mORF", sorf_type), ]
     
     gene_scores <- aggregate(
-        abs(sig_res[[estimates_col]]) * (1 - sig_res[[padj_col]]) ~ sig_res$gene_id,
+        abs(sig_res[[estimates_col]]) * (1 - sig_res[[padj_col]]) ~ 
+            sig_res$gene_id,
         FUN = median
     )
     names(gene_scores) <- c("gene_id", "score")
@@ -1198,38 +1228,43 @@ plot_heatmap <- function(paired_data) {
 #' Reset and Recover Graphics Device
 #'
 #' @description
-#' A wrapper function that resets the graphics layout and optionally opens a new
-#' graphics device before executing a plotting function. It is designed to prevent
-#' layout persistence and recover from common base R graphics errors such as
-#' "invalid graphics state" or "figure margins too large", which can occur when
-#' plotting multiple figures sequentially.
+#' A wrapper function that resets the graphics layout and optionally
+#' opens a new graphics device before executing a plotting function.
+#' It is designed to prevent layout persistence and recover from
+#' common base R graphics errors such as "invalid graphics state" or
+#' "figure margins too large", which can occur when plotting multiple
+#' figures sequentially.
 #'
-#' @param plot_fn A function object that performs plotting. This function will be
-#'     executed within a clean graphics context.
+#' @param plot_fn A function object that performs plotting. This
+#' function will be executed within a clean graphics context.
 #'
-#' @param force_new_device Logical; if \code{TRUE}, attempts to close and reopen
-#'     the graphics device before plotting. This helps isolate plots and prevent
-#'     layout or overlay issues. Default is \code{TRUE}.
+#' @param force_new_device Logical; if \code{TRUE}, attempts to close
+#' and reopen the graphics device before plotting. This helps isolate
+#' plots and prevent layout or overlay issues. Default is \code{TRUE}.
 #'
-#' @return Invisibly returns the result of \code{plot_fn()}, if successful.
-#'     If an error occurs and recovery is triggered, the function attempts to
-#'     replot in a fresh graphics device.
+#' @return Invisibly returns the result of \code{plot_fn()}, if
+#' successful. If an error occurs and recovery is triggered, the
+#' function attempts to replot in a fresh graphics device.
 #'
 #' @details
-#' This function is useful when plotting multiple complex figures (e.g., composite
-#' plots with \code{layout()}) in sequence. It resets the layout using
-#' \code{layout(1)} and \code{par(mfrow = c(1, 1))} before plotting, and catches
-#' common graphics errors to retry the plot in a clean device.
+#' This function is useful when plotting multiple complex figures
+#' (e.g., composite plots with \code{layout()}) in sequence. It resets
+#' the layout using \code{layout(1)} and \code{par(mfrow = c(1, 1))}
+#' before plotting, and catches common graphics errors to retry the
+#' plot in a clean device.
 #'
 #' @importFrom graphics layout par 
 #' @importFrom grDevices dev.cur dev.new dev.off
 #' 
 #' @keywords internal
-#' 
 reset_graphics <- function(plot_fn, force_new_device = TRUE) {
     tryCatch({
         if (force_new_device && dev.cur() > 1) {
-            message(sprintf("resetting graphics device (force_new_device = %s)", force_new_device))
+            msg <- sprintf(
+                "resetting graphics device (force_new_device = %s)",
+                force_new_device
+            )
+            message(msg)
             try(dev.off(), silent = TRUE)
             try(dev.new(), silent = TRUE)
         }
@@ -1237,8 +1272,14 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
         par(mfrow = c(1, 1))
         invisible(plot_fn())
     }, error = function(e) {
-        if (grepl("invalid graphics state|figure margins too large", e$message, ignore.case = TRUE)) {
-            if (dev.cur() > 1) try(dev.off(), silent = TRUE)
+        if (grepl(
+            "invalid graphics state|figure margins too large",
+            e$message,
+            ignore.case = TRUE
+        )) {
+            if (dev.cur() > 1) {
+                try(dev.off(), silent = TRUE)
+            }
             try(dev.new(), silent = TRUE)
             layout(1)
             par(mfrow = c(1, 1))
@@ -1256,41 +1297,43 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' A high-level wrapper that visualizes differential ORF usage (DOU) and
 #' translation efficiency (DTE) relationships through a suite of plots
 #' including Venn diagrams, volcano plots, composite scatter plots with
-#' marginal distributions, and heatmaps. It integrates Ensembl gene symbols
-#' and highlights significant ORFs based on empirical Bayes shrinkage
-#' (via the \code{ashr} package).
+#' marginal distributions, and heatmaps. It integrates Ensembl gene 
+#' symbols and highlights significant ORFs based on empirical Bayes 
+#' shrinkage (via the \code{\link{ashr}} package).
 #'
 #' @seealso \code{\link{DOTSeq}}
 #' 
 #' @param results A data frame containing DOU and DTE estimates and
-#'     significance values. Must include ORF-level identifiers and columns
-#'     specified by \code{dou_estimates_col}, \code{dou_padj_col},
-#'     \code{dte_estimates_col}, and \code{dte_padj_col}.
+#'     significance values. Must include ORF-level identifiers and 
+#'     columns specified by \code{dou_estimates_col}, 
+#'     \code{dou_padj_col}, \code{dte_estimates_col}, and 
+#'     \code{dte_padj_col}.
 #'
-#' @param rowdata A data frame containing ORF-level metadata, including ORF
-#'     type (e.g., mORF, uORF). Default is \code{NULL}.
+#' @param rowdata A data frame containing ORF-level metadata, including 
+#'     ORF type (e.g., mORF, uORF). Default is \code{NULL}.
 #'
 #' @param id_mapping A data frame containing gene symbols for the input
 #'     Ensembl IDs. Default is \code{NULL}.
 #'
 #' @param include_go Logical; if \code{TRUE}, includes GO annotations
-#'     (\code{go_id}, \code{name_1006}, \code{namespace_1003}) in the output.
+#'     (\code{go_id}, \code{name_1006}, \code{namespace_1003}) in the 
+#'     output.
 #'
 #' @param plot_types Character vector specifying which plots to generate.
 #'     Options include \code{"venn"}, \code{"composite"}, \code{"volcano"},
 #'     and \code{"heatmap"}.
 #'
-#' @param dou_estimates_col Character string specifying the column name for
-#'     DOU effect size estimates. Default is \code{"PosteriorMean"}.
+#' @param dou_estimates_col Character string specifying the column name 
+#'     for DOU effect size estimates. Default is \code{"PosteriorMean"}.
 #'
-#' @param dou_padj_col Character string specifying the column name for DOU
-#'     significance values (LFSR). Default is \code{"lfsr"}.
+#' @param dou_padj_col Character string specifying the column name for 
+#'     DOU significance values (LFSR). Default is \code{"lfsr"}.
 #'
-#' @param dte_estimates_col Character string specifying the column name for
-#'     DTE effect size estimates. Default is \code{"log2FoldChange"}.
+#' @param dte_estimates_col Character string specifying the column name 
+#'     for DTE effect size estimates. Default is \code{"log2FoldChange"}.
 #'
-#' @param dte_padj_col Character string specifying the column name for DTE
-#'     adjusted p-values. Default is \code{"padj"}.
+#' @param dte_padj_col Character string specifying the column name for 
+#'     DTE adjusted p-values. Default is \code{"padj"}.
 #'
 #' @param dou_estimates_threshold Numeric threshold for DOU effect size
 #'     significance. Default is \code{1}.
@@ -1298,21 +1341,21 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' @param dou_padj_threshold Numeric threshold for DOU LFSR significance.
 #'     Default is \code{0.05}.
 #'
-#' @param dou_padj_ceiling Numeric value to define the rounding ceiling for
-#'     -log10(LFSR). The maximum y-axis value will be rounded up to the
-#'     nearest multiple of this value. Default is \code{10}.
+#' @param dou_padj_ceiling Numeric value to define the rounding ceiling 
+#'     for -log10(LFSR). The maximum y-axis value will be rounded up to 
+#'     the nearest multiple of this value. Default is \code{10}.
 #'
-#' @param extreme_threshold Optional numeric threshold for labeling extreme
-#'     points in the volcano plot (based on -log10 LFSR).
+#' @param extreme_threshold Optional numeric threshold for labeling 
+#'     extreme points in the volcano plot (based on -log10 LFSR).
 #'
-#' @param label_topn Optional numeric. If specified, labels the top N most
-#'     significant points in the volcano plot.
+#' @param label_topn Optional numeric. If specified, labels the top N 
+#'     most significant points in the volcano plot.
 #'
-#' @param top_genes Optional numeric. If specified, limits the heatmap to the
-#'     top N genes ranked by DOU magnitude and significance.
+#' @param top_genes Optional numeric. If specified, limits the heatmap  
+#'     to the top N genes ranked by DOU magnitude and significance.
 #'
-#' @param sorf_type Character string specifying the short ORF type to compare
-#'     with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.
+#' @param sorf_type Character string specifying the short ORF type to 
+#'     compare with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.
 #'
 #' @param dataset Character string specifying the Ensembl dataset name
 #'     (e.g., \code{"hsapiens_gene_ensembl"}).
@@ -1320,9 +1363,9 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' @param symbol_col Character string specifying the column name for gene
 #'     symbols in the annotation data. Default is \code{"hgnc_symbol"}.
 #'
-#' @param mart_source Character string specifying the BioMart source. One of
-#'     \code{"ensembl"}, \code{"plants"}, \code{"fungi"}, \code{"protists"},
-#'     \code{"metazoa"}, or \code{"bacteria"}.
+#' @param mart_source Character string specifying the BioMart source.  
+#'     One of \code{"ensembl"}, \code{"plants"}, \code{"fungi"}, 
+#'     \code{"protists"}, \code{"metazoa"}, or \code{"bacteria"}.
 #'     
 #' @param colors A named list of colors used across plots:
 #'     \itemize{
@@ -1340,8 +1383,8 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #'     \code{"left"}, \code{"topleft"}, \code{"top"},
 #'     \code{"topright"}, \code{"right"}, \code{"center"}.
 #'     Default is \code{"topright"}.
-#' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates
-#'     to align directionality with DTE. Default is \code{TRUE}.
+#' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU 
+#'     estimates to align directionality with DTE. Default is \code{TRUE}.
 #'     
 #' @param force_new_device Logical; if \code{TRUE}, detects graphics
 #'     error and resets graphics state unconditionally. 
@@ -1350,54 +1393,67 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' @param verbose Logical; if \code{TRUE}, prints progress messages.
 #'     Default is \code{TRUE}.
 #'
-#' @return A data frame containing gene symbols retrieved from Ensembl, used
-#'     for labeling and heatmap visualization.
+#' @return A data frame containing gene symbols retrieved from Ensembl, 
+#'     used for labeling and heatmap visualization.
 #'
 #' @details
-#' This function orchestrates multiple visualization components to explore
-#' differential translation across ORFs. It uses empirical Bayes shrinkage to
-#' identify significant ORFs, retrieves gene symbols via \code{biomaRt}, and
-#' generates plots to summarize DOU and DTE relationships. The composite
-#' scatter plot includes marginal distributions by ORF type, helping to
-#' visualize the overlap and divergence between DTE and DOU signals. The
-#' volcano plot highlights extreme and top-ranked ORFs, while the heatmap
-#' summarizes translation changes across top genes.
+#' This function orchestrates multiple visualization components to 
+#' explore differential translation across ORFs. It uses 
+#' \code{\link{testDOU}} output to identify significant ORFs, 
+#' retrieves gene symbols via  \code{\link{biomaRt}}, and generates 
+#' plots to summarize DOU and DTE relationships. The composite scatter 
+#' plot includes marginal distributions by ORF type, helping to 
+#' visualize the overlap and divergence between DTE and DOU signals. 
+#' The volcano plot highlights extreme and top-ranked ORFs, while 
+#' the heatmap summarizes DOU across top genes.
 #'
 #' @importFrom graphics par layout
 #' @importFrom grid grid.newpage grid.draw
 #'
 #' @export
 #' @examples
-#' 
 #' # Example ORF-level results
 #' results_df <- data.frame(
-#'     orf_id = c("ENSG00000139618.19:O001", "ENSG00000139618.19:O002", "ENSG00000157764.15:O003"),
-#'     lfsr = c(0.01, 0.2, 0.03),
-#'     padj = c(0.02, 0.01, 0.1)
+#'   orf_id = c(
+#'     "ENSG00000139618.19:O001",
+#'     "ENSG00000139618.19:O002",
+#'     "ENSG00000157764.15:O003"
+#'   ),
+#'   lfsr = c(0.01, 0.2, 0.03),
+#'   padj = c(0.02, 0.01, 0.1)
 #' )
-#' 
+#'
 #' rowdata_df <- data.frame(
-#'     orf_id = c("ENSG00000139618.19:O001", "ENSG00000139618.19:O002", "ENSG00000157764.15:O003"),
-#'     gene_id = c("ENSG00000139618.19", "ENSG00000139618.19", "ENSG00000157764.15"),
-#'     orf_type = c("mORF", "dORF", "mORF")
+#'   orf_id = c(
+#'     "ENSG00000139618.19:O001",
+#'     "ENSG00000139618.19:O002",
+#'     "ENSG00000157764.15:O003"
+#'   ),
+#'   gene_id = c(
+#'     "ENSG00000139618.19",
+#'     "ENSG00000139618.19",
+#'     "ENSG00000157764.15"
+#'   ),
+#'   orf_type = c("mORF", "dORF", "mORF")
 #' )
-#' 
+#'
 #' plotDOT(results_df, rowdata_df, plot_types = "venn")
-#' 
+#'
 #' @references
-#' Durinck S, Spellman P, Birney E, Huber W (2009). Mapping identifiers for the
-#' integration of genomic datasets with the R/Bioconductor package biomaRt.
-#' Nature Protocols, 4, 1184–1191.
+#' Durinck S, Spellman P, Birney E, Huber W (2009). Mapping identifiers
+#' for the integration of genomic datasets with the R/Bioconductor
+#' package biomaRt. Nature Protocols, 4, 1184–1191.
 #' \doi{10.1038/nprot.2009.97}
 #'
-#' Durinck S, Moreau Y, Kasprzyk A, Davis S, De Moor B, Brazma A, Huber W
-#' (2005). BioMart and Bioconductor: a powerful link between biological
-#' databases and microarray data analysis. Bioinformatics, 21, 3439–3440.
-#' \doi{10.1093/bioinformatics/bti525}
+#' Durinck S, Moreau Y, Kasprzyk A, Davis S, De Moor B, Brazma A,
+#' Huber W (2005). BioMart and Bioconductor: a powerful link between
+#' biological databases and microarray data analysis. Bioinformatics,
+#' 21, 3439–3440. \doi{10.1093/bioinformatics/bti525}
 #'
-#' Larsson J, Gustafsson P (2018). “A Case Study in Fitting Area-Proportional
-#' Euler Diagrams with Ellipses Using eulerr.” In Proceedings of International
-#' Workshop on Set Visualization and Reasoning, volume 2116, 84–91.
+#' Larsson J, Gustafsson P (2018). “A Case Study in Fitting
+#' Area-Proportional Euler Diagrams with Ellipses Using eulerr.”
+#' In Proceedings of International Workshop on Set Visualization
+#' and Reasoning, volume 2116, 84–91.
 #' \url{https://ceur-ws.org/Vol-2116/paper7.pdf}
 #'
 plotDOT <- function(

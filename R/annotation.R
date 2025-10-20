@@ -1,43 +1,46 @@
 #' Extract Significant Genes Based on LFSR Threshold
 #'
 #' @description
-#' Identifies genes with significant differential ORF usage (DOU) based on a
-#' local false sign rate (LFSR) threshold. Extracts gene IDs from ORF-level
-#' results and filters those with LFSR below the specified threshold.
+#' Identifies genes with significant differential ORF usage (DOU)
+#' based on a local false sign rate (LFSR) threshold. Extracts gene
+#' IDs from ORF-level results and filters those with LFSR below the
+#' specified threshold.
 #'
 #' @seealso \code{\link{plotDOT}}
 #'
-#' @param results A data frame containing ORF-level DOU results. Must include
-#'     columns \code{orf_id} and the specified \code{padj_col}.
+#' @param results A data frame containing ORF-level DOU results.
+#' Must include columns \code{orf_id} and the specified \code{padj_col}.
 #'
-#' @param padj_col Character string specifying the column name for LFSR values.
-#'     Default is \code{"lfsr"}.
+#' @param padj_col Character string specifying the column name for
+#' LFSR values. Default is \code{"lfsr"}.
 #'
-#' @param padj_threshold Numeric threshold for filtering significant ORFs.
-#'     Default is \code{0.05}.
+#' @param padj_threshold Numeric threshold for filtering significant
+#' ORFs. Default is \code{0.05}.
 #'
-#' @return A character vector of Ensembl gene IDs corresponding to significant
-#'     ORFs.
-#'     
+#' @return A character vector of Ensembl gene IDs corresponding to
+#' significant ORFs.
+#'
 #' @keywords internal
+#'
 #' @examples
 #' \dontrun{
 #' sig_genes <- get_significant_genes(
-#'     results_df,
-#'     padj_col = "lfsr",
-#'     padj_threshold = 0.05
+#'   results_df,
+#'   padj_col = "lfsr",
+#'   padj_threshold = 0.05
 #' )
 #' }
-#'
-#'
+#' 
 get_significant_genes <- function(
-        results,
-        padj_col = "lfsr",
-        padj_threshold = 0.05
+    results,
+    padj_col = "lfsr",
+    padj_threshold = 0.05
 ) {
     results$gene_id <- sub("\\..*", "", results$orf_id)
     
-    gene_ids <- results[results[[padj_col]] < padj_threshold, ]$gene_id
+    gene_ids <- results[
+        results[[padj_col]] < padj_threshold,
+    ]$gene_id
     
     return(na.omit(gene_ids))
 }
@@ -49,17 +52,31 @@ get_significant_genes <- function(
 #' 
 bm_use_ensembl <- function(biomart, dataset, host = NULL) {
     if (is.null(host)) {
-        biomaRt::useEnsembl(biomart = biomart, dataset = dataset)
+        biomaRt::useEnsembl(
+            biomart = biomart, 
+            dataset = dataset
+        )
     } else {
-        biomaRt::useEnsembl(biomart = biomart, dataset = dataset, host = host)
+        biomaRt::useEnsembl(
+            biomart = biomart, 
+            dataset = dataset, 
+            host = host
+        )
     }
 }
 
 bm_use_ensembl_genomes <- function(biomart, dataset, host = NULL) {
     if (is.null(host)) {
-        biomaRt::useEnsemblGenomes(biomart = biomart, dataset = dataset)
+        biomaRt::useEnsemblGenomes(
+            biomart = biomart, 
+            dataset = dataset
+        )
     } else {
-        biomaRt::useEnsemblGenomes(biomart = biomart, dataset = dataset, host = host)
+        biomaRt::useEnsemblGenomes(
+            biomart = biomart, 
+            dataset = dataset, 
+            host = host
+        )
     }
 }
 
@@ -76,35 +93,36 @@ bm_get <- function(attributes, filters, values, mart) {
 #' Retrieve Gene Symbols from Ensembl or Ensembl Genomes
 #'
 #' @description
-#' Queries Ensembl or Ensembl Genomes BioMart databases to retrieve gene
-#' symbols, descriptions, and optionally Gene Ontology (GO) terms. Supports
-#' multiple organism groups including vertebrates, plants, fungi, protists,
-#' metazoa, and bacteria.
+#' Queries Ensembl or Ensembl Genomes BioMart databases to retrieve
+#' gene symbols, descriptions, and optionally Gene Ontology (GO)
+#' terms. Supports multiple organism groups including vertebrates,
+#' plants, fungi, protists, metazoa, and bacteria.
 #'
-#' If the specified \code{symbol_col} returns only \code{NA} values, the
-#' function automatically falls back to using the \code{description} field
-#' instead.
+#' If the specified \code{symbol_col} returns only \code{NA} values,
+#' the function automatically falls back to using the
+#' \code{description} field instead.
 #'
 #' @param ensembl_ids A character vector of Ensembl gene IDs to query.
 #'
 #' @param dataset A string specifying the dataset name (e.g.,
-#'     \code{"hsapiens_gene_ensembl"}, \code{"athaliana_eg_gene"}).
+#' \code{"hsapiens_gene_ensembl"}, \code{"athaliana_eg_gene"}).
 #'
-#' @param symbol_col A string specifying the attribute to use as the gene
-#'     symbol. Default is \code{"external_gene_name"}.
+#' @param symbol_col A string specifying the attribute to use as the
+#' gene symbol. Default is \code{"external_gene_name"}.
 #'
 #' @param include_go Logical; if \code{TRUE}, includes GO annotations
-#'     (\code{go_id}, \code{name_1006}, \code{namespace_1003}) in the output.
+#' (\code{go_id}, \code{name_1006}, \code{namespace_1003}) in the output.
 #'
 #' @param mart_source A string indicating the BioMart source. One of
-#'     \code{"ensembl"}, \code{"plants"}, \code{"fungi"}, \code{"protists"},
-#'     \code{"metazoa"}, or \code{"bacteria"}.
+#' \code{"ensembl"}, \code{"plants"}, \code{"fungi"}, \code{"protists"},
+#' \code{"metazoa"}, or \code{"bacteria"}.
 #'
-#' @param host Optional. A custom host URL (e.g., for archived Ensembl versions).
+#' @param host Optional. A custom host URL (e.g., for archived Ensembl
+#' versions).
 #'
-#' @return A data frame containing gene symbols for the input Ensembl IDs.
-#'     If \code{symbol_col} is unavailable, the \code{description} field is
-#'     used instead and renamed to match \code{symbol_col}.
+#' @return A data frame containing gene symbols for the input Ensembl
+#' IDs. If \code{symbol_col} is unavailable, the \code{description}
+#' field is used instead and renamed to match \code{symbol_col}.
 #'
 #' @export
 #' @examples
@@ -133,15 +151,15 @@ bm_get <- function(attributes, filters, values, mart) {
 #' @import biomaRt
 #'
 #' @references
-#' Durinck S, Spellman P, Birney E, Huber W (2009). Mapping identifiers for the
-#' integration of genomic datasets with the R/Bioconductor package biomaRt.
-#' Nature Protocols, 4, 1184–1191.
+#' Durinck S, Spellman P, Birney E, Huber W (2009). Mapping identifiers 
+#' for the integration of genomic datasets with the R/Bioconductor 
+#' package biomaRt. Nature Protocols, 4, 1184–1191.
 #' \doi{10.1038/nprot.2009.97}
 #'
-#' Durinck S, Moreau Y, Kasprzyk A, Davis S, De Moor B, Brazma A, Huber W (2005).
-#' BioMart and Bioconductor: a powerful link between biological databases and
-#' microarray data analysis. Bioinformatics, 21, 3439–3440.
-#' \doi{10.1093/bioinformatics/bti525}
+#' Durinck S, Moreau Y, Kasprzyk A, Davis S, De Moor B, Brazma A, 
+#' Huber W (2005). BioMart and Bioconductor: a powerful link between 
+#' biological databases and microarray data analysis. Bioinformatics, 
+#' 21, 3439–3440. \doi{10.1093/bioinformatics/bti525}
 #'
 get_id_mapping <- function(
     ensembl_ids,
@@ -171,15 +189,28 @@ get_id_mapping <- function(
     
     # Connect to BioMart
     mart <- if (mart_source == "ensembl") {
-        bm_use_ensembl(biomart = biomart_map[[mart_source]], dataset = dataset, host = host)
+        bm_use_ensembl(
+            biomart = biomart_map[[mart_source]], 
+            dataset = dataset,
+            host = host
+        )
     } else {
-        bm_use_ensembl_genomes(biomart = biomart_map[[mart_source]], dataset = dataset, host = host)
+        bm_use_ensembl_genomes(
+            biomart = biomart_map[[mart_source]], 
+            dataset = dataset, 
+            host = host
+        )
     }
     
     # Define attributes
     base_attributes <- c("ensembl_gene_id", symbol_col)
     if (include_go) {
-        base_attributes <- c(base_attributes, "go_id", "name_1006", "namespace_1003")
+        base_attributes <- c(
+            base_attributes, 
+            "go_id", 
+            "name_1006", 
+            "namespace_1003"
+        )
     }
     
     # Try primary symbol_col
@@ -192,8 +223,17 @@ get_id_mapping <- function(
     
     # Fallback to description if all symbol_col are NA
     if (all(is.na(genes[[symbol_col]]))) {
-        message(sprintf("'%s' returned all NA; falling back to 'description'", symbol_col))
-        fallback_attributes <- gsub(symbol_col, "description", base_attributes)
+        message(
+            sprintf(
+                "'%s' returned all NA; falling back to 'description'", 
+                symbol_col
+            )
+        )
+        fallback_attributes <- gsub(
+            symbol_col,
+            "description", 
+            base_attributes
+        )
         genes <- bm_get(
             attributes = fallback_attributes,
             filters = "ensembl_gene_id",

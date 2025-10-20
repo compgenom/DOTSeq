@@ -7,29 +7,31 @@
 reset_graphics(plot_fn, force_new_device = TRUE)
 }
 \arguments{
-\item{plot_fn}{A function object that performs plotting. This function will be
-executed within a clean graphics context.}
+\item{plot_fn}{A function object that performs plotting. This
+function will be executed within a clean graphics context.}
 
-\item{force_new_device}{Logical; if \code{TRUE}, attempts to close and reopen
-the graphics device before plotting. This helps isolate plots and prevent
-layout or overlay issues. Default is \code{TRUE}.}
+\item{force_new_device}{Logical; if \code{TRUE}, attempts to close
+and reopen the graphics device before plotting. This helps isolate
+plots and prevent layout or overlay issues. Default is \code{TRUE}.}
 }
 \value{
-Invisibly returns the result of \code{plot_fn()}, if successful.
-If an error occurs and recovery is triggered, the function attempts to
-replot in a fresh graphics device.
+Invisibly returns the result of \code{plot_fn()}, if
+successful. If an error occurs and recovery is triggered, the
+function attempts to replot in a fresh graphics device.
 }
 \description{
-A wrapper function that resets the graphics layout and optionally opens a new
-graphics device before executing a plotting function. It is designed to prevent
-layout persistence and recover from common base R graphics errors such as
-"invalid graphics state" or "figure margins too large", which can occur when
-plotting multiple figures sequentially.
+A wrapper function that resets the graphics layout and optionally
+opens a new graphics device before executing a plotting function.
+It is designed to prevent layout persistence and recover from
+common base R graphics errors such as "invalid graphics state" or
+"figure margins too large", which can occur when plotting multiple
+figures sequentially.
 }
 \details{
-This function is useful when plotting multiple complex figures (e.g., composite
-plots with \code{layout()}) in sequence. It resets the layout using
-\code{layout(1)} and \code{par(mfrow = c(1, 1))} before plotting, and catches
-common graphics errors to retry the plot in a clean device.
+This function is useful when plotting multiple complex figures
+(e.g., composite plots with \code{layout()}) in sequence. It resets
+the layout using \code{layout(1)} and \code{par(mfrow = c(1, 1))}
+before plotting, and catches common graphics errors to retry the
+plot in a clean device.
 }
 \keyword{internal}
