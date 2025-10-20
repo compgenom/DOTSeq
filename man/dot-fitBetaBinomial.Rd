@@ -56,8 +56,8 @@ compare the full model (with interaction) against a reduced model
 (without interaction) to assess translation-specific effects.
 Default is \code{FALSE}.}
 
-\item{diagnostic}{Logical; if \code{TRUE}, runs \pkg{DHARMa} diagnostics to
-assess model fit. This requires \pkg{DHARMa} to be installed.
+\item{diagnostic}{Logical; if \code{TRUE}, runs \pkg{DHARMa} diagnostics
+to assess model fit. This requires \pkg{DHARMa} to be installed.
 Default is \code{FALSE}.}
 
 \item{optimizers}{Logical; if \code{TRUE}, enables brute-force
