@@ -432,8 +432,11 @@ run_diagnostic <- function(
                     results <- list(model_fit = list(), estimates = list(), dispersion = list())
                 }
                 
-                if (isTRUE(diagnostic)) {
+                if (isTRUE(diagnostic) && requireNamespace("DHARMa", quietly = TRUE)) {
                     results$diagnostics <- list()
+                } else if (diagnostic && !requireNamespace("DHARMa", quietly = TRUE)) {
+                    diagnostic <- FALSE
+                    warning("DHARMa not installed; skipping diagnostics.")
                 }
 
 
