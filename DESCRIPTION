@@ -33,12 +33,12 @@ RoxygenNote: 7.3.3
 VignetteBuilder: knitr
 Suggests: 
     BiocStyle, 
-    DHARMa, 
     knitr, 
     rmarkdown, 
     testthat
 Imports:
     ashr,
+    DHARMa, 
     emmeans,
     glmmTMB,
     eulerr,

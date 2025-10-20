@@ -194,17 +194,17 @@ run_diagnostic <- function(
             "Model diagnostics require the 'DHARMa' package. ", 
             "Please install it by running: install.packages('DHARMa')"
         )
+    } else {
+        sim_out <- DHARMa::simulateResiduals(fittedModel = fitted_model, plot = plot)
+        
+        results_list$diagnostics[[diagnostics_name]] <- list(
+            overdispersion = DHARMa::testDispersion(sim_out, plot = plot)$p.value,
+            zeroInflation = DHARMa::testZeroInflation(sim_out, plot = plot)$p.value,
+            uniformity = DHARMa::testResiduals(sim_out, plot = plot)$uniformity$p.value,
+            residualsDispersion = DHARMa::testResiduals(sim_out, plot = plot)$dispersion$p.value,
+            outliers = DHARMa::testResiduals(sim_out, plot = plot)$outliers$p.value
+        )
     }
-    
-    sim_out <- DHARMa::simulateResiduals(fittedModel = fitted_model, plot = plot)
-    
-    results_list$diagnostics[[diagnostics_name]] <- list(
-        overdispersion = DHARMa::testDispersion(sim_out, plot = plot)$p.value,
-        zeroInflation = DHARMa::testZeroInflation(sim_out, plot = plot)$p.value,
-        uniformity = DHARMa::testResiduals(sim_out, plot = plot)$uniformity$p.value,
-        residualsDispersion = DHARMa::testResiduals(sim_out, plot = plot)$dispersion$p.value,
-        outliers = DHARMa::testResiduals(sim_out, plot = plot)$outliers$p.value
-    )
     
     return(results_list)
 }
