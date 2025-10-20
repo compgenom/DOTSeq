@@ -171,7 +171,7 @@ names(m)
 metadata(m$dds)
 
 set.seed(42)
-random_rows <- sample(seq_len(nrow(m$sumExp)), size = 100)
+random_rows <- sample(seq_len(nrow(m$sumExp)), size = 50)
 m$sumExp <- m$sumExp[random_rows, ]
 
 m <- DOTSeq(dotseq_dataset = m)

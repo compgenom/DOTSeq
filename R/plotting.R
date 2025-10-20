@@ -580,7 +580,10 @@ plot_composite <- function(
 #'
 #' @param dte_padj_col Column name for DTE adjusted p-values.
 #'     Default is \code{"padj"}.
-#'
+#'     
+#' @param dte_padj_threshold Numeric threshold for DTE adjusted p-value
+#'     significance. Default is \code{0.05}.
+#'     
 #' @param flip_sign Logical. If \code{TRUE}, flips the sign of DOU 
 #'     estimates for plotting. Default is \code{FALSE}.
 #'
@@ -642,11 +645,11 @@ plot_volcano <- function(
         dou_padj_col = "lfsr",
         dte_estimates_col = "log2FoldChange",
         dte_padj_col = "padj",
+        dte_padj_threshold = 0.05,
         flip_sign = FALSE,
         dou_estimates_threshold = 1,
         dou_padj_threshold = 0.05,
         dou_padj_ceiling = 10,
-        dte_padj_threshold = 0.05,
         extreme_threshold = NULL,
         label_topn = NULL,
         legend_position = "right",
@@ -1294,12 +1297,13 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' Generate Differential ORF Translation (DOT) Visualization Suite
 #'
 #' @description
-#' A high-level wrapper that visualizes differential ORF usage (DOU) and
-#' translation efficiency (DTE) relationships through a suite of plots
-#' including Venn diagrams, volcano plots, composite scatter plots with
-#' marginal distributions, and heatmaps. It integrates Ensembl gene 
+#' Generates a comprehensive suite of visualizations to explore 
+#' Differential ORF Usage (DOU) and Translation Efficiency (DTE) results 
+#' This includes Venn diagrams, volcano plots, composite scatter plots 
+#' with marginal distributions, and heatmaps. It integrates Ensembl gene 
 #' symbols and highlights significant ORFs based on empirical Bayes 
-#' shrinkage (via the \code{\link[ashr]{ash}} package).
+#' shrinkage (via the \code{\link[ashr]{ash}} package). It is designed 
+#' to provide an overview of translation-specific changes across conditions.
 #'
 #' @seealso \code{\link{DOTSeq}}
 #' 
@@ -1325,19 +1329,13 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #'
 #' @param dou_estimates_col Character string specifying the column name 
 #'     for DOU effect size estimates. Default is \code{"PosteriorMean"}.
-#'
+#'     
+#' @param dou_estimates_threshold Numeric threshold for DOU effect size
+#'     significance in volcano plot. Default is \code{1}.
+#'     
 #' @param dou_padj_col Character string specifying the column name for 
 #'     DOU significance values (LFSR). Default is \code{"lfsr"}.
-#'
-#' @param dte_estimates_col Character string specifying the column name 
-#'     for DTE effect size estimates. Default is \code{"log2FoldChange"}.
-#'
-#' @param dte_padj_col Character string specifying the column name for 
-#'     DTE adjusted p-values. Default is \code{"padj"}.
-#'
-#' @param dou_estimates_threshold Numeric threshold for DOU effect size
-#'     significance. Default is \code{1}.
-#'
+#'     
 #' @param dou_padj_threshold Numeric threshold for DOU LFSR significance.
 #'     Default is \code{0.05}.
 #'
@@ -1347,7 +1345,16 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #'
 #' @param extreme_threshold Optional numeric threshold for labeling 
 #'     extreme points in the volcano plot (based on -log10 LFSR).
+#'     
+#' @param dte_estimates_col Character string specifying the column name 
+#'     for DTE effect size estimates. Default is \code{"log2FoldChange"}.
 #'
+#' @param dte_padj_col Character string specifying the column name for 
+#'     DTE adjusted p-values. Default is \code{"padj"}.
+#'     
+#' @param dte_padj_threshold Numeric threshold for DTE adjusted
+#'     p-value significance. Default is \code{0.05}.
+#'     
 #' @param label_topn Optional numeric. If specified, labels the top N 
 #'     most significant points in the volcano plot.
 #'
@@ -1463,13 +1470,14 @@ plotDOT <- function(
         include_go = FALSE,
         plot_types = c("venn", "composite", "volcano", "heatmap"),
         dou_estimates_col = "PosteriorMean",
-        dou_padj_col = "lfsr",
-        dte_estimates_col = "log2FoldChange",
-        dte_padj_col = "padj",
         dou_estimates_threshold = 1,
+        dou_padj_col = "lfsr",
         dou_padj_threshold = 0.05,
         dou_padj_ceiling = 10,
         extreme_threshold = NULL,
+        dte_estimates_col = "log2FoldChange",
+        dte_padj_col = "padj",
+        dte_padj_threshold = 0.05,
         label_topn = 3,
         top_genes = 20,
         sorf_type = "uORF",
@@ -1535,7 +1543,9 @@ plotDOT <- function(
             grid::grid.draw(plot_venn(
                 results = results,
                 dou_padj_col = dou_padj_col,
-                dte_padj_col = dte_padj_col
+                dte_padj_col = dte_padj_col,
+                dou_padj_threshold = dou_padj_threshold,
+                dte_padj_threshold = dte_padj_threshold
             ))
             if (verbose) message("Venn diagram plotted")
         }, force_new_device = force_new_device)

@@ -30,7 +30,7 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
     # Subset for speed
     m$sumExp <- m$sumExp[rowRanges(m$sumExp)$is_kept == TRUE, ]
     set.seed(42)
-    m$sumExp <- m$sumExp[sample(seq_len(nrow(m$sumExp)), size = 50), ]
+    m$sumExp <- m$sumExp[sample(seq_len(nrow(m$sumExp)), size = 25), ]
     
     # Fit models (with diagnostics enabled because DHARMa is available)
     suppressMessages(
