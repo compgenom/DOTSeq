@@ -196,7 +196,7 @@ efficiency (DTE), indicating relative changes in ribosome loading.
 
 - `padj`: The adjusted p-value for DTE, accounting for multiple testing.
 
-Additional statistics include:
+Additional statistics for DOU results include:
 
 - `betahat`: The raw (unshrunken) effect size estimate.
 
