@@ -23,12 +23,13 @@ bibliography: DOTSeq.bib
 
 # Introduction
 `DOTSeq` is an R package for detecting differential translation of open 
-reading frames (ORFs) from matched ribosome profiling (Ribo-seq) and 
-RNA-seq datasets [@lim2025differential]. Translation is a tightly 
-regulated process, where multiple ORFs within the same gene can modulate 
-protein synthesis. Traditional gene-level approaches obscure these 
-regulatory layers. `DOTSeq` addresses this limitation by modelling 
-translation at the ORF level.
+reading frames (ORFs) from ribosome profiling (Ribo-seq) 
+[@ingolia2009genome, @ingolia2019ribosome] and matched RNA-seq datasets 
+[@lim2025differential]. Translation is a tightly regulated process, 
+where multiple ORFs within the same gene can modulate protein synthesis. 
+Traditional gene-level approaches obscure these regulatory layers. 
+`DOTSeq` addresses this limitation by modelling translation at the ORF 
+level.
 
 `DOTSeq` provides two complementary modules:
 
@@ -58,8 +59,8 @@ library(SummarizedExperiment, quietly = TRUE)
 
 # Example dataset
 We demonstrate `DOTSeq` functionalities using a HeLa cell cycle dataset 
-[@ly2024nuclear]. This dataset includes the snapshots of ribosome 
-footprints in HeLa cells synchronised at Mitotic Cycling, Mitotic Arrest, 
+[@ly2024nuclear]. This dataset includes the snapshots of translation 
+landscapes in HeLa cells synchronised at Mitotic Cycling, Mitotic Arrest, 
 and Interphase. Each condition contains two biological replicates. 
 
 Here, we use only a small portion of the dataset to speed up the 
