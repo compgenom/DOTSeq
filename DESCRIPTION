@@ -39,6 +39,7 @@ Suggests:
     testthat
 Imports:
     ashr,
+    boot,
     emmeans,
     glmmTMB,
     eulerr,
