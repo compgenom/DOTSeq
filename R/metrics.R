@@ -16,7 +16,6 @@
 #'
 #' @importFrom emmeans emmeans
 #' @importFrom boot inv.logit
-#' @importFrom SummarizedExperiment rowData
 #' 
 #' @export
 #' @examples
@@ -44,10 +43,11 @@
 #'     bed = bed
 #' )
 #'
-#' m$sumExp <- m$sumExp[rowData(m$sumExp)$is_kept == TRUE, ]
+#' m$sumExp <- m$sumExp[
+#'     SummarizedExperiment::rowData(m$sumExp)$is_kept == TRUE, ]
 #' # Subset only one gene
 #' m$sumExp <- m$sumExp[
-#'     rowData(m$sumExp)$gene_id == "ENSG00000119402.18", ]
+#'     SummarizedExperiment::rowData(m$sumExp)$gene_id == "ENSG00000119402.18", ]
 #'
 #' m <- DOTSeq(dotseq_dataset = m, modules = "DOU")
 #'
