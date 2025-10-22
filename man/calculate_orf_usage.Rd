@@ -49,7 +49,7 @@ m <- DOTSeqDataSet(
     bed = bed
 )
 
-m$sumExp <- m$sumExp[rowRanges(m$sumExp)$is_kept == TRUE, ]
+m$sumExp <- m$sumExp[rowData(m$sumExp)$is_kept == TRUE, ]
 # Subset only one gene
 m$sumExp <- m$sumExp[
     rowData(m$sumExp)$gene_id == "ENSG00000119402.18", ]
