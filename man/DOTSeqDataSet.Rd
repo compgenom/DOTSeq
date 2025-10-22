@@ -18,41 +18,43 @@ DOTSeqDataSet(
 )
 }
 \arguments{
-\item{count_table}{Path to a count table file or a data frame. Must contain
-columns: \code{Geneid}, \code{Chr}, \code{Start}, \code{End},
-\code{Strand}, \code{Length}, plus one column per sample.}
+\item{count_table}{Path to a count table file or a data frame. Must
+contain columns: \code{Geneid}, \code{Chr}, \code{Start},
+\code{End}, \code{Strand}, \code{Length}, plus one column per
+sample.}
 
 \item{condition_table}{Path to a sample metadata file or a data frame.
 Must include columns: \code{run}, \code{strategy}, \code{condition},
 \code{replicate}.}
 
-\item{flattened_gtf}{Optional path to a flattened GFF/GTF file containing
-exon definitions.}
+\item{flattened_gtf}{Optional path to a flattened GFF/GTF file
+containing exon definitions.}
 
 \item{bed}{Path to a BED file with ORF annotations.}
 
 \item{formula}{A formula object specifying the design.
 Default is \code{~ condition * strategy}.}
 
-\item{target}{Character string specifying the non-reference condition level
-to extract the corresponding interaction term. Contrasted against the
-baseline condition. Default is \code{NULL}.}
+\item{target}{Character string specifying the non-reference condition
+level to extract the corresponding interaction term. Contrasted
+against the baseline condition. Default is \code{NULL}.}
 
-\item{baseline}{Character string specifying the desired reference level.
-Default is \code{NULL}.}
+\item{baseline}{Character string specifying the desired reference
+level. Default is \code{NULL}.}
 
 \item{min_count}{Minimum count threshold for filtering ORFs.
 Default is \code{1}.}
 
-\item{stringent}{Logical or \code{NULL}; determines the filtering strategy:
+\item{stringent}{Logical or \code{NULL}; determines the filtering
+strategy:
 \describe{
 \item{\code{TRUE}}{
-Keep ORFs where all replicates in at least one condition pass
-\code{min_count}.
+Keep ORFs where all replicates in at least one condition
+pass \code{min_count}.
 }
 \item{\code{FALSE}}{
-Keep ORFs where all replicates in at least one condition-strategy
-group pass \code{min_count}.
+Keep ORFs where all replicates in at least one
+condition-strategy group pass \code{min_count}.
 }
 \item{\code{NULL}}{
 Keep ORFs where total counts across replicates pass
@@ -67,9 +69,9 @@ Default is \code{TRUE}.}
 A named \code{list} containing:
 \describe{
 \item{sumExp}{
-A \code{SummarizedExperiment} object containing pre-filtered raw
-counts and sample metadata, used for modeling Differential ORF
-Usage (DOU) within the DOTSeq framework.
+A \code{SummarizedExperiment} object containing pre-filtered
+raw counts and sample metadata, used for modeling
+Differential ORF Usage (DOU) within the DOTSeq framework.
 }
 \item{dds}{
 A \code{DESeqDataSet} object used for modeling Differential
@@ -80,10 +82,10 @@ DESeq2.
 }
 \description{
 This function initialize and construct the DOTSeq dataset object.
-This includes loading count and metadata tables, parsing ORF annotations,
-filtering ORFs based on count thresholds, and preparing objects for
-downstream differential translation analysis using beta-binomial and
-negative binomial models.
+This includes loading count and metadata tables, parsing ORF
+annotations, filtering ORFs based on count thresholds, and preparing
+objects for downstream differential translation analysis using
+beta-binomial and negative binomial models.
 }
 \examples{
 # Read in count matrix, condition table, and annotation files

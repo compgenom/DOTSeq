@@ -7,36 +7,37 @@
 contrast_vectors(dds, formula = NULL, baseline = NULL, delim = ".")
 }
 \arguments{
-\item{dds}{A \code{DESeqDataSet} object containing count data and sample
-annotations.}
+\item{dds}{A \code{DESeqDataSet} object containing count data and
+sample annotations.}
 
-\item{formula}{Optional. A model formula used to generate the design matrix
-(e.g., \code{~ condition * strategy}). If not provided, the function
-will attempt to extract it from \code{metadata(dds)$formula}.}
+\item{formula}{Optional. A model formula used to generate the design
+matrix (e.g., \code{~ condition * strategy}). If not provided,
+the function will try to extract it from
+\code{metadata(dds)$formula}.}
 
 \item{baseline}{Optional. A character string specifying the baseline
 condition for comparisons. If \code{NULL}, the first level of
 \code{condition} in \code{colData(dds)} is used.}
 
-\item{delim}{A character string used to identify interaction terms in
-coefficient names. Default is \code{"."}.}
+\item{delim}{A character string used to identify interaction terms
+in coefficient names. Default is \code{"."}.}
 }
 \value{
-A named list of numeric contrast vectors, where each vector
-corresponds to a pairwise or baseline comparison. These vectors can be
-used with \code{results(dds, contrast = ...)} for custom differential
+A named list of numeric contrast vectors. Each vector
+represents a pairwise or baseline comparison. These can be used
+with \code{results(dds, contrast = ...)} for custom differential
 testing.
 }
 \description{
-Constructs a named list of contrast vectors for differential analysis using
-a DESeq2 \code{DESeqDataSet} object. It identifies interaction terms (e.g.,
-\code{condition:strategy}) from the model design and builds pairwise
-contrasts between them, as well as contrasts against a specified baseline
-condition.
+Constructs a named list of contrast vectors for differential
+analysis using a DESeq2 \code{DESeqDataSet} object. It identifies
+interaction terms (e.g., \code{condition:strategy}) from the model
+design and builds pairwise contrasts between them, as well as
+contrasts against a specified baseline condition.
 
-This is useful for extracting custom contrasts not directly available via
-\code{resultsNames(dds)} and for post hoc comparisons in complex designs
-involving interaction terms.
+This is useful for extracting custom contrasts not directly
+available via \code{resultsNames(dds)} and for post hoc comparisons
+in complex designs involving interaction terms.
 }
 \examples{
 \dontrun{
@@ -56,8 +57,8 @@ involving interaction terms.
 
 }
 \references{
-Love, M.I., Huber, W., Anders, S. (2014) Moderated estimation of fold change
-and dispersion for RNA-seq data with DESeq2. Genome Biology, 15:550.
-\doi{10.1186/s13059-014-0550-8}
+Love, M.I., Huber, W., Anders, S. (2014) Moderated estimation of fold
+change and dispersion for RNA-seq data with DESeq2. Genome Biology,
+15:550. \doi{10.1186/s13059-014-0550-8}
 }
 \keyword{internal}

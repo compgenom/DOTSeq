@@ -22,9 +22,9 @@ with six columns:
 annotated.}
 }
 \value{
-A \code{GRanges} object with an added metadata column \code{orf_type},
-containing the BED score for overlapping ORFs. Non-overlapping ORFs will
-have \code{NA}.
+A \code{GRanges} object with an added metadata column
+\code{orf_type}, containing the BED score for overlapping ORFs.
+Non-overlapping ORFs will have \code{NA}.
 }
 \description{
 This function reads a BED file and converts it into a \code{GRanges} object.

@@ -28,8 +28,8 @@
 #' @keywords internal
 #'
 .calculate_mean_dispersion <- function(
-    counts, 
-    totals
+        counts, 
+        totals
 ) {
     
     # Avoid division by zero
@@ -42,25 +42,25 @@
             )
         )
     }
-
+    
     # The proportions
     proportions <- counts / totals
-
+    
     # The mean proportion for the group
     mu_hat <- mean(proportions)
-
+    
     # The sample variance of the proportions
     var_hat <- var(proportions)
-
+    
     # The mean of the total counts for the group
     N_bar <- mean(totals)
-
+    
     # Moment-based estimate for rho
     # Based on: var_hat = (mu_hat * (1 - mu_hat) / N_bar) * (1 + (N_bar - 1) * rho)
     # Solve for rho_hat
     rho_hat <- (var_hat * N_bar) / (mu_hat * (1 - mu_hat)) - 1
     rho_hat <- rho_hat / (N_bar - 1)
-
+    
     # Ensure rho is non-negative
     return(list(
         mean_prop = mu_hat,
@@ -118,13 +118,13 @@
 #'
 #'
 fit_glmm <- function(
-    formula, 
-    dispformula, 
-    data, 
-    family = betabinomial(), 
-    parallel = list(n = 4L, autopar = TRUE),
-    optimizers = c("nlminb", "bobyqa", "optim"), 
-    max_iter = 1000
+        formula, 
+        dispformula, 
+        data, 
+        family = betabinomial(), 
+        parallel = list(n = 4L, autopar = TRUE),
+        optimizers = c("nlminb", "bobyqa", "optim"), 
+        max_iter = 1000
 ) {
     
     for (opt in optimizers) {
@@ -143,12 +143,12 @@ fit_glmm <- function(
             ),
             silent = TRUE
         )
-
+        
         if (inherits(model, "glmmTMB") && model$fit$convergence == 0 && isTRUE(model$sdr$pdHess)) {
             return(model)
         }
     }
-
+    
     # If none of the optimizers worked
     return(model)
 }
@@ -183,10 +183,10 @@ fit_glmm <- function(
 #' @keywords internal
 #' 
 run_diagnostic <- function(
-    fitted_model, 
-    results_list, 
-    diagnostics_name, 
-    plot = FALSE
+        fitted_model, 
+        results_list, 
+        diagnostics_name, 
+        plot = FALSE
 ) {
     
     if (!requireNamespace("DHARMa", quietly=TRUE)) {
@@ -296,22 +296,22 @@ run_diagnostic <- function(
 #' \url{https://github.com/florianhartig/dharma}
 #'
 .fitBetaBinomial <- function(
-    ribo_mat,
-    rna_mat,
-    coldata,
-    formula = ~ condition * strategy,
-    emm_specs = ~ condition * strategy,
-    dispersion_modeling = c("auto", "shared", "custom"),
-    dispformula = NULL,
-    lrt = FALSE,
-    diagnostic = FALSE,
-    optimizers = FALSE,
-    parallel = list(n = 4L, autopar = TRUE),
-    verbose = FALSE
+        ribo_mat,
+        rna_mat,
+        coldata,
+        formula = ~ condition * strategy,
+        emm_specs = ~ condition * strategy,
+        dispersion_modeling = c("auto", "shared", "custom"),
+        dispformula = NULL,
+        lrt = FALSE,
+        diagnostic = FALSE,
+        optimizers = FALSE,
+        parallel = list(n = 4L, autopar = TRUE),
+        verbose = FALSE
 ) {
     
     dispersion_modeling <- match.arg(dispersion_modeling)
-
+    
     # Check if gene has only one ORF
     num_orfs <- nrow(ribo_mat)
     # Handle single-ORF genes
@@ -324,50 +324,53 @@ run_diagnostic <- function(
         names(.out) <- rownames(ribo_mat)
         return(list(.out))
     }
-
+    
     # Get a list of ORFs to process
     orf_names <- rownames(ribo_mat)
     num_orfs <- length(orf_names)
     num_samples <- ncol(ribo_mat)
-
+    
     # Extract the condition levels from coldata
     condition_levels <- levels(coldata$condition)
-
+    
     # Extract the strategy levels from coldata
     strategy_levels <- levels(coldata$strategy)
-
-    # Define a flexible regex pattern: matches "rna", "RNA", "RNA-seq", and "0"
-    rna_pattern <- "(?i)rna|^0$"
-    rna_level <- strategy_levels[1]
-    ribo_level <- strategy_levels[2]
-
-    # Find matching values
-    if (isTRUE(grepl(rna_pattern, rna_level))) {
-        # Prepare the data for a single gene dynamically based on the design matrix
+    assigned_levels <- assign_strategy_levels(
+        coldata, 
+        strategy_col = "strategy"
+    )
+    
+    # Prepare the data for a single gene dynamically based on the design matrix
+    if (strategy_levels[1] == assigned_levels$rna_level) {
+        rna_level <- strategy_levels[1]
+        ribo_level <- strategy_levels[2]
         long_data <- data.frame(
             counts = c(as.vector(rna_mat), as.vector(ribo_mat)),
             ORF = factor(rep(orf_names, times = num_samples * 2)),
             row.names = NULL
         )
-    } else {
+        
+    } else if (strategy_levels[2] == assigned_levels$rna_level) {
+        rna_level <- strategy_levels[2]
+        ribo_level <- strategy_levels[1]
         long_data <- data.frame(
             counts = c(as.vector(ribo_mat), as.vector(rna_mat)),
             ORF = factor(rep(orf_names, times = num_samples * 2)),
             row.names = NULL
         )
     }
-
+    
     # Replicate the design variables for each ORF
     long_design <- as.data.frame(coldata[rep(seq_len(nrow(coldata)), each = num_orfs), ])
-
+    
     # Bind the replicated design matrix to the long data frame
     long_data <- cbind(long_data, long_design)
-
+    
     # Check for negative counts
     if (isTRUE(any(long_data$counts < 0))) {
         stop("Encounter negative counts")
     }
-
+    
     # Check for zero-count ORFs and remove them
     # DEBUGGING
     # if (grepl('ENSG00000000003.16', long_data$ORF)[1]) {
@@ -375,7 +378,7 @@ run_diagnostic <- function(
     # }
     total_counts_by_orf <- aggregate(counts ~ ORF, data = long_data, sum)
     orfs_to_keep <- as.character(total_counts_by_orf$ORF[total_counts_by_orf$counts > 0])
-
+    
     if (length(orfs_to_keep) < 2) {
         return(list(.PostHoc(
             type = "fitError",
@@ -383,39 +386,39 @@ run_diagnostic <- function(
             posthoc = NA
         )))
     }
-
+    
     # Fit the model for each non-zero ORF's proportion against the others
     models_gene <- lapply(orfs_to_keep, function(current_orf) {
         # Get the data for the current ORF
         model_data_this_orf <- long_data[long_data$ORF == current_orf, ]
-
+        
         # Get the total gene counts for each sample
-        if (isTRUE(grepl(rna_pattern, strategy_levels[1]))) {
+        if (strategy_levels[1] == assigned_levels$rna_level) {
             total_gene_counts <- c(colSums(rna_mat), colSums(ribo_mat))
             model_data_this_orf$strategy <- relevel(factor(model_data_this_orf$strategy), ref = rna_level)
-        } else {
+        } else if (strategy_levels[2] == assigned_levels$rna_level) {
             total_gene_counts <- c(colSums(ribo_mat), colSums(rna_mat))
             model_data_this_orf$strategy <- relevel(factor(model_data_this_orf$strategy), ref = ribo_level)
         }
-
+        
         model_data_this_orf$success <- model_data_this_orf$counts
         model_data_this_orf$failure <- total_gene_counts - model_data_this_orf$success
-
+        
         model_data_this_orf$condition <- relevel(factor(model_data_this_orf$condition), ref = condition_levels[1])
-
+        
         # DEBUGGING
         # if (current_orf == "ENSG00000000003.16:O034") {
         #   print(levels(model_data_this_orf$strategy))
         #   print(levels(model_data_this_orf$condition))
         # }
-
+        
         full_formula <- as.formula(paste("cbind(success, failure) ~", as.character(formula)[2]))
-
+        
         if (isTRUE(lrt)) {
             null_formula_str <- paste0(as.character(formula)[2], " - condition:strategy")
             null_formula <- as.formula(paste("cbind(success, failure) ~", null_formula_str))
         }
-
+        
         # Use a single, robust tryCatch block to handle all potential errors
         result <- tryCatch(
             {
@@ -424,7 +427,7 @@ run_diagnostic <- function(
                 model_shared <- NULL
                 model_null <- NULL
                 model_null_shared <- NULL
-
+                
                 # Initialize the results list with the new structure
                 if (isTRUE(lrt)) {
                     results <- list(model_fit = list(), tests = list(), estimates = list(), dispersion = list())
@@ -440,8 +443,8 @@ run_diagnostic <- function(
                 } else if (isTRUE(diagnostic) && requireNamespace("DHARMa", quietly = TRUE)) {
                     results$diagnostics <- list()
                 }
-
-
+                
+                
                 if (isTRUE(optimizers)) {
                     # Fit Models based on dispersion_modeling
                     if (dispersion_modeling %in% c("auto")) {
@@ -487,7 +490,7 @@ run_diagnostic <- function(
                             )
                         }
                     }
-
+                    
                     if (dispersion_modeling %in% c("shared")) {
                         model_shared <- fit_glmm(
                             formula = full_formula, 
@@ -509,7 +512,7 @@ run_diagnostic <- function(
                             )
                         }
                     }
-
+                    
                     if (dispersion_modeling == "custom") {
                         if (!is.null(dispformula)) {
                             model_custom <- fit_glmm(
@@ -586,7 +589,7 @@ run_diagnostic <- function(
                             )
                         }
                     }
-
+                    
                     if (dispersion_modeling %in% c("shared")) {
                         model_shared <- glmmTMB(
                             full_formula, dispformula = ~1, 
@@ -611,7 +614,7 @@ run_diagnostic <- function(
                             )
                         }
                     }
-
+                    
                     if (dispersion_modeling == "custom") {
                         if (!is.null(dispformula)) {
                             model_custom <- glmmTMB(
@@ -644,10 +647,10 @@ run_diagnostic <- function(
                 }
                 # Build return object based on chosen strategy
                 model_to_return <- NULL
-
+                
                 if (dispersion_modeling == "auto") {
                     # Full comparison mode
-
+                    
                     # Add strategy-specific metrics
                     if (!is.null(model_strategy) && model_strategy$fit$convergence == 0 && isTRUE(model_strategy$sdr$pdHess)) {
                         results$model_fit$aic <- AIC(model_strategy)
@@ -663,16 +666,16 @@ run_diagnostic <- function(
                             )
                         }
                     }
-
+                    
                     # Add shared-specific metrics
                     if (!is.null(model_shared) && model_shared$fit$convergence == 0 && isTRUE(model_shared$sdr$pdHess)) {
                         results$model_fit$aic_shared_disp <- AIC(model_shared)
-
+                        
                         # results$tests$lrt_shared_disp <- anova(model_strategy, model_shared)$P[2]
                         if (isTRUE(lrt) && !is.null(model_null_shared) && model_null_shared$fit$convergence == 0 && isTRUE(model_null_shared$sdr$pdHess)) {
                             results$tests$lrt_shared <- anova(model_shared, model_null_shared)$P[2]
                         }
-
+                        
                         if (isTRUE(diagnostic)) {
                             results <- run_diagnostic(
                                 fitted_model = model_shared, 
@@ -682,10 +685,10 @@ run_diagnostic <- function(
                             )
                         }
                     }
-
+                    
                     valid_strategy <- !is.null(model_strategy) && model_strategy$fit$convergence == 0 && isTRUE(model_strategy$sdr$pdHess)
                     valid_shared <- !is.null(model_shared) && model_shared$fit$convergence == 0 && isTRUE(model_shared$sdr$pdHess)
-
+                    
                     if (valid_strategy) {
                         model_to_return <- model_strategy
                     } else if (valid_shared) {
@@ -728,7 +731,7 @@ run_diagnostic <- function(
                         }
                     }
                 }
-
+                
                 # Check if a valid model was chosen and fitted
                 if (is.null(model_to_return) || model_to_return$fit$convergence != 0 || !isTRUE(model_to_return$sdr$pdHess)) {
                     warning("Model fit failed for ORF", current_orf, "due to convergence or non-positive-definite Hessian.")
@@ -738,32 +741,32 @@ run_diagnostic <- function(
                         posthoc = NA
                     ))
                 }
-
+                
                 raw_rho_rna <- .calculate_mean_dispersion(model_data_this_orf[model_data_this_orf$strategy == rna_level, ]$counts, model_data_this_orf[model_data_this_orf$strategy == rna_level, ]$success + model_data_this_orf[model_data_this_orf$strategy == rna_level, ]$failure)
                 raw_rho_ribo <- .calculate_mean_dispersion(model_data_this_orf[model_data_this_orf$strategy == ribo_level, ]$counts, model_data_this_orf[model_data_this_orf$strategy == ribo_level, ]$success + model_data_this_orf[model_data_this_orf$strategy == ribo_level, ]$failure)
-
+                
                 results$estimates$mean_prop_rna <- raw_rho_rna$mean_prop
                 results$estimates$mean_prop_ribo <- raw_rho_ribo$mean_prop
                 results$dispersion$raw_rho_rna <- raw_rho_rna$raw_rho
                 results$dispersion$raw_rho_ribo <- raw_rho_ribo$raw_rho
-
+                
                 disp_coefs <- fixef(model_to_return)$disp
                 names(disp_coefs) <- paste0("disp~", names(disp_coefs))
-
+                
                 disp_intercept <- disp_coefs["disp~(Intercept)"]
                 results$dispersion$fitted_disp_rna <- exp(disp_intercept)
-
+                
                 if ((dispersion_modeling == "auto" && !is.null(model_strategy))) {
                     disp_ribo_effect <- disp_coefs["disp~strategy1"]
                     results$dispersion$fitted_disp_ribo <- exp(disp_intercept + disp_ribo_effect)
                 } else {
                     results$dispersion$fitted_disp_ribo <- results$dispersion$fitted_disp_rna
                 }
-
+                
                 results$dispersion$fittedVsRawDispDiff <- abs(results$dispersion$fitted_disp_rna - results$dispersion$raw_rho_rna) + abs(results$dispersion$fitted_disp_ribo - results$dispersion$raw_rho_ribo)
-
+                
                 emm <- emmeans(model_to_return, specs = emm_specs)
-
+                
                 return(.PostHoc(
                     type = "glmmTMB",
                     results = results,
@@ -779,10 +782,10 @@ run_diagnostic <- function(
                 ))
             }
         )
-
+        
         return(result)
     })
-
+    
     names(models_gene) <- orfs_to_keep
     return(models_gene)
 }
@@ -930,36 +933,36 @@ run_diagnostic <- function(
 #'
 #'
 fitDOU <- function(
-    count_table,
-    rowdata,
-    coldata,
-    formula = ~ condition * strategy,
-    emm_specs = ~ condition * strategy,
-    dispformula = NULL,
-    dispersion_modeling = "auto",
-    lrt = FALSE,
-    diagnostic = FALSE,
-    parallel = list(n = 4L, autopar = TRUE),
-    optimizers = FALSE,
-    verbose = TRUE
+        count_table,
+        rowdata,
+        coldata,
+        formula = ~ condition * strategy,
+        emm_specs = ~ condition * strategy,
+        dispformula = NULL,
+        dispersion_modeling = "auto",
+        lrt = FALSE,
+        diagnostic = FALSE,
+        parallel = list(n = 4L, autopar = TRUE),
+        optimizers = FALSE,
+        verbose = TRUE
 ) {
     stopifnot(class(count_table)[1] %in% c("matrix", "data.frame", "dgCMatrix", "DelayedMatrix"))
-
+    
     count_table <- as.matrix(count_table)
     storage.mode(count_table) <- "integer"
-
+    
     # Identify lonely ORFs
     single_orf <- !mcols(rowdata)$gene_id %in% mcols(rowdata)$gene_id[duplicated(mcols(rowdata)$gene_id)]
     lonely_orfs <- rownames(rowdata)[single_orf]
     if (any(single_orf)) {
         message("Genes with only one ORF detected. Results of such ORFs will be set to NA and flagged as lonelyORF.")
     }
-
+    
     # Match ORFs to genes
     geneForEachOrf <- rowdata$gene_id[match(rownames(count_table), rownames(rowdata))]
     geneForEachOrf <- as.character(geneForEachOrf)
     stopifnot(length(geneForEachOrf) == nrow(count_table))
-
+    
     # Get the logical indices from the 'strategy' column of the sample annotation (coldata)
     strategy_levels <- levels(coldata$strategy)
     if (length(strategy_levels) != 2) {
@@ -968,18 +971,18 @@ fitDOU <- function(
     }
     ribo_idx <- coldata$strategy == strategy_levels[2]
     rna_idx <- coldata$strategy == strategy_levels[1]
-
+    
     # Subset the count_table matrix using these indices
     count_table_ribo <- count_table[, ribo_idx]
     count_table_rna <- count_table[, rna_idx]
-
+    
     gene_ids <- levels(factor(geneForEachOrf))
-
+    
     fit_model_for_gene <- function(gene) {
         is_kept <- unique(rowdata[rowdata$gene_id == gene, ]$is_kept)
         idx <- which(geneForEachOrf == gene)
         orfs <- rownames(count_table)[idx]
-
+        
         if (!isTRUE(is_kept)) {
             models_gene <- setNames(
                 lapply(orfs, function(orf) {
@@ -989,10 +992,10 @@ fitDOU <- function(
             )
             return(models_gene)
         }
-
+        
         ribo_mat <- count_table_ribo[idx, , drop = FALSE]
         rna_mat <- count_table_rna[idx, , drop = FALSE]
-
+        
         models_gene <- tryCatch(
             {
                 .fitBetaBinomial(
@@ -1020,18 +1023,18 @@ fitDOU <- function(
                 )
             }
         )
-
+        
         return(models_gene)
     }
-
+    
     models <- if (verbose) {
         pbapply::pblapply(gene_ids, fit_model_for_gene)
     } else {
         lapply(gene_ids, fit_model_for_gene)
     }
-
+    
     all_models <- do.call(c, models)
-
+    
     final_models <- setNames(
         lapply(rownames(count_table), function(orf) {
             if (orf %in% lonely_orfs) {
@@ -1045,6 +1048,6 @@ fitDOU <- function(
         }),
         rownames(count_table)
     )
-
+    
     return(final_models)
 }

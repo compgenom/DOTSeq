@@ -2,8 +2,7 @@
 % Please edit documentation in R/posthoc.R
 \name{testDOU}
 \alias{testDOU}
-\title{Compute Differential ORF Usage (DOU) Contrasts Using Estimated Marginal
-Means}
+\title{Compute Differential ORF Usage (DOU) Contrasts Using EMMs}
 \usage{
 testDOU(
   sumExp,
@@ -13,54 +12,55 @@ testDOU(
 )
 }
 \arguments{
-\item{sumExp}{A SummarizedExperiment object containing fitted model objects,
-typically stored in \code{rowData(sumExp)[['DOUResults']]}.}
+\item{sumExp}{A SummarizedExperiment object containing fitted
+model objects, typically stored in
+\code{rowData(sumExp)[['DOUResults']]}.}
 
-\item{contrasts_method}{Character string specifying the method for computing
-contrasts. Default is \code{"revpairwise"}.}
+\item{contrasts_method}{Character string specifying the method
+for computing contrasts. Default is \code{"revpairwise"}.}
 
-\item{nullweight}{Numeric. Prior weight on the null hypothesis for empirical
-Bayes shrinkage. Higher values yield more conservative lfsr estimates.
-Default is \code{500}.}
+\item{nullweight}{Numeric. Prior weight on the null hypothesis
+for empirical Bayes shrinkage. Higher values yield more
+conservative lfsr estimates. Default is \code{500}.}
 
 \item{verbose}{Logical. If \code{TRUE}, prints progress messages.
 Default is \code{TRUE}.}
 }
 \value{
-A \code{SummarizedExperiment} object (the input \code{sumExp} or
-\code{m$sumExp}) with two new \code{S4Vectors::DataFrame} objects
-stored in its \code{metadata} slot. These tables contain the
-long-format results for all computed contrasts:
+A \code{SummarizedExperiment} object (the input
+\code{sumExp} or \code{m$sumExp}) with two new
+\code{S4Vectors::DataFrame} objects stored in its
+\code{metadata} slot. These tables contain long-format results
+for all computed contrasts:
 \describe{
 \item{\code{interaction_results}}{
-A long-format \code{S4Vectors::DataFrame} containing the
-Differential ORF Usage (DOU) effect sizes (Ribo-seq contrast
-minus RNA-seq contrast) for all computed interaction contrasts.
-Columns include \code{contrast}, and the full set of shrunken
-and unshrunken metrics (e.g., \code{betahat}, \code{sebetahat},
-\code{WaldPadj}, \code{PosteriorMean}, \code{lfsr}).
+A long-format \code{S4Vectors::DataFrame} containing DOU
+effect sizes (Ribo-seq minus RNA-seq) for all interaction
+contrasts. Columns include \code{contrast}, and shrunken
+and unshrunken metrics (e.g., \code{betahat},
+\code{sebetahat}, \code{WaldPadj}, \code{PosteriorMean},
+\code{lfsr}).
 }
 \item{\code{strategy_results}}{
-A long-format \code{S4Vectors::DataFrame} containing the
-strategy-specific effect sizes (e.g., estimates for Ribo-seq
-only) for all computed contrasts. Columns include
-\code{strategy} (e.g., "ribo", "rna"), \code{contrast}, and
-the full set of shrunken and unshrunken metrics.
+A long-format \code{S4Vectors::DataFrame} containing
+strategy-specific effect sizes (e.g., Ribo-seq only) for
+all computed contrasts. Columns include \code{strategy},
+\code{contrast}, and shrunken and unshrunken metrics.
 }
 }
 }
 \description{
-Performs Differential ORF Usage (DOU) analysis by computing contrasts
-between ribosome profiling and RNA-seq modalities using estimated
-marginal means (EMMs) from fitted models (via
-\code{\link[emmeans]{emmeans}}). Supports both interaction-specific
-and strategy-specific contrasts, and applies empirical Bayes shrinkage
-via \code{\link[ashr]{ash}} to stabilize effect size estimates.
+Performs Differential ORF Usage (DOU) analysis by computing
+contrasts between ribosome profiling and RNA-seq modalities
+using estimated marginal means (EMMs) from fitted models.
+Supports interaction-specific and strategy-specific contrasts.
+Applies empirical Bayes shrinkage via \code{\link[ashr]{ash}} to
+stabilize effect size estimates.
 }
 \details{
-The results for post hoc contrasts are stored in long format via explicit
-\code{contrast} and/or \code{strategy} columns. Non-converged models are
-omitted.
+Results for post hoc contrasts are stored in long format using
+explicit \code{contrast} and/or \code{strategy} columns.
+Non-converged models are omitted.
 }
 \examples{
 # Load SummarizedExperiment to enable subsetting and access to 

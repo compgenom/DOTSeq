@@ -1,56 +1,57 @@
-#' Compute Differential ORF Usage (DOU) Contrasts Using Estimated Marginal 
-#' Means
+#' Compute Differential ORF Usage (DOU) Contrasts Using EMMs
 #'
 #' @description
-#' Performs Differential ORF Usage (DOU) analysis by computing contrasts
-#' between ribosome profiling and RNA-seq modalities using estimated 
-#' marginal means (EMMs) from fitted models (via 
-#' \code{\link[emmeans]{emmeans}}). Supports both interaction-specific 
-#' and strategy-specific contrasts, and applies empirical Bayes shrinkage 
-#' via \code{\link[ashr]{ash}} to stabilize effect size estimates.
+#' Performs Differential ORF Usage (DOU) analysis by computing
+#' contrasts between ribosome profiling and RNA-seq modalities
+#' using estimated marginal means (EMMs) from fitted models.
+#' Supports interaction-specific and strategy-specific contrasts.
+#' Applies empirical Bayes shrinkage via \code{\link[ashr]{ash}} to
+#' stabilize effect size estimates.
 #'
-#' @seealso \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSet}}, 
+#' @seealso
+#' \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSet}},
 #' \code{\link{fitDOU}}, \code{\link{plotDOT}}
-#' 
-#' @param sumExp A SummarizedExperiment object containing fitted model objects,
-#'     typically stored in \code{rowData(sumExp)[['DOUResults']]}.
 #'
-#' @param contrasts_method Character string specifying the method for computing
-#'     contrasts. Default is \code{"revpairwise"}.
+#' @param sumExp A SummarizedExperiment object containing fitted
+#'     model objects, typically stored in
+#'     \code{rowData(sumExp)[['DOUResults']]}.
 #'
-#' @param nullweight Numeric. Prior weight on the null hypothesis for empirical
-#'     Bayes shrinkage. Higher values yield more conservative lfsr estimates.
-#'     Default is \code{500}.
+#' @param contrasts_method Character string specifying the method
+#'     for computing contrasts. Default is \code{"revpairwise"}.
+#'
+#' @param nullweight Numeric. Prior weight on the null hypothesis
+#'     for empirical Bayes shrinkage. Higher values yield more
+#'     conservative lfsr estimates. Default is \code{500}.
 #'
 #' @param verbose Logical. If \code{TRUE}, prints progress messages.
 #'     Default is \code{TRUE}.
 #'
-#' @return A \code{SummarizedExperiment} object (the input \code{sumExp} or
-#'     \code{m$sumExp}) with two new \code{S4Vectors::DataFrame} objects 
-#'     stored in its \code{metadata} slot. These tables contain the 
-#'     long-format results for all computed contrasts:
+#' @return A \code{SummarizedExperiment} object (the input
+#'     \code{sumExp} or \code{m$sumExp}) with two new
+#'     \code{S4Vectors::DataFrame} objects stored in its
+#'     \code{metadata} slot. These tables contain long-format results
+#'         for all computed contrasts:
 #'     \describe{
 #'         \item{\code{interaction_results}}{
-#'             A long-format \code{S4Vectors::DataFrame} containing the
-#'             Differential ORF Usage (DOU) effect sizes (Ribo-seq contrast
-#'             minus RNA-seq contrast) for all computed interaction contrasts.
-#'             Columns include \code{contrast}, and the full set of shrunken
-#'             and unshrunken metrics (e.g., \code{betahat}, \code{sebetahat},
-#'             \code{WaldPadj}, \code{PosteriorMean}, \code{lfsr}).
+#'             A long-format \code{S4Vectors::DataFrame} containing DOU 
+#'             effect sizes (Ribo-seq minus RNA-seq) for all interaction 
+#'             contrasts. Columns include \code{contrast}, and shrunken 
+#'             and unshrunken metrics (e.g., \code{betahat}, 
+#'             \code{sebetahat}, \code{WaldPadj}, \code{PosteriorMean}, 
+#'             \code{lfsr}).
 #'         }
 #'         \item{\code{strategy_results}}{
-#'             A long-format \code{S4Vectors::DataFrame} containing the
-#'             strategy-specific effect sizes (e.g., estimates for Ribo-seq
-#'             only) for all computed contrasts. Columns include 
-#'             \code{strategy} (e.g., "ribo", "rna"), \code{contrast}, and 
-#'             the full set of shrunken and unshrunken metrics.
+#'             A long-format \code{S4Vectors::DataFrame} containing
+#'             strategy-specific effect sizes (e.g., Ribo-seq only) for 
+#'             all computed contrasts. Columns include \code{strategy},
+#'             \code{contrast}, and shrunken and unshrunken metrics.
 #'         }
 #'     }
 #'
 #' @details
-#' The results for post hoc contrasts are stored in long format via explicit
-#' \code{contrast} and/or \code{strategy} columns. Non-converged models are
-#' omitted.
+#' Results for post hoc contrasts are stored in long format using
+#' explicit \code{contrast} and/or \code{strategy} columns.
+#' Non-converged models are omitted.
 #'
 #' @importFrom emmeans emmeans contrast
 #' @importFrom ashr ash get_pm get_qvalue get_lfdr get_lfsr
@@ -187,39 +188,17 @@ testDOU <- function(
                 )
             )
 
-            # Set baseline
-            strategy_vals <- as.character(contrast_df$strategy)
-
-            # Define a flexible regex pattern: matches "rna", "RNA", "RNA-seq", and "0"
-            rna_pattern <- "(?i)rna|^0$"
-
-            # Find matching values to RNA-seq
-            rna_like <- unique(strategy_vals[grepl(rna_pattern, strategy_vals)])
-
-            # Handle multiple matches
-            if (length(rna_like) > 1) {
-                warning("Multiple RNA-seq levels found. Using the first match as reference and the last as .")
-                rna_like <- rna_like[1]
-            } else if (length(rna_like) == 0) {
-                stop("No RNA-seq level found. Please use rna, RNA, RNA-seq, or 0 to represent RNA-seq.")
-            }
-
-            # Find the Ribo-seq level
-            ribo_like <- setdiff(unique(strategy_vals), rna_like)
-
-            if (length(ribo_like) > 1) {
-                warning("Multiple Ribo-seq levels found. Use ", ribo_like[1], " as target.")
-                ribo_like <- ribo_like[1]
-            } else if (length(ribo_like) == 0) {
-                stop("No Ribo-seq level found. Please check your data.")
-            }
+            strategy_levels <- assign_strategy_levels(
+                input_df = contrast_df, 
+                strategy_col = "strategy"
+            )
 
             # Use as.character() for robust subsetting
-            beta_ribo <- contrast_df$estimate[(as.character(contrast_df$strategy) == ribo_like) & (as.character(contrast_df$contrast) == c_name)]
-            se_ribo <- contrast_df$SE[(as.character(contrast_df$strategy) == ribo_like) & (as.character(contrast_df$contrast) == c_name)]
+            beta_ribo <- contrast_df$estimate[(as.character(contrast_df$strategy) == strategy_levels$ribo_level) & (as.character(contrast_df$contrast) == c_name)]
+            se_ribo <- contrast_df$SE[(as.character(contrast_df$strategy) == strategy_levels$ribo_level) & (as.character(contrast_df$contrast) == c_name)]
 
-            beta_rna <- contrast_df$estimate[(as.character(contrast_df$strategy) == rna_like) & (as.character(contrast_df$contrast) == c_name)]
-            se_rna <- contrast_df$SE[(as.character(contrast_df$strategy) == rna_like) & (as.character(contrast_df$contrast) == c_name)]
+            beta_rna <- contrast_df$estimate[(as.character(contrast_df$strategy) == strategy_levels$rna_level) & (as.character(contrast_df$contrast) == c_name)]
+            se_rna <- contrast_df$SE[(as.character(contrast_df$strategy) == strategy_levels$rna_level) & (as.character(contrast_df$contrast) == c_name)]
 
             beta_dou <- beta_ribo - beta_rna
             se_dou <- sqrt(se_ribo^2 + se_rna^2)
@@ -383,33 +362,34 @@ testDOU <- function(
 #' Generate Contrast Vectors for Pairwise and Baseline Comparisons
 #'
 #' @description
-#' Constructs a named list of contrast vectors for differential analysis using
-#' a DESeq2 \code{DESeqDataSet} object. It identifies interaction terms (e.g.,
-#' \code{condition:strategy}) from the model design and builds pairwise
-#' contrasts between them, as well as contrasts against a specified baseline
-#' condition.
+#' Constructs a named list of contrast vectors for differential
+#' analysis using a DESeq2 \code{DESeqDataSet} object. It identifies
+#' interaction terms (e.g., \code{condition:strategy}) from the model
+#' design and builds pairwise contrasts between them, as well as
+#' contrasts against a specified baseline condition.
 #'
-#' This is useful for extracting custom contrasts not directly available via
-#' \code{resultsNames(dds)} and for post hoc comparisons in complex designs
-#' involving interaction terms.
+#' This is useful for extracting custom contrasts not directly
+#' available via \code{resultsNames(dds)} and for post hoc comparisons
+#' in complex designs involving interaction terms.
 #'
-#' @param dds A \code{DESeqDataSet} object containing count data and sample
-#'     annotations.
+#' @param dds A \code{DESeqDataSet} object containing count data and
+#'     sample annotations.
 #'
-#' @param formula Optional. A model formula used to generate the design matrix
-#'     (e.g., \code{~ condition * strategy}). If not provided, the function
-#'     will attempt to extract it from \code{metadata(dds)$formula}.
+#' @param formula Optional. A model formula used to generate the design
+#'     matrix (e.g., \code{~ condition * strategy}). If not provided, 
+#'     the function will try to extract it from 
+#'     \code{metadata(dds)$formula}.
 #'
 #' @param baseline Optional. A character string specifying the baseline
-#'     condition for comparisons. If \code{NULL}, the first level of
+#'     condition for comparisons. If \code{NULL}, the first level of 
 #'     \code{condition} in \code{colData(dds)} is used.
 #'
-#' @param delim A character string used to identify interaction terms in
-#'     coefficient names. Default is \code{"."}.
+#' @param delim A character string used to identify interaction terms
+#'     in coefficient names. Default is \code{"."}.
 #'
-#' @return A named list of numeric contrast vectors, where each vector
-#'     corresponds to a pairwise or baseline comparison. These vectors can be
-#'     used with \code{results(dds, contrast = ...)} for custom differential
+#' @return A named list of numeric contrast vectors. Each vector
+#'     represents a pairwise or baseline comparison. These can be used 
+#'     with \code{results(dds, contrast = ...)} for custom differential 
 #'     testing.
 #'
 #' @importFrom SummarizedExperiment colData
@@ -435,9 +415,9 @@ testDOU <- function(
 #' }
 #'
 #' @references
-#' Love, M.I., Huber, W., Anders, S. (2014) Moderated estimation of fold change
-#' and dispersion for RNA-seq data with DESeq2. Genome Biology, 15:550.
-#' \doi{10.1186/s13059-014-0550-8}
+#' Love, M.I., Huber, W., Anders, S. (2014) Moderated estimation of fold 
+#' change and dispersion for RNA-seq data with DESeq2. Genome Biology, 
+#' 15:550. \doi{10.1186/s13059-014-0550-8}
 #'
 contrast_vectors <- function(
     dds, 
@@ -451,15 +431,11 @@ contrast_vectors <- function(
     if (is.null(baseline)) {
         baseline <- levels(coldata$condition)[1]
     }
-
-    strategy_levels <- levels(coldata$strategy)
-    if (length(strategy_levels) > 2) {
-        stop("Expect two strategy levels got: ", paste(strategy_levels, collapse = ", "))
-    } else if (length(strategy_levels) == 1) {
-        stop("Expect two strategy levels got: ", strategy_levels)
-    } else {
-        ribo_level <- strategy_levels[2]
-    }
+    
+    strategy_levels <- assign_strategy_levels(
+        coldata, 
+        strategy_col = "strategy"
+    )
 
     # Get the names of all coefficients in the model matrix
     all_terms <- resultsNames(dds)
@@ -489,9 +465,25 @@ contrast_vectors <- function(
             contrast_vector[index2] <- 1
 
             target1 <- sub(attrs[1], "", pairs[1])
-            target1 <- sub(paste0(delim, attrs[2], ribo_level), "", target1)
+            target1 <- sub(
+                paste0(
+                    delim, 
+                    attrs[2], 
+                    strategy_levels$ribo_level
+                ), 
+                "", 
+                target1
+            )
             target2 <- sub(attrs[1], "", pairs[2])
-            target2 <- sub(paste0(delim, attrs[2], ribo_level), "", target2)
+            target2 <- sub(
+                paste0(
+                    delim, 
+                    attrs[2], 
+                    strategy_levels$ribo_level
+                ), 
+                "", 
+                target2
+            )
 
             contrast_name <- paste0(target2, " - ", target1)
             contrast_vectors_list[[contrast_name]] <- contrast_vector
@@ -504,7 +496,15 @@ contrast_vectors <- function(
                 contrast_vector[idx] <- 1
 
                 target <- sub(attrs[1], "", term)
-                target <- sub(paste0(delim, attrs[2], ribo_level), "", target)
+                target <- sub(
+                    paste0(
+                        delim, 
+                        attrs[2], 
+                        strategy_levels$ribo_level
+                    ), 
+                    "", 
+                    target
+                )
                 contrast_name <- paste0(target, " - ", baseline)
 
                 contrast_vectors_list[[contrast_name]] <- contrast_vector
@@ -518,7 +518,15 @@ contrast_vectors <- function(
                 contrast_vector[idx] <- 1
 
                 target <- sub(attrs[1], "", term)
-                target <- sub(paste0(delim, attrs[2], ribo_level), "", target)
+                target <- sub(
+                    paste0(
+                        delim, 
+                        attrs[2], 
+                        strategy_levels$ribo_level
+                    ), 
+                    "", 
+                    target
+                )
                 contrast_name <- paste0(target, " - ", baseline)
 
                 contrast_vectors_list[[contrast_name]] <- contrast_vector
