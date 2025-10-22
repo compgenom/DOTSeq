@@ -1,3 +1,6 @@
+# Suppress R CMD check NOTE for non-standard evaluation
+utils::globalVariables(c("condition", "usage", "orf_id", "subset_row"))
+
 #' Retrieve and format adjusted p-value for a specific ORF and contrast
 #'
 #' This helper function extracts the adjusted p-value (e.g., LFSR or padj) 
