@@ -1,10 +1,135 @@
+#' Retrieve and format adjusted p-value for a specific ORF and contrast
+#'
+#' This helper function extracts the adjusted p-value (e.g., LFSR or padj) 
+#' for a given ORF and contrast from a results data frame, and formats it 
+#' to three decimal places. If the value is missing or NA, it returns "N/A".
+#'
+#' @param rowdata A data frame containing differential results, including 
+#'     columns for `orf_id`, `contrast`, and the specified p-value column.
+#' @param orf A character string specifying the ORF ID to look up.
+#' @param contrast_name A character string specifying the contrast name 
+#'     (e.g., "Treatment - Control").
+#' @param dou_padj_col A character string specifying the column name to 
+#'     extract the adjusted p-value from. Defaults to `"lfsr"`.
+#'
+#' @return A character string representing the formatted p-value 
+#'     (e.g., `"0.023"`), or `"N/A"` if not found or NA.
+#' 
+#' @keywords internal
+#' 
+get_lfsr_annotation <- function(
+        rowdata, orf, 
+        contrast_name, 
+        dou_padj_col = "lfsr"
+) {
+    
+    if (!dou_padj_col %in% colnames(rowdata)) {
+        stop(sprintf("Column '%s' not found in rowdata.", dou_padj_col))
+    }
+    
+    lfsr_value <- rowdata[rowdata$orf_id == orf & rowdata$contrast == contrast_name, dou_padj_col]
+    # Check if lfsr_value is empty/NA and return a placeholder if necessary
+    if (length(lfsr_value) == 0 || is.na(lfsr_value)) {
+        return("N/A")
+    }
+    return(round(as.numeric(subset_row), 3))
+}
+
+
+#' Plot ORF usage across conditions with significance annotations
+#'
+#' Generates a faceted bar plot of ORF usage across experimental 
+#' conditions, with optional significance annotations based on adjusted 
+#' p-values (e.g., LFSR). Requires 
+#' \href{https://CRAN.R-project.org/package=ggplot2}{ggplot2} and 
+#' \href{https://CRAN.R-project.org/package=ggsignif}{ggsignif}.
+#'
+#' @param usage_df A data frame containing ORF usage values, with 
+#'     olumns `orf_id`, `condition`, and `usage`.
+#' @param sumExp A `SummarizedExperiment` object containing metadata 
+#'     with `interaction_results`.
+#' @param levels Optional character vector specifying the order of 
+#'     conditions on the x-axis.
+#' @param dou_padj_threshold Numeric threshold for significance 
+#'     annotation (default is `0.05`).
+#'
+#' @return A \code{ggplot} object visualizing ORF usage across 
+#' conditions, with significance annotations for contrasts passing 
+#' `dou_padj_threshold`. ORFs with non-significant contrasts are 
+#' not annotated.
+#' 
+#' @keywords internal
+#' 
+plot_orf_usage <- function(
+        usage_df, 
+        sumExp, 
+        levels = NULL, 
+        dou_padj_threshold = 0.05
+) {
+    
+    if (!requireNamespace("ggplot2", quietly = TRUE) || 
+        !requireNamespace("ggsignif", quietly = TRUE)) {
+        stop(
+            "Model diagnostics require the 'ggplot2' and 'ggsignif' packages. ", 
+            "Please install them by running: install.packages(c('ggplot2', 'ggsignif'))"
+        )
+    }
+    
+    usage_df$condition <- factor(usage_df$condition, levels = levels)
+    
+    annot_df <- metadata(sumExp)$interaction_results
+    if (is.null(annot_df)) {
+        warning("No interaction_results found in metadata. Returning base plot.")
+        return(p)
+    }
+    
+    annot_df$orf_id <- as.character(annot_df$orf_id)
+    annot_df$contrast <- as.character(annot_df$contrast)
+    contrasts_to_annotate <- unique(annot_df$contrast)
+    
+    p <- ggplot2::ggplot(usage_df, ggplot2::aes(x = condition, y = usage, fill = orf_id)) +
+        ggplot2::geom_bar(stat = "identity", position = ggplot2::position_dodge()) +
+        ggplot2::facet_wrap(~ orf_id) +
+        ggplot2::theme_minimal() +
+        ggplot2::labs(y = "ORF Usage", x = "Condition", fill = "ORF ID")
+    
+    for (orf in unique(usage_df$orf_id)) {
+        max_usage <- max(usage_df$usage[usage_df$orf_id == orf])
+        y_base <- max_usage + 0.01
+        y_increment <- 0.05
+        y_pos <- y_base
+        
+        for (contrast in contrasts_to_annotate) {
+            lfsr <- get_lfsr_annotation(annot_df, orf, contrast)
+            if (lfsr == "N/A" || as.numeric(lfsr) > dou_padj_threshold) next
+            
+            conds <- unlist(strsplit(contrast, " - "))
+            
+            p <- p + ggsignif::geom_signif(
+                annotation = lfsr,
+                comparisons = list(conds),
+                y_position = y_pos,
+                tip_length = 0.01,
+                vjust = 0.5,
+                data = subset(usage_df, orf_id == orf)
+            )
+            
+            y_pos <- y_pos + y_increment
+        }
+    }
+    
+    return(p)
+}
+
+
 #' Plot Venn Diagram of DTE and DOU Significance Overlap
 #'
 #' @description
 #' Generates a Venn diagram (Euler diagram) showing the overlap of
 #' significantly differentially translated ORFs (DTE) and differentially
 #' used ORFs (DOU). ORFs are classified as significant in DTE only,
-#' DOU only, or both.
+#' DOU only, or both. Requires 
+#' \href{https://CRAN.R-project.org/package=eulerr}{eulerr}.
 #'
 #' @param results A data frame containing DTE and DOU results. Must include
 #'     row names corresponding to ORF identifiers, and columns for adjusted
@@ -31,7 +156,6 @@
 #' p-values. The plot uses a color-blind friendly palette and includes
 #' counts for each region.
 #'
-#' @importFrom eulerr euler
 #' @importFrom graphics plot
 #'
 #' @keywords internal
@@ -49,6 +173,14 @@ plot_venn <- function(
         dou_padj_threshold = 0.05,
         dte_padj_threshold = 0.05
 ) {
+    
+    if (!requireNamespace("eulerr", quietly=TRUE)) {
+        stop(
+            "Plotting Venn diagrams require the 'eulerr' package. ", 
+            "Please install it by running: install.packages('eulerr')"
+        )
+    }
+    
     padj_sig <- !is.na(results[[dte_padj_col]]) &
         results[[dte_padj_col]] < dte_padj_threshold
     fdr_sig <- !is.na(results[[dou_padj_col]]) &
@@ -58,7 +190,7 @@ plot_venn <- function(
     fdr_set <- rownames(results)[fdr_sig]
     
     # Create Euler fit
-    fit <- euler(c(
+    fit <- eulerr::euler(c(
         "DTE" = length(setdiff(padj_set, fdr_set)),
         "DOU" = length(setdiff(fdr_set, padj_set)),
         "DTE&DOU" = length(intersect(padj_set, fdr_set))

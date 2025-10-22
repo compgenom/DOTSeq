@@ -38,7 +38,8 @@ significant in DTE only, DOU only, or both.
 Generates a Venn diagram (Euler diagram) showing the overlap of
 significantly differentially translated ORFs (DTE) and differentially
 used ORFs (DOU). ORFs are classified as significant in DTE only,
-DOU only, or both.
+DOU only, or both. Requires
+\href{https://CRAN.R-project.org/package=eulerr}{eulerr}.
 }
 \details{
 Significance is determined using a threshold of 0.05 on the adjusted

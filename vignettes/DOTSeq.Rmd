@@ -260,8 +260,12 @@ are significant in **DOU** and **DTE** analyses suggest changes in both
 usage and translation efficiency, potentially indicating strong 
 translational control.
 
-```{r plot-venn, fig.small = TRUE}
-plotDOT(results = results, plot_types = "venn", force_new_device = FALSE)
+```{r plot-venn, eval = requireNamespace("eulerr", quietly = TRUE), fig.small = TRUE}
+if (requireNamespace("eulerr", quietly = TRUE)) {
+    plotDOT(results = results, plot_types = "venn", force_new_device = FALSE)
+} else { 
+    message("Package 'eulerr' not installed; skipping Venn diagram.")
+}
 ```
 
 ## Composite scatter plot: 

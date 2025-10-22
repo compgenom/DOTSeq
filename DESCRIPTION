@@ -34,6 +34,9 @@ VignetteBuilder: knitr
 Suggests: 
     BiocStyle, 
     DHARMa, 
+    eulerr,
+    ggplot2,
+    ggsignif,
     knitr, 
     rmarkdown, 
     testthat
@@ -42,7 +45,6 @@ Imports:
     boot,
     emmeans,
     glmmTMB,
-    eulerr,
     methods,
     stats,
     utils,

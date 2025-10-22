@@ -52,6 +52,7 @@ test_that("plotDOT generates all plot types without error", {
         regexp = "Spearman"
     )
     
+    testthat::skip_if_not_installed("eulerr", minimum_version = NULL)
     expect_message(
         plotDOT(
             results = results_df,
