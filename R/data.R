@@ -359,6 +359,8 @@ DOTSeqDataSet <- function(
     } else {
         stop("`condition_table` must be either a valid file path or a data frame.")
     }
+    
+    cond_run <- cond$run
 
     # Rename cond rownames
     rownames(cond) <- cond$run
@@ -367,6 +369,21 @@ DOTSeqDataSet <- function(
 
     cond <- cond[common, , drop = FALSE]
     cond <- cond[order(cond$strategy, cond$replicate), ]
+    
+    cnt_run <- colnames(cnt[c(7:ncol(cnt))])
+    missing_samples <- setdiff(cnt_run, cond_run)
+    
+    if (length(cnt_run) < length(cond_run)) {
+        warning(
+            paste(missing_samples, collapse = ", "), 
+            " are missing in count table."
+        )
+    } else if (length(cnt_run) > length(cond_run)) {
+        warning(
+            paste(missing_samples, collapse = ", "),
+            " are missing in condition table."
+        )
+    }
 
     # Combine with metadata columns
     cnt <- cnt[, c(cntCols, rownames(cond))]

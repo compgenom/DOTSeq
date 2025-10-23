@@ -5,11 +5,13 @@
 \title{Generate Differential ORF Translation (DOT) Visualization Suite}
 \usage{
 plotDOT(
-  results,
+  plot_type = c("venn", "composite", "volcano", "heatmap", "usage"),
+  results = NULL,
+  sumExp = NULL,
   rowdata = NULL,
   id_mapping = NULL,
   include_go = FALSE,
-  plot_types = c("venn", "composite", "volcano", "heatmap"),
+  gene_id = NULL,
   dou_estimates_col = "PosteriorMean",
   dou_estimates_threshold = 1,
   dou_padj_col = "lfsr",
@@ -31,20 +33,31 @@ plotDOT(
     morf = adjustcolor("#4575B4", alpha.f = 0.6), dorf = adjustcolor("#A6A6A6", alpha.f =
     0.6), low = "blue", middle = "white", high = "red"),
   volcano_legend_position = "topright",
+  usage_order = NULL,
   flip_sign = FALSE,
   force_new_device = TRUE,
   verbose = TRUE
 )
 }
 \arguments{
+\item{plot_type}{Character vector specifying which plots to generate.
+Options include \code{"venn"}, \code{"composite"}, \code{"volcano"},
+and \code{"heatmap"}.}
+
 \item{results}{A data frame containing DOU and DTE estimates and
 significance values. Must include ORF-level identifiers and
 columns specified by \code{dou_estimates_col},
 \code{dou_padj_col}, \code{dte_estimates_col}, and
 \code{dte_padj_col}.}
 
-\item{rowdata}{A data frame containing ORF-level metadata, including
-ORF type (e.g., mORF, uORF). Default is \code{NULL}.}
+\item{sumExp}{A SummarizedExperiment object containing \code{emmGrid}
+objects, typically stored in \code{rowData(sumExp)[['DOUResults']]}.
+Default is \code{NULL}.}
+
+\item{rowdata}{Optional data frame containing ORF metadata,
+with row names corresponding to \code{orf_id}. Must
+include an \code{orf_type} column with values "uORF",
+"mORF", or "dORF" if \code{color_by = "orf_type"}.}
 
 \item{id_mapping}{A data frame containing gene symbols for the input
 Ensembl IDs. Default is \code{NULL}.}
@@ -52,10 +65,6 @@ Ensembl IDs. Default is \code{NULL}.}
 \item{include_go}{Logical; if \code{TRUE}, includes GO annotations
 (\code{go_id}, \code{name_1006}, \code{namespace_1003}) in the
 output.}
-
-\item{plot_types}{Character vector specifying which plots to generate.
-Options include \code{"venn"}, \code{"composite"}, \code{"volcano"},
-and \code{"heatmap"}.}
 
 \item{dou_estimates_col}{Character string specifying the column name
 for DOU effect size estimates. Default is \code{"PosteriorMean"}.}
@@ -181,7 +190,7 @@ rowdata_df <- data.frame(
   orf_type = c("mORF", "dORF", "mORF")
 )
 
-plotDOT(results_df, rowdata_df, plot_types = "venn")
+plotDOT(results_df, rowdata_df, plot_type = "venn")
 
 }
 \references{

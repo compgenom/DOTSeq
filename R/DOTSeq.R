@@ -192,27 +192,35 @@
 #' \url{https://github.com/florianhartig/dharma}
 #'
 DOTSeq <- function(
-    dotseq_dataset = NULL,
-    count_table = NULL,
-    condition_table = NULL,
-    flattened_gtf = NULL,
-    bed = NULL,
-    formula = ~ condition * strategy,
-    modules = c("DOU", "DTE"),
-    target = NULL,
-    baseline = NULL,
-    min_count = 1,
-    stringent = TRUE,
-    dispersion_modeling = "auto",
-    dispformula = NULL,
-    lrt = FALSE,
-    diagnostic = FALSE,
-    parallel = list(n = 4L, autopar = TRUE),
-    optimizers = FALSE,
-    nullweight = 500,
-    contrasts_method = "revpairwise",
-    verbose = TRUE
+        dotseq_dataset = NULL,
+        count_table = NULL,
+        condition_table = NULL,
+        flattened_gtf = NULL,
+        bed = NULL,
+        formula = ~ condition * strategy,
+        modules = c("DOU", "DTE"),
+        target = NULL,
+        baseline = NULL,
+        min_count = 1,
+        stringent = TRUE,
+        dispersion_modeling = "auto",
+        dispformula = NULL,
+        lrt = FALSE,
+        diagnostic = FALSE,
+        parallel = list(n = 4L, autopar = TRUE),
+        optimizers = FALSE,
+        nullweight = 500,
+        contrasts_method = "revpairwise",
+        verbose = TRUE
 ) {
+    
+    if (diagnostic && !requireNamespace("DHARMa", quietly = TRUE)) {
+        stop(
+            "Model diagnostics require the 'DHARMa' package. ", 
+            "Please install it by running: install.packages('DHARMa')"
+        )
+    }
+    
     if (!("DOU" %in% modules) && !("DTE" %in% modules)) {
         stop("Please specify at least one module: 'DOU' and/or 'DTE'.")
     }

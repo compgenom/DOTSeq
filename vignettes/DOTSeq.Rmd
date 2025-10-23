@@ -111,7 +111,7 @@ The condition table defines the experimental design for both Ribo-seq and
 RNA-seq samples. It allows `DOTSeq` to match Ribo/RNA-seq pairs and to 
 model translation-specific interactions. 
 
-Each row corresponds to one sequencing run. The table must include four 
+Each row corresponds to one sequencing run. The table **must** include four 
 essential columns: run, strategy (`"ribo"` or `"rna"`, or `"0"` or `"1"`), 
 replicate, and condition. Additional columns (e.g., batch) can also be 
 included.
@@ -262,7 +262,7 @@ translational control.
 
 ```{r plot-venn, eval = requireNamespace("eulerr", quietly = TRUE), fig.small = TRUE}
 if (requireNamespace("eulerr", quietly = TRUE)) {
-    plotDOT(results = results, plot_types = "venn", force_new_device = FALSE)
+    plotDOT(plot_types = "venn", results = results, force_new_device = FALSE)
 } else { 
     message("Package 'eulerr' not installed; skipping Venn diagram.")
 }
@@ -280,7 +280,11 @@ weak in the other. This visualisation helps highlight patterns of
 differential translation across ORFs. 
 
 ```{r plot-composite-by-significance, fig.small = TRUE}
-plotDOT(results = results, plot_types = "composite", force_new_device = FALSE)
+plotDOT(
+    plot_types = "composite", 
+    results = results, 
+    force_new_device = FALSE
+)
 ```
 
 If `rowdata` is given as an input, points can also be colour-coded by 
@@ -290,9 +294,9 @@ translation across different ORF types.
 ```{r plot-composite-by-orfs, fig.small = TRUE}
 rowdata <- rowData(m$sumExp)
 plotDOT(
+    plot_types = "composite", 
     results = results, 
     rowdata = rowdata, 
-    plot_types = "composite", 
     force_new_device = FALSE
 )
 ```
@@ -308,8 +312,8 @@ stored as a dataframe and reused across plots to avoid repeated downloads.
 
 ```{r plot-volcano-by-significance, fig.small = TRUE}
 id_mapping <- plotDOT(
+    plot_types = "volcano", 
     results = results,
-    plot_types = "volcano",
     volcano_legend_position = "topright",
     force_new_device = FALSE
 )
@@ -320,10 +324,10 @@ depending on whether rowdata is given as an input.
 
 ```{r plot-volcano-by-orfs, fig.small = TRUE}
 plotDOT(
+    plot_types = "volcano", 
     results = results,
     rowdata = rowdata,
     id_mapping = id_mapping,
-    plot_types = "volcano", 
     volcano_legend_position = "topright",
     force_new_device = FALSE
 )
@@ -335,14 +339,95 @@ metrics for the top 20 uORF-regulated genes.
 
 ```{r plot-heatmap, warning=FALSE, fig.width=4, fig.height=8, fig.align="center", out.width="325px"}
 plotDOT(
+    plot_types = "heatmap", 
     results = results, 
     rowdata = rowdata, 
     id_mapping = id_mapping, 
-    plot_types = "heatmap", 
-    top_genes = 20,
+    top_genes = 40,
     force_new_device = FALSE
 )
 ```
+
+## ORF usage plot:
+We can visualise the estimated ORF usage within a gene as inferred by 
+the DOTSeq beta-binomial GLM. This plot combines the probabilistic 
+estimates of ORF usage with post hoc statistical significance 
+annotations, allowing interpretation of DOU across conditions.
+
+```{r plot-orf-usage, eval = requireNamespace("ggsignif", quietly = TRUE), fig.small = TRUE}
+gene_id <- "NUP50"
+usage_order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
+
+if ((requireNamespace("ggplot2", quietly = TRUE)) && (requireNamespace("ggsignif", quietly = TRUE))) {
+    plotDOT(
+        plot_types = "usage",
+        sumExp = m$sumExp, 
+        gene_id = gene_id, 
+        id_mapping = id_mapping, 
+        usage_order = usage_order
+    )
+} else { 
+    message("Package 'ggsignif' not installed; skipping ORF Usage plot.")
+}
+```
+
+```{r plot-orf-usage, eval = requireNamespace("ggsignif", quietly = TRUE), fig.small = TRUE}
+gene_id <- "SENP6"
+usage_order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
+
+if ((requireNamespace("ggplot2", quietly = TRUE)) && (requireNamespace("ggsignif", quietly = TRUE))) {
+    plotDOT(
+        plot_types = "usage",
+        sumExp = m$sumExp, 
+        gene_id = gene_id, 
+        id_mapping = id_mapping, 
+        usage_order = usage_order
+    )
+} else { 
+    message("Package 'ggsignif' not installed; skipping ORF Usage plot.")
+}
+```
+
+
+```{r plot-orf-usage, eval = requireNamespace("ggsignif", quietly = TRUE), fig.small = TRUE}
+gene_id <- "ERBIN"
+usage_order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
+
+if ((requireNamespace("ggplot2", quietly = TRUE)) && (requireNamespace("ggsignif", quietly = TRUE))) {
+    plotDOT(
+        plot_types = "usage",
+        sumExp = m$sumExp, 
+        gene_id = gene_id, 
+        id_mapping = id_mapping, 
+        usage_order = usage_order
+    )
+} else { 
+    message("Package 'ggsignif' not installed; skipping ORF Usage plot.")
+}
+```
+
+In addition to gene symbols, the `plotDOT()` function supports querying 
+using gene IDs in the rowData/rowRanges. This enable us to generate ORF 
+usage plots using stable gene identifiers, which is especially useful 
+when gene symbols are ambiguous.
+
+```{r plot-orf-usage-eif4g1, eval = requireNamespace("ggsignif", quietly = TRUE), fig.small = TRUE}
+gene_id <- "ENSG00000114867"
+usage_order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
+
+if ((requireNamespace("ggplot2", quietly = TRUE)) && (requireNamespace("ggsignif", quietly = TRUE))) {
+    plotDOT(
+        plot_types = "usage",
+        sumExp = m$sumExp, 
+        gene_id = gene_id, 
+        id_mapping = id_mapping, 
+        usage_order = usage_order
+    )
+} else { 
+    message("Package 'ggsignif' not installed; skipping ORF Usage plot.")
+}
+```
+
 # Simulation and benchmarking
 
 `DOTSeq` includes the function `simDOT()` for generating simulated Ribo-seq 

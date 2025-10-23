@@ -12,9 +12,8 @@
 #' \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSet}},
 #' \code{\link{fitDOU}}, \code{\link{plotDOT}}
 #'
-#' @param sumExp A SummarizedExperiment object containing fitted
-#'     model objects, typically stored in
-#'     \code{rowData(sumExp)[['DOUResults']]}.
+#' @param sumExp A SummarizedExperiment object containing `emmGrid`
+#'     objects, typically stored in \code{rowData(sumExp)[['DOUResults']]}.
 #'
 #' @param contrasts_method Character string specifying the method
 #'     for computing contrasts. Default is \code{"revpairwise"}.
@@ -242,6 +241,10 @@ testDOU <- function(
             all_results[["interaction_specific"]][[c_name]] <- NULL
         }
     }
+    
+    if (verbose) {
+        message("effect sizes for interaction_specific contrasts calculated and shrunk succesfully")
+    }
 
     ### Strategy-specific contrasts
     all_results[["strategy_specific"]] <- list()
@@ -352,7 +355,7 @@ testDOU <- function(
     metadata(sumExp)$strategy_results <- strategy_df
     
     if (verbose) {
-        message("effect sizes calculated and shrunk successfully")
+        message("effect sizes for strategy_specific contrasts calculated and shrunk successfully")
     }
 
     return(sumExp)

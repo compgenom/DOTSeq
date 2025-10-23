@@ -30,28 +30,14 @@ Default is \code{"."}.}
 zero. Default is \code{1e-6}.}
 }
 \value{
-A list with two elements:
-\describe{
-\item{te}{
-A matrix of translational efficiency (Ribo / RNA).
-}
-\item{usage_shift}{
-A matrix of log2 ratios of Ribo-proportion / RNA-proportion
-within each gene.
-}
-}
+A matrix of translational efficiency (TE), calculated as the ratio of
+Ribo-seq to RNA-seq counts for each matched sample (by prefix).
 }
 \description{
-This function computes translational efficiency (TE) and shifts in ORF
-usage for a set of normalized RNA-seq and Ribo-seq counts. TE is
-calculated as the ratio of Ribo-seq counts to RNA-seq counts. Shifts
-in ORF usage are computed as the log2 ratio of Ribo-seq proportion to
-RNA-seq proportion within each gene.
-}
-\examples{
-\dontrun{
-result <- calculateTE(counts)
-head(result$te)
-}
+This function computes translational efficiency (TE) and ORF usage for
+a set of normalized RNA-seq and Ribo-seq counts. TE is calculated as
+the ratio of Ribo-seq counts to RNA-seq counts. ORF usage is
+aproximnated as the fraction of total signal (Ribo-proportion and
+RNA-proportion) that comes from Ribo-proportion, per ORF and condition.
 }
 \keyword{internal}

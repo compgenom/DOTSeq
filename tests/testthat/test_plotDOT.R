@@ -34,7 +34,7 @@ test_that("plotDOT generates all plot types without error", {
         plotDOT(
             results = results_df,
             rowdata = rowdata_df,
-            plot_types = "composite",
+            plot_type = "composite",
             verbose = FALSE,
             force_new_device = TRUE
         ),
@@ -45,7 +45,7 @@ test_that("plotDOT generates all plot types without error", {
         plotDOT(
             results = results_df,
             rowdata = rowdata_df,
-            plot_types = "composite",
+            plot_type = "composite",
             verbose = FALSE,
             force_new_device = TRUE
         ),
@@ -56,7 +56,7 @@ test_that("plotDOT generates all plot types without error", {
     expect_message(
         plotDOT(
             results = results_df,
-            plot_types = "venn",
+            plot_type = "venn",
             verbose = FALSE,
             force_new_device = TRUE
         ),

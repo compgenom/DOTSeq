@@ -60,7 +60,8 @@
 #' 
 calculate_orf_usage <- function(sumExp, gene_id) {
     # Filter by gene ID
-    se_gene <- sumExp[rowData(sumExp)$gene_id == gene_id, ]
+    rowData(sumExp)$ensembl_gene_id <- sub("\\..*", "", rowData(sumExp)$gene_id)
+    se_gene <- sumExp[rowData(sumExp)$ensembl_gene_id == gene_id, ]
     orf_rows <- rowData(se_gene)
     
     # Extract DOUResults for those ORFs
@@ -118,14 +119,13 @@ calculate_orf_usage <- function(sumExp, gene_id) {
 }
 
 
-
 #' Calculate Translational Efficiency and Shifts in ORF Usage
 #'
-#' This function computes translational efficiency (TE) and shifts in ORF 
-#' usage for a set of normalized RNA-seq and Ribo-seq counts. TE is 
-#' calculated as the ratio of Ribo-seq counts to RNA-seq counts. Shifts 
-#' in ORF usage are computed as the log2 ratio of Ribo-seq proportion to 
-#' RNA-seq proportion within each gene.
+#' This function computes translational efficiency (TE) and ORF usage for 
+#' a set of normalized RNA-seq and Ribo-seq counts. TE is calculated as 
+#' the ratio of Ribo-seq counts to RNA-seq counts. ORF usage is 
+#' aproximnated as the fraction of total signal (Ribo-proportion and 
+#' RNA-proportion) that comes from Ribo-proportion, per ORF and condition.
 #'
 #' @param counts A numeric matrix or data frame of normalized counts, where 
 #'     rows correspond to ORFs and columns correspond to samples. RNA-seq 
@@ -143,23 +143,12 @@ calculate_orf_usage <- function(sumExp, gene_id) {
 #' @param pseudocount Numeric value added to counts to avoid division by 
 #'     zero. Default is \code{1e-6}.
 #'
-#' @return A list with two elements:
-#'     \describe{
-#'         \item{te}{
-#'             A matrix of translational efficiency (Ribo / RNA).
-#'         }
-#'         \item{usage_shift}{
-#'             A matrix of log2 ratios of Ribo-proportion / RNA-proportion
-#'             within each gene.
-#'         }
-#'     }
+#' @return 
+#' A matrix of translational efficiency (TE), calculated as the ratio of 
+#' Ribo-seq to RNA-seq counts for each matched sample (by prefix).
 #'
 #' @keywords internal
-#' @examples
-#' \dontrun{
-#' result <- calculateTE(counts)
-#' head(result$te)
-#' }
+#' 
 calculateTE <- function(
         counts,
         rna_suffix = ".rna",
@@ -223,20 +212,7 @@ calculateTE <- function(
             (rnaVals + pseudocount)
     }
     
-    # Compute usage shift
-    gene_ids <- sub(":O.*", "", rownames(counts))
-    ribo_mat <- counts[, ribo_cols, drop = FALSE]
-    rna_mat <- counts[, rna_cols, drop = FALSE]
-    ribo_sum <- rowsum(ribo_mat, group = gene_ids)
-    rna_sum <- rowsum(rna_mat, group = gene_ids)
-    ribo_prop <- ribo_mat / ribo_sum[gene_ids, ]
-    rna_prop <- rna_mat / rna_sum[gene_ids, ]
-    usage_shift <- log2((ribo_prop + pseudocount) / (rna_prop + pseudocount))
-    
-    return(list(
-        te = te,
-        usage_shift = usage_shift
-    ))
+    return(te)
 }
 
 

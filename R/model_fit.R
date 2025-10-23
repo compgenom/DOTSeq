@@ -435,12 +435,7 @@ run_diagnostic <- function(
                     results <- list(model_fit = list(), estimates = list(), dispersion = list())
                 }
                 
-                if (diagnostic && !requireNamespace("DHARMa", quietly = TRUE)) {
-                    stop(
-                        "Model diagnostics require the 'DHARMa' package. ", 
-                        "Please install it by running: install.packages('DHARMa')"
-                    )
-                } else if (isTRUE(diagnostic) && requireNamespace("DHARMa", quietly = TRUE)) {
+                if (isTRUE(diagnostic) && requireNamespace("DHARMa", quietly = TRUE)) {
                     results$diagnostics <- list()
                 }
                 
@@ -742,8 +737,14 @@ run_diagnostic <- function(
                     ))
                 }
                 
-                raw_rho_rna <- .calculate_mean_dispersion(model_data_this_orf[model_data_this_orf$strategy == rna_level, ]$counts, model_data_this_orf[model_data_this_orf$strategy == rna_level, ]$success + model_data_this_orf[model_data_this_orf$strategy == rna_level, ]$failure)
-                raw_rho_ribo <- .calculate_mean_dispersion(model_data_this_orf[model_data_this_orf$strategy == ribo_level, ]$counts, model_data_this_orf[model_data_this_orf$strategy == ribo_level, ]$success + model_data_this_orf[model_data_this_orf$strategy == ribo_level, ]$failure)
+                raw_rho_rna <- .calculate_mean_dispersion(
+                    model_data_this_orf[model_data_this_orf$strategy == rna_level, ]$counts, 
+                    model_data_this_orf[model_data_this_orf$strategy == rna_level, ]$success + model_data_this_orf[model_data_this_orf$strategy == rna_level, ]$failure
+                )
+                raw_rho_ribo <- .calculate_mean_dispersion(
+                    model_data_this_orf[model_data_this_orf$strategy == ribo_level, ]$counts, 
+                    model_data_this_orf[model_data_this_orf$strategy == ribo_level, ]$success + model_data_this_orf[model_data_this_orf$strategy == ribo_level, ]$failure
+                )
                 
                 results$estimates$mean_prop_rna <- raw_rho_rna$mean_prop
                 results$estimates$mean_prop_ribo <- raw_rho_ribo$mean_prop
@@ -946,6 +947,14 @@ fitDOU <- function(
         optimizers = FALSE,
         verbose = TRUE
 ) {
+    
+    if (diagnostic && !requireNamespace("DHARMa", quietly = TRUE)) {
+        stop(
+            "Model diagnostics require the 'DHARMa' package. ", 
+            "Please install it by running: install.packages('DHARMa')"
+        )
+    }
+    
     stopifnot(class(count_table)[1] %in% c("matrix", "data.frame", "dgCMatrix", "DelayedMatrix"))
     
     count_table <- as.matrix(count_table)

@@ -12,9 +12,8 @@ testDOU(
 )
 }
 \arguments{
-\item{sumExp}{A SummarizedExperiment object containing fitted
-model objects, typically stored in
-\code{rowData(sumExp)[['DOUResults']]}.}
+\item{sumExp}{A SummarizedExperiment object containing \code{emmGrid}
+objects, typically stored in \code{rowData(sumExp)[['DOUResults']]}.}
 
 \item{contrasts_method}{Character string specifying the method
 for computing contrasts. Default is \code{"revpairwise"}.}

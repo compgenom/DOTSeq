@@ -1,6 +1,3 @@
-# Suppress R CMD check NOTE for non-standard evaluation
-utils::globalVariables(c("condition", "usage", "orf_id", "subset_row"))
-
 #' Retrieve and format adjusted p-value for a specific ORF and contrast
 #'
 #' This helper function extracts the adjusted p-value (e.g., LFSR or padj) 
@@ -9,19 +6,23 @@ utils::globalVariables(c("condition", "usage", "orf_id", "subset_row"))
 #'
 #' @param rowdata A data frame containing differential results, including 
 #'     columns for `orf_id`, `contrast`, and the specified p-value column.
+#'     
 #' @param orf A character string specifying the ORF ID to look up.
+#' 
 #' @param contrast_name A character string specifying the contrast name 
 #'     (e.g., "Treatment - Control").
+#'     
 #' @param dou_padj_col A character string specifying the column name to 
 #'     extract the adjusted p-value from. Defaults to `"lfsr"`.
 #'
 #' @return A character string representing the formatted p-value 
-#'     (e.g., `"0.023"`), or `"N/A"` if not found or NA.
+#'     (e.g., `"0.023"`).
 #' 
 #' @keywords internal
 #' 
 get_lfsr_annotation <- function(
-        rowdata, orf, 
+        rowdata, 
+        orf, 
         contrast_name, 
         dou_padj_col = "lfsr"
 ) {
@@ -31,11 +32,8 @@ get_lfsr_annotation <- function(
     }
     
     lfsr_value <- rowdata[rowdata$orf_id == orf & rowdata$contrast == contrast_name, dou_padj_col]
-    # Check if lfsr_value is empty/NA and return a placeholder if necessary
-    if (length(lfsr_value) == 0 || is.na(lfsr_value)) {
-        return("N/A")
-    }
-    return(round(as.numeric(subset_row), 3))
+    
+    return(as.numeric(lfsr_value))
 }
 
 
@@ -46,13 +44,18 @@ get_lfsr_annotation <- function(
 #' p-values (e.g., LFSR). Requires 
 #' \href{https://CRAN.R-project.org/package=ggplot2}{ggplot2} and 
 #' \href{https://CRAN.R-project.org/package=ggsignif}{ggsignif}.
-#'
-#' @param usage_df A data frame containing ORF usage values, with 
-#'     olumns `orf_id`, `condition`, and `usage`.
+#'     
 #' @param sumExp A `SummarizedExperiment` object containing metadata 
 #'     with `interaction_results`.
+#'     
+#' @param gene_id A character string specifying the gene ID of interest
+#'     
+#' @param id_mapping Optional data frame with gene symbols (e.g., 
+#'     from biomaRt). Used to label heatmap rows with gene symbols.
+#'     
 #' @param levels Optional character vector specifying the order of 
 #'     conditions on the x-axis.
+#'     
 #' @param dou_padj_threshold Numeric threshold for significance 
 #'     annotation (default is `0.05`).
 #'
@@ -63,9 +66,13 @@ get_lfsr_annotation <- function(
 #' 
 #' @keywords internal
 #' 
+#' @importFrom SummarizedExperiment rowRanges strand 
+#' @importFrom SummarizedExperiment mcols mcols<- metadata<-
+#' 
 plot_orf_usage <- function(
-        usage_df, 
         sumExp, 
+        gene_id = NULL,
+        id_mapping = NULL,
         levels = NULL, 
         dou_padj_threshold = 0.05
 ) {
@@ -78,42 +85,129 @@ plot_orf_usage <- function(
         )
     }
     
-    usage_df$condition <- factor(usage_df$condition, levels = levels)
-    
     annot_df <- metadata(sumExp)$interaction_results
     if (is.null(annot_df)) {
-        warning("No interaction_results found in metadata. Returning base plot.")
-        return(p)
+        stop("No interaction_results found in metadata. Returning base plot.")
     }
     
+    rowranges <- rowRanges(sumExp)
+    orfs <- data.frame(
+        orf_id = rownames(mcols(rowranges)),
+        orf_number = mcols(rowranges)$orf_number,
+        orf_type = mcols(rowranges)$orf_type,
+        strand = as.character(strand(rowranges))
+    )
+    
+    # Remove input gene_id version if present
+    gene_id_clean <- gsub("\\..*$", "", gene_id)
+    fig_title <- gene_id_clean
+    if (!is.null(id_mapping)) {
+        # Extract the symbol column name
+        symbol_col <- colnames(id_mapping)[2]
+        
+        # Match by Ensembl ID with and without version
+        match_ensembl_ver <- id_mapping[id_mapping$ensembl_gene_id == gene_id, ]
+        match_ensembl <- id_mapping[id_mapping$ensembl_gene_id == gene_id_clean, ]
+        
+        # Match by gene symbol
+        match_symbol <- id_mapping[grepl(gene_id, id_mapping[[symbol_col]], ignore.case = TRUE), ]
+        
+        # Combine matches
+        id_mapping <- rbind(match_ensembl_ver, match_ensembl, match_symbol)
+        
+        id_mapping <- unique(id_mapping)
+        
+        if (nrow(id_mapping) == 0) {
+            stop("No match found for gene ID or symbol:", gene_id)
+        } else {
+            fig_title <- unique(id_mapping[[symbol_col]])
+            gene_id_clean <- unique(id_mapping$ensembl_gene_id)
+        }
+    }
+    
+    
+    # Calculate ORF usage from fitted models
+    usage_df <- calculate_orf_usage(
+        sumExp = sumExp,
+        gene_id = gene_id_clean
+    )
+
+    usage_df$usage <- as.numeric(usage_df$usage)
+    if (!is.null(levels)) {
+        usage_df$condition <- factor(usage_df$condition, levels = levels)
+    }
+    
+    usage_df <- merge(orfs, usage_df, by = "orf_id")
+    
+    # Get ORF annotation
     annot_df$orf_id <- as.character(annot_df$orf_id)
+    annot_df <- merge(orfs, annot_df, by = "orf_id")
+    
+    if (!is.null(id_mapping)) {
+        annot_df$ensembl_gene_id <- sub("\\..*", "", annot_df$orf_id)
+        annot_df <- merge(id_mapping, annot_df, by = "ensembl_gene_id")
+        annot_df$orf_number <- paste0(annot_df$orf_type, " (O", annot_df$orf_number, ")")
+        
+        usage_df$ensembl_gene_id <- sub("\\..*", "", usage_df$orf_id)
+        usage_df <- merge(id_mapping, usage_df, by = "ensembl_gene_id")
+
+        if (unique(usage_df$strand) == "+") {
+            usage_df <- usage_df[order(-rank(usage_df$orf_type), usage_df$orf_number), ]
+            usage_df$orf_number <- paste0(usage_df$orf_type, " (O", usage_df$orf_number, ")")
+            usage_df$orf_number <- factor(usage_df$orf_number, levels = unique(usage_df$orf_number))
+        } else {
+            usage_df <- usage_df[order(-rank(usage_df$orf_type), -rank(usage_df$orf_number)), ]
+            usage_df$orf_number <- paste0(usage_df$orf_type, " (O", usage_df$orf_number, ")")
+            usage_df$orf_number <- factor(usage_df$orf_number, levels = unique(usage_df$orf_number))
+        }
+        
+    } else {
+        annot_df$orf_number <- paste0("O", annot_df$orf_number)
+        usage_df$orf_number <- paste0("O", usage_df$orf_number)
+    }
+    
     annot_df$contrast <- as.character(annot_df$contrast)
     contrasts_to_annotate <- unique(annot_df$contrast)
     
-    p <- ggplot2::ggplot(usage_df, ggplot2::aes(x = condition, y = usage, fill = orf_id)) +
+    p <- ggplot2::ggplot(usage_df, ggplot2::aes(x = condition, y = usage, fill = condition)) +
         ggplot2::geom_bar(stat = "identity", position = ggplot2::position_dodge()) +
-        ggplot2::facet_wrap(~ orf_id) +
-        ggplot2::theme_minimal() +
-        ggplot2::labs(y = "ORF Usage", x = "Condition", fill = "ORF ID")
+        ggplot2::facet_wrap(~ orf_number) +
+        ggplot2::theme_bw() + 
+        ggplot2::theme(
+            axis.text.x = ggplot2::element_text(angle = 45, hjust = 1), 
+            panel.grid.major = ggplot2::element_blank(),
+            panel.grid.minor = ggplot2::element_blank()
+        ) +
+        ggplot2::labs(
+            title = fig_title, 
+            y = "ORF usage", 
+            x = "Condition", 
+            fill = "Condition"
+        )
     
     for (orf in unique(usage_df$orf_id)) {
         max_usage <- max(usage_df$usage[usage_df$orf_id == orf])
         y_base <- max_usage + 0.01
-        y_increment <- 0.05
+        y_increment <- 0.08
         y_pos <- y_base
         
         for (contrast in contrasts_to_annotate) {
             lfsr <- get_lfsr_annotation(annot_df, orf, contrast)
-            if (lfsr == "N/A" || as.numeric(lfsr) > dou_padj_threshold) next
+            if (as.numeric(lfsr) > dou_padj_threshold) next
+            lfsr_formatted <- format.pval(lfsr, digits = 3, eps = .Machine$double.eps)
+            # message(
+            #     "ORF ID: ", orf, 
+            #     "\nContrasts: ", contrast, 
+            #     "\nLFSR: ", lfsr_formatted
+            # )
             
             conds <- unlist(strsplit(contrast, " - "))
             
             p <- p + ggsignif::geom_signif(
-                annotation = lfsr,
+                annotation = lfsr_formatted,
                 comparisons = list(conds),
                 y_position = y_pos,
                 tip_length = 0.01,
-                vjust = 0.5,
                 data = subset(usage_df, orf_id == orf)
             )
             
@@ -1320,15 +1414,25 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' to provide an overview of translation-specific changes across conditions.
 #'
 #' @seealso \code{\link{DOTSeq}}
-#' 
+#'
+#' @param plot_type Character vector specifying which plots to generate.
+#'     Options include \code{"venn"}, \code{"composite"}, \code{"volcano"},
+#'     and \code{"heatmap"}.
+#'     
 #' @param results A data frame containing DOU and DTE estimates and
 #'     significance values. Must include ORF-level identifiers and 
 #'     columns specified by \code{dou_estimates_col}, 
 #'     \code{dou_padj_col}, \code{dte_estimates_col}, and 
 #'     \code{dte_padj_col}.
 #'
-#' @param rowdata A data frame containing ORF-level metadata, including 
-#'     ORF type (e.g., mORF, uORF). Default is \code{NULL}.
+#' @param sumExp A SummarizedExperiment object containing `emmGrid`
+#'     objects, typically stored in \code{rowData(sumExp)[['DOUResults']]}. 
+#'     Default is \code{NULL}.
+#'
+#' @param rowdata Optional data frame containing ORF metadata,
+#'     with row names corresponding to \code{orf_id}. Must
+#'     include an \code{orf_type} column with values "uORF",
+#'     "mORF", or "dORF" if \code{color_by = "orf_type"}.
 #'
 #' @param id_mapping A data frame containing gene symbols for the input
 #'     Ensembl IDs. Default is \code{NULL}.
@@ -1336,10 +1440,6 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' @param include_go Logical; if \code{TRUE}, includes GO annotations
 #'     (\code{go_id}, \code{name_1006}, \code{namespace_1003}) in the 
 #'     output.
-#'
-#' @param plot_types Character vector specifying which plots to generate.
-#'     Options include \code{"venn"}, \code{"composite"}, \code{"volcano"},
-#'     and \code{"heatmap"}.
 #'
 #' @param dou_estimates_col Character string specifying the column name 
 #'     for DOU effect size estimates. Default is \code{"PosteriorMean"}.
@@ -1458,7 +1558,7 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #'   orf_type = c("mORF", "dORF", "mORF")
 #' )
 #'
-#' plotDOT(results_df, rowdata_df, plot_types = "venn")
+#' plotDOT(results_df, rowdata_df, plot_type = "venn")
 #'
 #' @references
 #' Durinck S, Spellman P, Birney E, Huber W (2009). Mapping identifiers
@@ -1478,11 +1578,13 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' \url{https://ceur-ws.org/Vol-2116/paper7.pdf}
 #'
 plotDOT <- function(
-        results,
+        plot_type = c("venn", "composite", "volcano", "heatmap", "usage"),
+        results = NULL,
+        sumExp = NULL,
         rowdata = NULL,
         id_mapping = NULL,
         include_go = FALSE,
-        plot_types = c("venn", "composite", "volcano", "heatmap"),
+        gene_id = NULL,
         dou_estimates_col = "PosteriorMean",
         dou_estimates_threshold = 1,
         dou_padj_col = "lfsr",
@@ -1511,18 +1613,23 @@ plotDOT <- function(
             high = "red"
         ),
         volcano_legend_position = "topright",
+        usage_order = NULL,
         flip_sign = FALSE,
         force_new_device = TRUE,
         verbose = TRUE
 ) {
 
-    plot_types <- match.arg(plot_types)
+    plot_type <- match.arg(plot_type)
     
     results <- as.data.frame(results)
     
+    if (!is.null(sumExp) && is.null(rowdata)) {
+        rowdata <- rowData(sumExp)
+    }
+    
     # Retrieve gene annotation if needed
     if (
-        any(c("heatmap", "volcano") %in% plot_types) && is.null(id_mapping)
+        any(c("heatmap", "volcano") %in% plot_type) && is.null(id_mapping)
     ) {
         if (verbose) {
             message("retrieving gene annotation from BioMart")
@@ -1551,7 +1658,7 @@ plotDOT <- function(
     }
     
     # Venn plot
-    if ("venn" %in% plot_types) {
+    if ("venn" %in% plot_type) {
         reset_graphics(function() {
             grid::grid.newpage()
             grid::grid.draw(plot_venn(
@@ -1566,7 +1673,7 @@ plotDOT <- function(
     }
     
     # Composite plots
-    if (("composite" %in% plot_types && (is.null(rowdata)))) {
+    if (("composite" %in% plot_type && (is.null(rowdata)))) {
         reset_graphics(function() {
             correlation_results <- plot_composite(
                 results = results,
@@ -1592,7 +1699,7 @@ plotDOT <- function(
         }, force_new_device = force_new_device)
     } 
     
-    if (("composite" %in% plot_types) && (!is.null(rowdata))) {
+    if (("composite" %in% plot_type) && (!is.null(rowdata))) {
         reset_graphics(function() {
             correlation_results <- plot_composite(
                 results = results,
@@ -1620,7 +1727,7 @@ plotDOT <- function(
     }
     
     # Volcano plot
-    if (("volcano" %in% plot_types) && (is.null(rowdata))) {
+    if (("volcano" %in% plot_type) && (is.null(rowdata))) {
         reset_graphics(function() {
             plot_volcano(
                 results = results,
@@ -1643,7 +1750,7 @@ plotDOT <- function(
         }, force_new_device = force_new_device)
     } 
     
-    if (("volcano" %in% plot_types) && (!is.null(rowdata))) {
+    if (("volcano" %in% plot_type) && (!is.null(rowdata))) {
         reset_graphics(function() {
             plot_volcano(
                 results = results,
@@ -1668,7 +1775,7 @@ plotDOT <- function(
     }
     
     # Heatmap plot
-    if ("heatmap" %in% plot_types) {
+    if ("heatmap" %in% plot_type) {
         if (verbose) {
             message("plotting heatmap for the top ", top_genes, " DOU genes")
         }
@@ -1700,14 +1807,14 @@ plotDOT <- function(
                 warning(
                     "Plotting device too small or corrupted. ",
                     "Please increase the plot window size and rerun with ",
-                    "plot_types = 'heatmap'.",
+                    "plot_type = 'heatmap'.",
                     "\nTo avoid re-downloading gene symbols, reuse the ",
                     "id_mapping object like this:",
                     "\n\n# Example usage:",
                     "\ngene_annot <- plotDOT(results, rowdata, ",
-                    "plot_types = 'heatmap')",
+                    "plot_type = 'heatmap')",
                     "\nplotDOT(results, rowdata, id_mapping = gene_annot, ",
-                    "plot_types = 'heatmap')"
+                    "plot_type = 'heatmap')"
                 )
                 plot_heatmap(paired_data)
                 if (verbose) {
@@ -1715,6 +1822,31 @@ plotDOT <- function(
                 }
             }, force_new_device = force_new_device)
         }
+    }
+    
+    if ("usage" %in% plot_type) {
+        
+        if (is.null(gene_id)) {
+            stop("Please provide gene_id.")
+        }
+        
+        if (is.null(id_mapping)) {
+            p <- plot_orf_usage(
+                sumExp = sumExp, 
+                gene_id = gene_id, 
+                levels = usage_order, 
+                dou_padj_threshold = dou_padj_threshold
+            )
+        } else if (!is.null(id_mapping)) {
+            p <- plot_orf_usage(
+                sumExp = sumExp, 
+                gene_id = gene_id, 
+                id_mapping = id_mapping,
+                levels = usage_order, 
+                dou_padj_threshold = dou_padj_threshold
+            )
+        }
+        print(p)
     }
     
     return(invisible(id_mapping))

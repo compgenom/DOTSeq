@@ -4,14 +4,22 @@
 \alias{plot_orf_usage}
 \title{Plot ORF usage across conditions with significance annotations}
 \usage{
-plot_orf_usage(usage_df, sumExp, levels = NULL, dou_padj_threshold = 0.05)
+plot_orf_usage(
+  sumExp,
+  gene_id = NULL,
+  id_mapping = NULL,
+  levels = NULL,
+  dou_padj_threshold = 0.05
+)
 }
 \arguments{
-\item{usage_df}{A data frame containing ORF usage values, with
-olumns \code{orf_id}, \code{condition}, and \code{usage}.}
-
 \item{sumExp}{A \code{SummarizedExperiment} object containing metadata
 with \code{interaction_results}.}
+
+\item{gene_id}{A character string specifying the gene ID of interest}
+
+\item{id_mapping}{Optional data frame with gene symbols (e.g.,
+from biomaRt). Used to label heatmap rows with gene symbols.}
 
 \item{levels}{Optional character vector specifying the order of
 conditions on the x-axis.}

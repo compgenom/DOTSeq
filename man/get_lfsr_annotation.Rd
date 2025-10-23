@@ -20,7 +20,7 @@ extract the adjusted p-value from. Defaults to \code{"lfsr"}.}
 }
 \value{
 A character string representing the formatted p-value
-(e.g., \code{"0.023"}), or \code{"N/A"} if not found or NA.
+(e.g., \code{"0.023"}).
 }
 \description{
 This helper function extracts the adjusted p-value (e.g., LFSR or padj)
