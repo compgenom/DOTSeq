@@ -262,7 +262,7 @@ translational control.
 
 ```{r plot-venn, eval = requireNamespace("eulerr", quietly = TRUE), fig.small = TRUE}
 if (requireNamespace("eulerr", quietly = TRUE)) {
-    plotDOT(plot_types = "venn", results = results, force_new_device = FALSE)
+    plotDOT(plot_type = "venn", results = results, force_new_device = FALSE)
 } else { 
     message("Package 'eulerr' not installed; skipping Venn diagram.")
 }
@@ -281,7 +281,7 @@ differential translation across ORFs.
 
 ```{r plot-composite-by-significance, fig.small = TRUE}
 plotDOT(
-    plot_types = "composite", 
+    plot_type = "composite", 
     results = results, 
     force_new_device = FALSE
 )
@@ -294,7 +294,7 @@ translation across different ORF types.
 ```{r plot-composite-by-orfs, fig.small = TRUE}
 rowdata <- rowData(m$sumExp)
 plotDOT(
-    plot_types = "composite", 
+    plot_type = "composite", 
     results = results, 
     rowdata = rowdata, 
     force_new_device = FALSE
@@ -312,7 +312,7 @@ stored as a dataframe and reused across plots to avoid repeated downloads.
 
 ```{r plot-volcano-by-significance, fig.small = TRUE}
 id_mapping <- plotDOT(
-    plot_types = "volcano", 
+    plot_type = "volcano", 
     results = results,
     volcano_legend_position = "topright",
     force_new_device = FALSE
@@ -324,7 +324,7 @@ depending on whether rowdata is given as an input.
 
 ```{r plot-volcano-by-orfs, fig.small = TRUE}
 plotDOT(
-    plot_types = "volcano", 
+    plot_type = "volcano", 
     results = results,
     rowdata = rowdata,
     id_mapping = id_mapping,
@@ -339,7 +339,7 @@ metrics for the top 20 uORF-regulated genes.
 
 ```{r plot-heatmap, warning=FALSE, fig.width=4, fig.height=8, fig.align="center", out.width="325px"}
 plotDOT(
-    plot_types = "heatmap", 
+    plot_type = "heatmap", 
     results = results, 
     rowdata = rowdata, 
     id_mapping = id_mapping, 
@@ -355,47 +355,12 @@ estimates of ORF usage with post hoc statistical significance
 annotations, allowing interpretation of DOU across conditions.
 
 ```{r plot-orf-usage, eval = requireNamespace("ggsignif", quietly = TRUE), fig.small = TRUE}
-gene_id <- "NUP50"
-usage_order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
-
-if ((requireNamespace("ggplot2", quietly = TRUE)) && (requireNamespace("ggsignif", quietly = TRUE))) {
-    plotDOT(
-        plot_types = "usage",
-        sumExp = m$sumExp, 
-        gene_id = gene_id, 
-        id_mapping = id_mapping, 
-        usage_order = usage_order
-    )
-} else { 
-    message("Package 'ggsignif' not installed; skipping ORF Usage plot.")
-}
-```
-
-```{r plot-orf-usage, eval = requireNamespace("ggsignif", quietly = TRUE), fig.small = TRUE}
 gene_id <- "SENP6"
 usage_order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
 
 if ((requireNamespace("ggplot2", quietly = TRUE)) && (requireNamespace("ggsignif", quietly = TRUE))) {
     plotDOT(
-        plot_types = "usage",
-        sumExp = m$sumExp, 
-        gene_id = gene_id, 
-        id_mapping = id_mapping, 
-        usage_order = usage_order
-    )
-} else { 
-    message("Package 'ggsignif' not installed; skipping ORF Usage plot.")
-}
-```
-
-
-```{r plot-orf-usage, eval = requireNamespace("ggsignif", quietly = TRUE), fig.small = TRUE}
-gene_id <- "ERBIN"
-usage_order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
-
-if ((requireNamespace("ggplot2", quietly = TRUE)) && (requireNamespace("ggsignif", quietly = TRUE))) {
-    plotDOT(
-        plot_types = "usage",
+        plot_type = "usage",
         sumExp = m$sumExp, 
         gene_id = gene_id, 
         id_mapping = id_mapping, 
@@ -407,9 +372,9 @@ if ((requireNamespace("ggplot2", quietly = TRUE)) && (requireNamespace("ggsignif
 ```
 
 In addition to gene symbols, the `plotDOT()` function supports querying 
-using gene IDs in the rowData/rowRanges. This enable us to generate ORF 
-usage plots using stable gene identifiers, which is especially useful 
-when gene symbols are ambiguous.
+according to the gene IDs listed in the rowData/rowRanges. This enable 
+us to generate ORF usage plots using stable gene identifiers, which is 
+especially useful when gene symbols are ambiguous.
 
 ```{r plot-orf-usage-eif4g1, eval = requireNamespace("ggsignif", quietly = TRUE), fig.small = TRUE}
 gene_id <- "ENSG00000114867"
@@ -417,7 +382,7 @@ usage_order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
 
 if ((requireNamespace("ggplot2", quietly = TRUE)) && (requireNamespace("ggsignif", quietly = TRUE))) {
     plotDOT(
-        plot_types = "usage",
+        plot_type = "usage",
         sumExp = m$sumExp, 
         gene_id = gene_id, 
         id_mapping = id_mapping, 
