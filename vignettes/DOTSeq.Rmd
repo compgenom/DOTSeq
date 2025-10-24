@@ -48,9 +48,10 @@ uORF-mediated repression.
 
 # Load required library
 We start by loading the `DOTSeq` package and its dependencies. 
-`DOTSeq` builds on the Bioconductor ecosystem, particularly the 
+`DOTSeq` builds on the Bioconductor ecosystem, particularly `Bioc.gff` 
+for parsing GTF files [@lawrence2025biocgff] and the 
 `SummarizedExperiment` container for storing count matrices and 
-metadata.
+metadata [@morgan2025summarized].
 
 ```{r setup, warning=FALSE}
 library(DOTSeq, quietly = TRUE)
@@ -274,7 +275,7 @@ respective effect sizes. Marginal density plots along each axis
 illustrate the distribution of effect sizes for each metric. Spearman 
 correlation is calculated and reported. 
 
-For this scatter plot, points are colour-coded by significance, 
+For this scatter plot, points are colour-coded by `significance`, 
 allowing us to identify ORFs with strong effects in one analysis but 
 weak in the other. This visualisation helps highlight patterns of 
 differential translation across ORFs. 
@@ -284,6 +285,7 @@ plotDOT(
     plot_type = "composite", 
     color_by = "significance",
     results = results, 
+    legend_position = "bottomright",
     force_new_device = FALSE
 )
 ```
@@ -299,6 +301,7 @@ plotDOT(
     color_by = "orf_type",
     results = results, 
     rowdata = rowdata, 
+    legend_position = "bottomright",
     force_new_device = FALSE
 )
 ```

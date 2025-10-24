@@ -21,7 +21,8 @@ plot_composite(
     alpha.f = 0.6), both = adjustcolor("#CC79A7", alpha.f = 0.6), none =
     adjustcolor("grey80", alpha.f = 0.6), uorf = adjustcolor("#D73027", alpha.f = 0.6),
     morf = adjustcolor("#4575B4", alpha.f = 0.6), dorf = adjustcolor("#A6A6A6", alpha.f =
-    0.6))
+    0.6)),
+  legend_position = "bottomright"
 )
 }
 \arguments{
@@ -82,6 +83,11 @@ type-based coloring}
 }
 Each value should be a valid color string or result of
 \code{adjustcolor()}.}
+
+\item{legend_position}{Position of the legend. Options include
+\code{"bottomright"}, \code{"bottom"}, \code{"bottomleft"},
+\code{"left"}, \code{"topleft"}, \code{"top"},
+\code{"topright"}, \code{"right"}, \code{"center"}.}
 }
 \value{
 A composite plot consisting of:

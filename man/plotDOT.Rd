@@ -160,10 +160,10 @@ heatmap gradient}
 }}
 
 \item{legend_position}{Character string specifying the
-position of the legend in the volcano plot. Options include:
-\code{"bottomright"}, \code{"bottom"}, \code{"bottomleft"},
-\code{"left"}, \code{"topleft"}, \code{"top"},
-\code{"topright"}, \code{"right"}, \code{"center"}.
+position of the legend in the volcano and composite scatter plots.
+Options include: \code{"bottomright"}, \code{"bottom"},
+\code{"bottomleft"}, \code{"left"}, \code{"topleft"},
+\code{"top"}, \code{"topright"}, \code{"right"}, \code{"center"}.
 Default is \code{"topright"}.}
 
 \item{condition_order}{Optional character vector specifying the order of

@@ -152,8 +152,7 @@ testDOU <- function(
         stop(
             sprintf(
                 "Invalid 'contrasts_method'. Choose from: %s", 
-                paste(valid_methods, collapse = ", "
-                  )
+                paste(valid_methods, collapse = ", ")
             )
         )
     }

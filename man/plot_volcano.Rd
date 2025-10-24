@@ -20,7 +20,7 @@ plot_volcano(
   dou_padj_ceiling = 10,
   extreme_threshold = NULL,
   label_topn = NULL,
-  legend_position = "right",
+  legend_position = "topright",
   colors = list(dte = adjustcolor("#0072B2", alpha.f = 0.6), dou = adjustcolor("#E69F00",
     alpha.f = 0.6), both = adjustcolor("#CC79A7", alpha.f = 0.6), none =
     adjustcolor("grey80", alpha.f = 0.6), uorf = adjustcolor("#D73027", alpha.f = 0.6),

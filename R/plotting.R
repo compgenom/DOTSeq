@@ -376,7 +376,12 @@ plot_venn <- function(
 #'     }
 #'     Each value should be a valid color string or result of
 #'     \code{adjustcolor()}.
-#'
+#'     
+#' @param legend_position Position of the legend. Options include
+#'     \code{"bottomright"}, \code{"bottom"}, \code{"bottomleft"},
+#'     \code{"left"}, \code{"topleft"}, \code{"top"},
+#'     \code{"topright"}, \code{"right"}, \code{"center"}.
+#'     
 #' @return A composite plot consisting of:
 #'     \describe{
 #'         \item{Scatter plot}{
@@ -427,7 +432,8 @@ plot_composite <- function(
             uorf = adjustcolor("#D73027", alpha.f = 0.6),
             morf = adjustcolor("#4575B4", alpha.f = 0.6),
             dorf = adjustcolor("#A6A6A6", alpha.f = 0.6)
-        )
+        ),
+        legend_position = "bottomright"
 ) {
     
     layout(1)
@@ -589,7 +595,7 @@ plot_composite <- function(
             col = col_both
         )
         legend(
-            "bottomright", 
+            legend_position, 
             legend = c("DTE", "DOU", "Both"), 
             col = c(col_dte, col_dou, col_both), 
             pch = 1, bty = "n", 
@@ -615,7 +621,7 @@ plot_composite <- function(
             col = col_dorfs
         )
         legend(
-            "bottomright", 
+            legend_position = legend_position, 
             legend = c("uORF", "mORF", "dORF"), 
             col = c(col_uorfs, col_morfs, col_dorfs), 
             pch = 1, 
@@ -754,7 +760,7 @@ plot_volcano <- function(
         dou_padj_ceiling = 10,
         extreme_threshold = NULL,
         label_topn = NULL,
-        legend_position = "right",
+        legend_position = "topright",
         colors = list(
             dte = adjustcolor("#0072B2", alpha.f = 0.6),
             dou = adjustcolor("#E69F00", alpha.f = 0.6),
@@ -856,7 +862,8 @@ plot_volcano <- function(
         )
         
         legend(
-            legend_position, legend = c("DTE", "DOU", "Both"),
+            legend_position, 
+            legend = c("DTE", "DOU", "Both"),
             col = c(col_dte, col_dou, col_both), 
             pch = 1, 
             bty = "n", 
@@ -1559,10 +1566,10 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #'     }
 #'
 #' @param legend_position Character string specifying the
-#'     position of the legend in the volcano plot. Options include:
-#'     \code{"bottomright"}, \code{"bottom"}, \code{"bottomleft"},
-#'     \code{"left"}, \code{"topleft"}, \code{"top"},
-#'     \code{"topright"}, \code{"right"}, \code{"center"}.
+#'     position of the legend in the volcano and composite scatter plots. 
+#'     Options include: \code{"bottomright"}, \code{"bottom"}, 
+#'     \code{"bottomleft"}, \code{"left"}, \code{"topleft"}, 
+#'     \code{"top"}, \code{"topright"}, \code{"right"}, \code{"center"}.
 #'     Default is \code{"topright"}.
 #'     
 #' @param condition_order Optional character vector specifying the order of 
@@ -1774,7 +1781,8 @@ plotDOT <- function(
                 dte_padj_col = dte_padj_col,
                 flip_sign = flip_sign,
                 lhist = 20,
-                colors = colors
+                colors = colors,
+                legend_position = legend_position
             )
             
             message(

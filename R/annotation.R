@@ -185,7 +185,7 @@ get_id_mapping <- function(
         stop("'include_go' must be TRUE or FALSE.")
     }
     
-    valid_source = c(
+    valid_source <- c(
         "ensembl",
         "plants",
         "fungi",
