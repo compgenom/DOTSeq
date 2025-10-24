@@ -35,7 +35,7 @@ plotDOT(
     morf = adjustcolor("#4575B4", alpha.f = 0.6), dorf = adjustcolor("#A6A6A6", alpha.f =
     0.6), low = "blue", middle = "white", high = "red", usage = "Set2"),
   legend_position = "topright",
-  usage_order = NULL,
+  condition_order = NULL,
   flip_sign = FALSE,
   force_new_device = TRUE,
   verbose = TRUE
@@ -166,7 +166,7 @@ position of the legend in the volcano plot. Options include:
 \code{"topright"}, \code{"right"}, \code{"center"}.
 Default is \code{"topright"}.}
 
-\item{usage_order}{Optional character vector specifying the order of
+\item{condition_order}{Optional character vector specifying the order of
 conditions on the \code{"usage"} plot x-axis.}
 
 \item{flip_sign}{Logical; if \code{TRUE}, flips the sign of DOU

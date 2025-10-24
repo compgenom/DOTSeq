@@ -341,7 +341,7 @@ plotDOT(
 To visualise the top-ranked genes, we generate a heatmap based on DOU 
 metrics for the top 20 uORF-regulated genes. 
 
-```{r plot-heatmap, warning=FALSE, fig.width=4, fig.height=7, fig.align="center", out.width="325px"}
+```{r plot-heatmap, warning=FALSE, fig.width=4, fig.height=6, fig.align="center", out.width="325px"}
 plotDOT(
     plot_type = "heatmap", 
     ranking_method = "score",
@@ -361,22 +361,19 @@ annotations, allowing interpretation of DOU across conditions. If
 the ID mapping dataframe provided, the gene symbol is displayed as 
 the plot title.
 
-```{r plot-usage-gene-symbol, eval = requireNamespace("ggsignif", quietly = TRUE)}
-gene_id <- "TAF2"
-usage_order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
+```{r plot-usage-gene-symbol, eval = requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("ggsignif", quietly = TRUE)}
+condition_order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
 
-if ((requireNamespace("ggplot2", quietly = TRUE)) && (requireNamespace("ggsignif", quietly = TRUE))) {
-    plotDOT(
-        plot_type = "usage",
-        sumExp = m$sumExp, 
-        gene_id = gene_id, 
-        id_mapping = id_mapping, 
-        usage_order = usage_order,
-        force_new_device = FALSE
-    )
-} else { 
-    message("Package 'ggsignif' not installed; skipping ORF Usage plot.")
-}
+gene_id <- "TAF2"
+
+plotDOT(
+    plot_type = "usage",
+    sumExp = m$sumExp, 
+    gene_id = gene_id, 
+    id_mapping = id_mapping, 
+    condition_order = condition_order,
+    force_new_device = FALSE
+)
 ```
 
 The `plotDOT()` function supports querying according to the gene 
@@ -386,20 +383,15 @@ used without their version suffix (e.g., .14).
 
 ```{r plot-usage-gene-id, eval = requireNamespace("ggsignif", quietly = TRUE)}
 gene_id <- "ENSG00000060339"
-usage_order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
 
-if ((requireNamespace("ggplot2", quietly = TRUE)) && (requireNamespace("ggsignif", quietly = TRUE))) {
-    plotDOT(
-        plot_type = "usage",
-        sumExp = m$sumExp, 
-        gene_id = gene_id, 
-        id_mapping = id_mapping, 
-        usage_order = usage_order,
-        force_new_device = FALSE
-    )
-} else { 
-    message("Package 'ggsignif' not installed; skipping ORF Usage plot.")
-}
+plotDOT(
+    plot_type = "usage",
+    sumExp = m$sumExp, 
+    gene_id = gene_id, 
+    id_mapping = id_mapping, 
+    condition_order = condition_order,
+    force_new_device = FALSE
+)
 ```
 
 # Simulation and benchmarking

@@ -1565,7 +1565,7 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #'     \code{"topright"}, \code{"right"}, \code{"center"}.
 #'     Default is \code{"topright"}.
 #'     
-#' @param usage_order Optional character vector specifying the order of 
+#' @param condition_order Optional character vector specifying the order of 
 #'     conditions on the \code{"usage"} plot x-axis.
 #'     
 #' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU 
@@ -1680,7 +1680,7 @@ plotDOT <- function(
             usage = "Set2"
         ),
         legend_position = "topright",
-        usage_order = NULL,
+        condition_order = NULL,
         flip_sign = FALSE,
         force_new_device = TRUE,
         verbose = TRUE
@@ -1880,7 +1880,7 @@ plotDOT <- function(
                 p <- plot_orf_usage(
                     sumExp = sumExp, 
                     gene_id = gene_id, 
-                    levels = usage_order, 
+                    levels = condition_order, 
                     dou_padj_threshold = dou_padj_threshold
                 )
             } else if (!is.null(id_mapping)) {
@@ -1888,7 +1888,7 @@ plotDOT <- function(
                     sumExp = sumExp, 
                     gene_id = gene_id, 
                     id_mapping = id_mapping,
-                    levels = usage_order, 
+                    levels = condition_order, 
                     dou_padj_threshold = dou_padj_threshold,
                     colors = colors$usage
                 )
