@@ -621,7 +621,7 @@ plot_composite <- function(
             col = col_dorfs
         )
         legend(
-            legend_position = legend_position, 
+            legend_position, 
             legend = c("uORF", "mORF", "dORF"), 
             col = c(col_uorfs, col_morfs, col_dorfs), 
             pch = 1, 
