@@ -142,7 +142,7 @@ below.
 (negative-binomial GLM via `DESeq2`).
 
 - Post hoc contrasts and adaptive shrinkage of effect sizes via `emmeans` 
-[@emmeans] and `ashr` (`testDOU()`). 
+[@emmeans] and `ashr` [@stephens2017false] (`testDOU()`). 
 
 `DOTSeqDataSet()`, `fitDOU()`, and `testDOU()` can be ran individually. 
 For simplicity, here we will use the `DOTSeq()` main function. To capturing 
@@ -262,11 +262,7 @@ usage and translation efficiency, potentially indicating strong
 translational control.
 
 ```{r plot-venn, eval = requireNamespace("eulerr", quietly = TRUE), fig.small = TRUE}
-if (requireNamespace("eulerr", quietly = TRUE)) {
-    plotDOT(plot_type = "venn", results = results, force_new_device = FALSE)
-} else { 
-    message("Package 'eulerr' not installed; skipping Venn diagram.")
-}
+plotDOT(plot_type = "venn", results = results, force_new_device = FALSE)
 ```
 
 ## Composite scatter plot: 
@@ -358,11 +354,10 @@ plotDOT(
 
 ## ORF usage plot:
 We can visualise the estimated ORF usage within a gene as inferred by 
-the DOTSeq beta-binomial GLM. This plot combines the probabilistic 
-estimates of ORF usage with post hoc statistical significance 
-annotations, allowing interpretation of DOU across conditions. If 
-the ID mapping dataframe provided, the gene symbol is displayed as 
-the plot title.
+the **DOU** module. This plot combines the probabilistic estimates of 
+ORF usage with post hoc statistical significance annotations, allowing 
+interpretation of DOU across conditions. If the ID mapping dataframe 
+provided, the gene symbol is displayed as the plot title.
 
 ```{r plot-usage-gene-symbol, eval = requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("ggsignif", quietly = TRUE)}
 condition_order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")

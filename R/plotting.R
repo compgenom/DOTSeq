@@ -169,7 +169,8 @@ plot_orf_usage <- function(
         ggplot2::theme(
             axis.text.x = ggplot2::element_text(angle = 45, hjust = 1), 
             panel.grid.major = ggplot2::element_blank(),
-            panel.grid.minor = ggplot2::element_blank()
+            panel.grid.minor = ggplot2::element_blank(),
+            legend.position = "none"
         ) +
         ggplot2::labs(
             title = fig_title, 
