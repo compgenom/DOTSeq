@@ -282,6 +282,7 @@ differential translation across ORFs.
 ```{r plot-composite-by-significance, fig.small = TRUE}
 plotDOT(
     plot_type = "composite", 
+    color_by = "significance",
     results = results, 
     force_new_device = FALSE
 )
@@ -295,6 +296,7 @@ translation across different ORF types.
 rowdata <- rowData(m$sumExp)
 plotDOT(
     plot_type = "composite", 
+    color_by = "orf_type",
     results = results, 
     rowdata = rowdata, 
     force_new_device = FALSE
@@ -313,8 +315,9 @@ stored as a dataframe and reused across plots to avoid repeated downloads.
 ```{r plot-volcano-by-significance, fig.small = TRUE}
 id_mapping <- plotDOT(
     plot_type = "volcano", 
+    color_by = "significance",
     results = results,
-    volcano_legend_position = "topright",
+    legend_position = "topright",
     force_new_device = FALSE
 )
 ```
@@ -325,10 +328,11 @@ depending on whether rowdata is given as an input.
 ```{r plot-volcano-by-orfs, fig.small = TRUE}
 plotDOT(
     plot_type = "volcano", 
+    color_by = "orf_type",
     results = results,
     rowdata = rowdata,
     id_mapping = id_mapping,
-    volcano_legend_position = "topright",
+    legend_position = "topright",
     force_new_device = FALSE
 )
 ```
@@ -337,13 +341,14 @@ plotDOT(
 To visualise the top-ranked genes, we generate a heatmap based on DOU 
 metrics for the top 20 uORF-regulated genes. 
 
-```{r plot-heatmap, warning=FALSE, fig.width=4, fig.height=8, fig.align="center", out.width="325px"}
+```{r plot-heatmap, warning=FALSE, fig.width=4, fig.height=7, fig.align="center", out.width="325px"}
 plotDOT(
     plot_type = "heatmap", 
+    ranking_method = "score",
     results = results, 
     rowdata = rowdata, 
     id_mapping = id_mapping, 
-    top_genes = 40,
+    top_genes = 20,
     force_new_device = FALSE
 )
 ```
@@ -352,10 +357,12 @@ plotDOT(
 We can visualise the estimated ORF usage within a gene as inferred by 
 the DOTSeq beta-binomial GLM. This plot combines the probabilistic 
 estimates of ORF usage with post hoc statistical significance 
-annotations, allowing interpretation of DOU across conditions.
+annotations, allowing interpretation of DOU across conditions. If 
+the ID mapping dataframe provided, the gene symbol is displayed as 
+the plot title.
 
-```{r plot-orf-usage, eval = requireNamespace("ggsignif", quietly = TRUE), fig.small = TRUE}
-gene_id <- "SENP6"
+```{r plot-usage-gene-symbol, eval = requireNamespace("ggsignif", quietly = TRUE)}
+gene_id <- "TAF2"
 usage_order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
 
 if ((requireNamespace("ggplot2", quietly = TRUE)) && (requireNamespace("ggsignif", quietly = TRUE))) {
@@ -364,20 +371,21 @@ if ((requireNamespace("ggplot2", quietly = TRUE)) && (requireNamespace("ggsignif
         sumExp = m$sumExp, 
         gene_id = gene_id, 
         id_mapping = id_mapping, 
-        usage_order = usage_order
+        usage_order = usage_order,
+        force_new_device = FALSE
     )
 } else { 
     message("Package 'ggsignif' not installed; skipping ORF Usage plot.")
 }
 ```
 
-In addition to gene symbols, the `plotDOT()` function supports querying 
-according to the gene IDs listed in the rowData/rowRanges. This enable 
-us to generate ORF usage plots using stable gene identifiers, which is 
-especially useful when gene symbols are ambiguous.
+The `plotDOT()` function supports querying according to the gene 
+IDs or gene symbols, as listed in the rowData, rowRanges and/or the 
+ID mapping dataframe. Stable gene IDs (e.g., ENSG00000060339) can be 
+used without their version suffix (e.g., .14).
 
-```{r plot-orf-usage-eif4g1, eval = requireNamespace("ggsignif", quietly = TRUE), fig.small = TRUE}
-gene_id <- "ENSG00000114867"
+```{r plot-usage-gene-id, eval = requireNamespace("ggsignif", quietly = TRUE)}
+gene_id <- "ENSG00000060339"
 usage_order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
 
 if ((requireNamespace("ggplot2", quietly = TRUE)) && (requireNamespace("ggsignif", quietly = TRUE))) {
@@ -386,7 +394,8 @@ if ((requireNamespace("ggplot2", quietly = TRUE)) && (requireNamespace("ggsignif
         sumExp = m$sumExp, 
         gene_id = gene_id, 
         id_mapping = id_mapping, 
-        usage_order = usage_order
+        usage_order = usage_order,
+        force_new_device = FALSE
     )
 } else { 
     message("Package 'ggsignif' not installed; skipping ORF Usage plot.")

@@ -9,8 +9,10 @@ cistronic_data(
   rowdata,
   id_mapping = NULL,
   estimates_col = "PosteriorMean",
+  estimates_threshold = 1,
   padj_col = "lfsr",
   padj_threshold = 0.05,
+  ranking_method = "significance",
   top_genes = NULL,
   flip_sign = FALSE,
   sorf_type = "uORF",
@@ -25,17 +27,31 @@ effect size estimates, and LFSR values.}
 \item{rowdata}{A data frame containing ORF-level metadata, including ORF
 type (e.g., mORF, uORF).}
 
-\item{id_mapping}{Optional data frame with gene symbols (e.g., from biomaRt).
-Used to label heatmap rows with gene symbols.}
+\item{id_mapping}{Optional data frame with gene symbols (e.g., from
+biomaRt). Used to label heatmap rows with gene symbols.}
 
 \item{estimates_col}{Character string specifying the column name for DOU
 effect size estimates. Default is \code{"PosteriorMean"}.}
 
-\item{padj_col}{Character string specifying the column name for significance
-values (LFSR). Default is \code{"lfsr"}.}
+\item{estimates_threshold}{Numeric threshold for effect size.
+Default is \code{1}.}
+
+\item{padj_col}{Character string specifying the column name for
+significance values (LFSR). Default is \code{"lfsr"}.}
 
 \item{padj_threshold}{Numeric threshold for filtering significant ORFs
 based on LFSR. Default is \code{0.05}.}
+
+\item{ranking_method}{Character string specifying how genes should be
+ranked for visualization. Options are:
+\itemize{
+\item \code{"score"}: ranks genes by a composite score defined as
+\verb{abs(effect size) × (1 - lfsr)}, which prioritizes genes with large
+and confident differential ORF usage.
+\item \code{"significance"}: ranks genes by the median significance values
+across ORFs, prioritizing statistical confidence regardless of
+effect size. Default is \code{"significance"}.
+}}
 
 \item{top_genes}{Optional numeric. If specified, limits the heatmap to the
 top N genes ranked by effect size magnitude and significance.}

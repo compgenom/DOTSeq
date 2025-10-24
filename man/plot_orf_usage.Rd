@@ -9,7 +9,8 @@ plot_orf_usage(
   gene_id = NULL,
   id_mapping = NULL,
   levels = NULL,
-  dou_padj_threshold = 0.05
+  dou_padj_threshold = 0.05,
+  colors = "Set2"
 )
 }
 \arguments{
@@ -26,6 +27,10 @@ conditions on the x-axis.}
 
 \item{dou_padj_threshold}{Numeric threshold for significance
 annotation (default is \code{0.05}).}
+
+\item{colors}{Color palette for
+\code{\link[ggplot2]{scale_fill_brewer}}. Default is
+\code{Set2}.}
 }
 \value{
 A \code{ggplot} object visualizing ORF usage across
