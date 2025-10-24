@@ -109,9 +109,7 @@
 #'
 #' # Model fitting using fitDOU
 #' rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
-#'     count_table = assay(m$sumExp),
-#'     rowdata = rowData(m$sumExp),
-#'     coldata = colData(m$sumExp),
+#'     sumExp = m$sumExp,
 #'     formula = ~ condition * strategy,
 #'     emm_specs = ~ condition * strategy,
 #'     dispersion_modeling = "auto",
@@ -135,11 +133,39 @@
 #'
 #'
 testDOU <- function(
-    sumExp,
-    contrasts_method = "revpairwise",
-    nullweight = 500,
-    verbose = TRUE
+        sumExp,
+        contrasts_method = "revpairwise",
+        nullweight = 500,
+        verbose = TRUE
 ) {
+    
+    if (missing(sumExp)) {
+        stop("Argument 'sumExp' is required.")
+    }
+    
+    if (!inherits(sumExp, "SummarizedExperiment")) {
+        stop("'sumExp' must be a SummarizedExperiment object.")
+    }
+    
+    valid_methods <- c("revpairwise", "pairwise")
+    if (!contrasts_method %in% valid_methods) {
+        stop(
+            sprintf(
+                "Invalid 'contrasts_method'. Choose from: %s", 
+                paste(valid_methods, collapse = ", "
+                  )
+            )
+        )
+    }
+    
+    if (!is.numeric(nullweight) || nullweight <= 0) {
+        stop("'nullweight' must be a positive numeric value.")
+    }
+    
+    if (!is.logical(verbose)) {
+        stop("'verbose' must be TRUE or FALSE.")
+    }
+    
     if (verbose) {
         message("starting post hoc analysis")
     }

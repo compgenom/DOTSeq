@@ -9,7 +9,7 @@ get_id_mapping(
   dataset,
   symbol_col = "external_gene_name",
   include_go = FALSE,
-  mart_source = c("ensembl", "plants", "fungi", "protists", "metazoa", "bacteria"),
+  mart_source = "ensembl",
   host = NULL
 )
 }
@@ -20,7 +20,10 @@ get_id_mapping(
 \code{"hsapiens_gene_ensembl"}, \code{"athaliana_eg_gene"}).}
 
 \item{symbol_col}{A string specifying the attribute to use as the
-gene symbol. Default is \code{"external_gene_name"}.}
+gene symbol. Common options include \code{hgnc_symbol},
+\code{"external_gene_name"}, \code{description}. The default is
+\code{"external_gene_name"}, which is widely used in vertebrate
+datasets such as human and mouse.}
 
 \item{include_go}{Logical; if \code{TRUE}, includes GO annotations
 (\code{go_id}, \code{name_1006}, \code{namespace_1003}) in the output.}

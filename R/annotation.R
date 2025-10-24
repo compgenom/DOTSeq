@@ -108,7 +108,10 @@ bm_get <- function(attributes, filters, values, mart) {
 #' \code{"hsapiens_gene_ensembl"}, \code{"athaliana_eg_gene"}).
 #'
 #' @param symbol_col A string specifying the attribute to use as the
-#' gene symbol. Default is \code{"external_gene_name"}.
+#' gene symbol. Common options include \code{hgnc_symbol}, 
+#' \code{"external_gene_name"}, \code{description}. The default is 
+#' \code{"external_gene_name"}, which is widely used in vertebrate 
+#' datasets such as human and mouse.
 #'
 #' @param include_go Logical; if \code{TRUE}, includes GO annotations
 #' (\code{go_id}, \code{name_1006}, \code{namespace_1003}) in the output.
@@ -162,21 +165,36 @@ bm_get <- function(attributes, filters, values, mart) {
 #' 21, 3439–3440. \doi{10.1093/bioinformatics/bti525}
 #'
 get_id_mapping <- function(
-    ensembl_ids,
-    dataset,
-    symbol_col = "external_gene_name",
-    include_go = FALSE,
-    mart_source = c(
+        ensembl_ids,
+        dataset,
+        symbol_col = "external_gene_name",
+        include_go = FALSE,
+        mart_source = "ensembl",
+        host = NULL
+) {
+    
+    if (missing(ensembl_ids) || !is.character(ensembl_ids) || length(ensembl_ids) == 0) {
+        stop("'ensembl_ids' must be a non-empty character vector.")
+    }
+    
+    if (missing(dataset) || !is.character(dataset) || length(dataset) != 1) {
+        stop("'dataset' must be a string.")
+    }
+    
+    if (!is.logical(include_go) || length(include_go) != 1) {
+        stop("'include_go' must be TRUE or FALSE.")
+    }
+    
+    valid_source = c(
         "ensembl",
         "plants",
         "fungi",
         "protists",
         "metazoa",
         "bacteria"
-    ),
-        host = NULL
-) {
-    mart_source <- match.arg(mart_source)
+    )
+    
+    mart_source <- match.arg(mart_source, choices = valid_source)
     
     biomart_map <- list(
         ensembl = "genes",

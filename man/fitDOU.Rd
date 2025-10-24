@@ -5,9 +5,7 @@
 \title{Fit Differential ORF Usage Models}
 \usage{
 fitDOU(
-  count_table,
-  rowdata,
-  coldata,
+  sumExp,
   formula = ~condition * strategy,
   emm_specs = ~condition * strategy,
   dispformula = NULL,
@@ -20,14 +18,10 @@ fitDOU(
 )
 }
 \arguments{
-\item{count_table}{A numeric matrix of ORF-level counts (rows = ORFs,
-columns = samples).}
-
-\item{rowdata}{A data frame mapping ORF IDs to gene IDs. Must contain
-columns \code{orf_id} and \code{gene_id}.}
-
-\item{coldata}{A data frame containing sample annotations. Must include columns
-such as \code{condition}, \code{strategy}, and \code{replicate}.}
+\item{sumExp}{A \code{SummarizedExperiment} object, typically a
+\code{DOTSeqDataSet}, containing raw ORF-level counts and
+sample metadata. This object is used as the input for modeling
+Differential ORF Usage (DOU) within the DOTSeq framework.}
 
 \item{formula}{A formula object specifying the model design,
 e.g., \code{~ condition * strategy}.}
@@ -123,9 +117,7 @@ m$sumExp <- m$sumExp[random_rows, ]
 
 # Fit DOU models
 rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
-    count_table = assay(m$sumExp),
-    rowdata = rowData(m$sumExp),
-    coldata = colData(m$sumExp),
+    sumExp = m$sumExp,
     formula = ~ condition * strategy,
     emm_specs = ~ condition * strategy,
     dispersion_modeling = "auto",

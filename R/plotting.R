@@ -1,3 +1,6 @@
+# Declare global variables to use NSE in ggplot2 functions
+utils::globalVariables(c("condition", "usage", "orf_id"))
+
 #' Retrieve and format adjusted p-value for a specific ORF and contrast
 #'
 #' This helper function extracts the adjusted p-value (e.g., LFSR or padj) 
@@ -1444,6 +1447,16 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #'     Options include \code{"venn"}, \code{"composite"}, \code{"volcano"},
 #'     \code{"heatmap"}, and \code{"usage"}. Default is \code{"volcano"}.
 #'     
+#' @param color_by Character string specifying how to color
+#'     points:
+#'     \itemize{
+#'         \item{\code{"significance"}: Colors by DTE-only,
+#'         DOU-only, both significant}
+#'         \item{\code{"orf_type"}: Colors by ORF type (requires
+#'         \code{rowdata})}
+#'     }
+#'     Default is \code{"significance"}.
+#'         
 #' @param results Required for plotting \code{"venn"}, \code{"composite"}, 
 #'     \code{"volcano"}, and \code{"heatmap"}. A data frame containing 
 #'     DOU and DTE estimates and significance values. Must include 

@@ -803,14 +803,10 @@ run_diagnostic <- function(
 #' @seealso \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSet}}, 
 #' \code{\link{testDOU}}
 #' 
-#' @param count_table A numeric matrix of ORF-level counts (rows = ORFs,
-#'     columns = samples).
-#'
-#' @param rowdata A data frame mapping ORF IDs to gene IDs. Must contain
-#'     columns \code{orf_id} and \code{gene_id}.
-#'
-#' @param coldata A data frame containing sample annotations. Must include columns
-#'     such as \code{condition}, \code{strategy}, and \code{replicate}.
+#' @param sumExp A \code{SummarizedExperiment} object, typically a
+#'     \code{DOTSeqDataSet}, containing raw ORF-level counts and 
+#'     sample metadata. This object is used as the input for modeling 
+#'     Differential ORF Usage (DOU) within the DOTSeq framework.
 #'
 #' @param formula A formula object specifying the model design,
 #'     e.g., \code{~ condition * strategy}.
@@ -904,9 +900,7 @@ run_diagnostic <- function(
 #'
 #' # Fit DOU models
 #' rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
-#'     count_table = assay(m$sumExp),
-#'     rowdata = rowData(m$sumExp),
-#'     coldata = colData(m$sumExp),
+#'     sumExp = m$sumExp,
 #'     formula = ~ condition * strategy,
 #'     emm_specs = ~ condition * strategy,
 #'     dispersion_modeling = "auto",
@@ -934,9 +928,7 @@ run_diagnostic <- function(
 #'
 #'
 fitDOU <- function(
-        count_table,
-        rowdata,
-        coldata,
+        sumExp,
         formula = ~ condition * strategy,
         emm_specs = ~ condition * strategy,
         dispformula = NULL,
@@ -955,10 +947,29 @@ fitDOU <- function(
         )
     }
     
-    stopifnot(class(count_table)[1] %in% c("matrix", "data.frame", "dgCMatrix", "DelayedMatrix"))
+    if (!inherits(sumExp, "SummarizedExperiment")) {
+        stop("'sumExp' must be a SummarizedExperiment object.")
+    }
     
+    valid_dispersion_models <- c("auto", "custom", "shared")
+    dispersion_modeling <- match.arg(dispersion_modeling, choices = valid_dispersion_models)
+    
+    if (!is.list(parallel) || !all(c("n", "autopar") %in% names(parallel))) {
+        stop("'parallel' must be a list with elements 'n' and 'autopar'.")
+    }
+    
+    for (arg in c("lrt", "diagnostic", "optimizers", "verbose")) {
+        if (!is.logical(get(arg)) || length(get(arg)) != 1) {
+            stop(sprintf("'%s' must be TRUE or FALSE.", arg))
+        }
+    }
+    
+    count_table <- assay(sumExp)
     count_table <- as.matrix(count_table)
     storage.mode(count_table) <- "integer"
+    
+    rowdata <- rowData(sumExp)
+    coldata <- colData(sumExp)
     
     # Identify lonely ORFs
     single_orf <- !mcols(rowdata)$gene_id %in% mcols(rowdata)$gene_id[duplicated(mcols(rowdata)$gene_id)]

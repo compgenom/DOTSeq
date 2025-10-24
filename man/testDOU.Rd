@@ -108,9 +108,7 @@ m$sumExp <- m$sumExp[random_rows, ]
 
 # Model fitting using fitDOU
 rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
-    count_table = assay(m$sumExp),
-    rowdata = rowData(m$sumExp),
-    coldata = colData(m$sumExp),
+    sumExp = m$sumExp,
     formula = ~ condition * strategy,
     emm_specs = ~ condition * strategy,
     dispersion_modeling = "auto",
