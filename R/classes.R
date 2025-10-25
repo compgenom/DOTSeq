@@ -92,7 +92,7 @@ setValidity("DOTSeqDataSet", function(object) {
     if (any(cnt < 0)) return("The count data contains negative values.")
     
     fmla <- fmla(object)
-    specs <- emmSpecs(object)
+    specs <- specs(object)
     interaction_df <- interactionResults(object)
     strategy_df <- strategyResults(object)
     
@@ -198,19 +198,19 @@ setMethod("fmla", "DESeqDataSet", function(object) design(object))
 #'
 #' @param object A \code{DOTSeqDataSet} or \code{DOTSeqDataSet} object.
 #' @return A \code{formula} object.
-#' @rdname emmSpecs
+#' @rdname specs
 #' @export
-setGeneric("emmSpecs", function(object) standardGeneric("emmSpecs"))
+setGeneric("specs", function(object) standardGeneric("specs"))
 
 #' @param object A \code{DOTSeqDataSet} object.
 #' @return A \code{formula} object.
-#' @rdname emmSpecs
+#' @rdname specs
 #' @export
-setMethod("emmSpecs", "DOTSeqDataSet", function(object) object@specs)
+setMethod("specs", "DOTSeqDataSet", function(object) object@specs)
 
 #' @param object A \code{DESeqDataSet} object.
 #' @return A \code{formula} object.
-#' @rdname emmSpecs
+#' @rdname specs
 #' @export
 #' @examples
 #' # Create a minimal DESeqDataSet object
@@ -221,8 +221,8 @@ setMethod("emmSpecs", "DOTSeqDataSet", function(object) object@specs)
 #'     interactionResults = S4Vectors::DataFrame(),
 #'     strategyResults = S4Vectors::DataFrame()
 #' )
-#' emmSpecs(dummy)
-setMethod("emmSpecs", "DESeqDataSet", function(object) {
+#' specs(dummy)
+setMethod("specs", "DESeqDataSet", function(object) {
     if (!"specs" %in% names(metadata(object))) {
         stop("No 'specs' found in metadata.")
     }

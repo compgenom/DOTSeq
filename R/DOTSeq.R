@@ -288,7 +288,7 @@ DOTSeq <- function(
             rowData(dou)[["DOUResults"]] <- fitDOU(
                 dou = dou,
                 formula = fmla(dou),
-                specs = emmSpecs(dou),
+                specs = specs(dou),
                 dispersion_modeling = dispersion_modeling,
                 dispformula = dispformula,
                 lrt = lrt,
