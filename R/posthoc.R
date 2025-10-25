@@ -473,7 +473,7 @@ contrast_vectors <- function(
     if (!is.null(formula)) {
         design <- model.matrix(formula, data = coldata)
     } else if ("formula" %in% names(metadata(dds))) {
-        design <- model.matrix(metadata(dds)$formula, data = coldata)
+        design <- model.matrix(fmla(dds), data = coldata)
     } else {
         stop("Please provide design formula.")
     }
