@@ -24,7 +24,7 @@ test_that("DOTSeqDataSet returns valid SummarizedExperiment object", {
     )
 
     expect_type(dot, "S4")
-    expect_s4_class(dot, "DOTSeqResults")
+    expect_s4_class(dot, "DOTSeqObjects")
     
     dou <- getDOU(dot)
 

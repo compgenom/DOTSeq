@@ -28,7 +28,7 @@ test_that("DOTSeq wrapper returns expected structure", {
 
     # Check structure
     expect_type(dot, "S4")
-    expect_s4_class(dot, "DOTSeqResults")
+    expect_s4_class(dot, "DOTSeqObjects")
     expect_s4_class(getDTE(dot), "DESeqDataSet")
     expect_s4_class(getDOU(dot), "DOTSeqDataSet")
 })
