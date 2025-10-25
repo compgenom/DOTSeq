@@ -22,3 +22,14 @@ A \code{formula} object.
 Retrieves the \code{\link[emmeans]{emmeans}} specification formula
 used for post hoc contrast generation.
 }
+\examples{
+# Create a minimal DOTSeqDataSet object
+library(S4Vectors)
+dummy <- new("DOTSeqDataSet",
+    formula = ~ condition * strategy,
+    specs = ~ condition | strategy,
+    interactionResults = S4Vectors::DataFrame(),
+    strategyResults = S4Vectors::DataFrame()
+)
+emmSpecs(dummy)
+}

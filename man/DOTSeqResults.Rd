@@ -35,6 +35,9 @@ getDTE(object) <- value
 
 \S4method{interactionResults}{DOTSeqResults}(object)
 }
+\value{
+A \code{DOTSeqDataSet} object containing DOU results.
+}
 \description{
 A wrapper class to store both DOU and DTE results from DOTSeq analysis.
 }
@@ -46,3 +49,11 @@ A wrapper class to store both DOU and DTE results from DOTSeq analysis.
 \item{\code{DTE}}{A \code{DESeqDataSet} object.}
 }}
 
+\examples{
+# Create dummy objects
+dou <- new("DOTSeqDataSet")
+dte <- new("DESeqDataSet")
+res <- new("DOTSeqResults", DOU = dou, DTE = dte)
+getDOU(res)
+getDTE(res)
+}

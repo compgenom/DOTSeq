@@ -24,6 +24,15 @@
 #' @name DOTSeqDataSet-class
 #' @rdname DOTSeqDataSet
 #' @export
+#' @examples
+#' # Create a minimal DOTSeqDataSet object
+#' library(S4Vectors)
+#' dummy <- new("DOTSeqDataSet",
+#'     formula = ~ condition * strategy,
+#'     specs = ~ condition | strategy,
+#'     interactionResults = S4Vectors::DataFrame(),
+#'     strategyResults = S4Vectors::DataFrame()
+#' )
 #' 
 setClass(
     "DOTSeqDataSet",
@@ -139,6 +148,16 @@ setMethod("conditionalFormula", "DOTSeqDataSet", function(object) object@formula
 
 #' @rdname conditionalFormula
 #' @export
+#' @examples
+#' # Create a minimal DOTSeqDataSet object
+#' library(S4Vectors)
+#' dummy <- new("DOTSeqDataSet",
+#'     formula = ~ condition * strategy,
+#'     specs = ~ condition | strategy,
+#'     interactionResults = S4Vectors::DataFrame(),
+#'     strategyResults = S4Vectors::DataFrame()
+#' )
+#' conditionalFormula(dummy)
 setMethod("conditionalFormula", "DESeqDataSet", function(object) {
     if (!"formula" %in% names(metadata(object))) {
         stop("No 'formula' found in metadata.")
@@ -164,6 +183,16 @@ setMethod("emmSpecs", "DOTSeqDataSet", function(object) object@specs)
 
 #' @rdname emmSpecs
 #' @export
+#' @examples
+#' # Create a minimal DOTSeqDataSet object
+#' library(S4Vectors)
+#' dummy <- new("DOTSeqDataSet",
+#'     formula = ~ condition * strategy,
+#'     specs = ~ condition | strategy,
+#'     interactionResults = S4Vectors::DataFrame(),
+#'     strategyResults = S4Vectors::DataFrame()
+#' )
+#' emmSpecs(dummy)
 setMethod("emmSpecs", "DESeqDataSet", function(object) {
     if (!"specs" %in% names(metadata(object))) {
         stop("No 'specs' found in metadata.")
@@ -188,10 +217,30 @@ setGeneric("interactionResults", function(object) standardGeneric("interactionRe
 
 #' @rdname interactionResults
 #' @export
+#' @examples
+#' # Create a minimal DOTSeqDataSet object
+#' library(S4Vectors)
+#' dummy <- new("DOTSeqDataSet",
+#'     formula = ~ condition * strategy,
+#'     specs = ~ condition | strategy,
+#'     interactionResults = S4Vectors::DataFrame(),
+#'     strategyResults = S4Vectors::DataFrame()
+#' )
+#' interactionResults(dummy)
 setMethod("interactionResults", "DOTSeqDataSet", function(object) object@interactionResults)
 
 #' @rdname interactionResults
 #' @export
+#' @examples
+#' # Create a minimal DESeqDataSet object
+#' library(S4Vectors)
+#' dummy <- new("DESeqDataSet",
+#'     formula = ~ condition * strategy,
+#'     specs = ~ condition | strategy,
+#'     interactionResults = S4Vectors::DataFrame(),
+#'     strategyResults = S4Vectors::DataFrame()
+#' )
+#' interactionResults(dummy)
 setMethod("interactionResults", "DESeqDataSet", function(object) {
     if (!"interaction_results" %in% names(metadata(object))) {
         stop("No 'interaction_results' found in metadata.")
@@ -236,10 +285,30 @@ setGeneric("strategyResults", function(object) standardGeneric("strategyResults"
 
 #' @rdname strategyResults
 #' @export
+#' @examples
+#' # Create a minimal DOTSeqDataSet object
+#' library(S4Vectors)
+#' dummy <- new("DOTSeqDataSet",
+#'     formula = ~ condition * strategy,
+#'     specs = ~ condition | strategy,
+#'     interactionResults = S4Vectors::DataFrame(),
+#'     strategyResults = S4Vectors::DataFrame()
+#' )
+#' strategyResults(dummy)
 setMethod("strategyResults", "DOTSeqDataSet", function(object) object@strategyResults)
 
 #' @rdname strategyResults
 #' @export
+#' @examples
+#' # Create a minimal DESeqDataSet object
+#' library(S4Vectors)
+#' dummy <- new("DESeqDataSet",
+#'     formula = ~ condition * strategy,
+#'     specs = ~ condition | strategy,
+#'     interactionResults = S4Vectors::DataFrame(),
+#'     strategyResults = S4Vectors::DataFrame()
+#' )
+#' strategyResults(dummy)
 setMethod("strategyResults", "DESeqDataSet", function(object) {
     if (!"strategy_results" %in% names(metadata(object))) {
         stop("No 'strategy_results' found in metadata.")
@@ -276,6 +345,13 @@ setReplaceMethod("strategyResults", "DESeqDataSet", function(object, value) {
 #' @slot DTE A \code{DESeqDataSet} object.
 #' @rdname DOTSeqResults
 #' @export
+#' @examples
+#' # Create dummy objects
+#' dou <- new("DOTSeqDataSet")
+#' dte <- new("DESeqDataSet")
+#' res <- new("DOTSeqResults", DOU = dou, DTE = dte)
+#' getDOU(res)
+#' getDTE(res)
 setClass(
     "DOTSeqResults",
     slots = list(
@@ -289,6 +365,7 @@ setClass(
 setGeneric("getDOU", function(object) standardGeneric("getDOU"))
 
 #' @rdname DOTSeqResults
+#' @return A \code{DOTSeqDataSet} object containing DOU results.
 #' @export
 setMethod("getDOU", "DOTSeqResults", function(object) object@DOU)
 

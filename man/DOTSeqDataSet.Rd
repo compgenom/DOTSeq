@@ -123,6 +123,15 @@ results strategy-specific contrasts}
 }}
 
 \examples{
+# Create a minimal DOTSeqDataSet object
+library(S4Vectors)
+dummy <- new("DOTSeqDataSet",
+    formula = ~ condition * strategy,
+    specs = ~ condition | strategy,
+    interactionResults = S4Vectors::DataFrame(),
+    strategyResults = S4Vectors::DataFrame()
+)
+
 # Read in count matrix, condition table, and annotation files
 dir <- system.file("extdata", package = "DOTSeq")
 

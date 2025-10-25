@@ -23,3 +23,14 @@ Retrieves the conditional formula stored in a \code{DOTSeqDataSet}
 or \code{DESeqDataSet} object. This formula defines the fixed effects
 structure used in GLM / GLMM modeling.
 }
+\examples{
+# Create a minimal DOTSeqDataSet object
+library(S4Vectors)
+dummy <- new("DOTSeqDataSet",
+    formula = ~ condition * strategy,
+    specs = ~ condition | strategy,
+    interactionResults = S4Vectors::DataFrame(),
+    strategyResults = S4Vectors::DataFrame()
+)
+conditionalFormula(dummy)
+}

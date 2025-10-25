@@ -34,3 +34,23 @@ Retrieves the contrast results stored in a \code{DOTSeqDataSet} object.
 These results may include shrinkage-adjusted estimates and contrast
 statistics
 }
+\examples{
+# Create a minimal DOTSeqDataSet object
+library(S4Vectors)
+dummy <- new("DOTSeqDataSet",
+    formula = ~ condition * strategy,
+    specs = ~ condition | strategy,
+    interactionResults = S4Vectors::DataFrame(),
+    strategyResults = S4Vectors::DataFrame()
+)
+strategyResults(dummy)
+# Create a minimal DESeqDataSet object
+library(S4Vectors)
+dummy <- new("DESeqDataSet",
+    formula = ~ condition * strategy,
+    specs = ~ condition | strategy,
+    interactionResults = S4Vectors::DataFrame(),
+    strategyResults = S4Vectors::DataFrame()
+)
+strategyResults(dummy)
+}
