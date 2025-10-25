@@ -1,4 +1,4 @@
-test_that("get_id_mapping returns gene symbols", {
+test_that("mapIDs returns gene symbols", {
     fake_df <- data.frame(
         ensembl_gene_id = "ENSG00000139618",
         external_gene_name = "BRCA2"
@@ -8,7 +8,7 @@ test_that("get_id_mapping returns gene symbols", {
         bm_use_ensembl = function(biomart, dataset, host = NULL) "fake_mart",
         bm_get = function(attributes, filters, values, mart) fake_df,
         {
-            res <- get_id_mapping(
+            res <- mapIDs(
                 "ENSG00000139618",
                 dataset = "hsapiens_gene_ensembl",
                 mart_source = "ensembl"

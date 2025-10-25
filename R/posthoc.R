@@ -12,8 +12,8 @@
 #' \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSet}},
 #' \code{\link{fitDOU}}, \code{\link{plotDOT}}
 #'
-#' @param sumExp A SummarizedExperiment object containing `emmGrid`
-#'     objects, typically stored in \code{rowData(sumExp)[['DOUResults']]}.
+#' @param dou A \code{\link{DOTSeqDataSet}} object containing `emmGrid`
+#'     objects, typically stored in \code{rowData(dou)[['DOUResults']]}.
 #'
 #' @param contrasts_method Character string specifying the method
 #'     for computing contrasts. Default is \code{"revpairwise"}.
@@ -25,13 +25,11 @@
 #' @param verbose Logical. If \code{TRUE}, prints progress messages.
 #'     Default is \code{TRUE}.
 #'
-#' @return A \code{SummarizedExperiment} object (the input
-#'     \code{sumExp} or \code{m$sumExp}) with two new
-#'     \code{S4Vectors::DataFrame} objects stored in its
-#'     \code{metadata} slot. These tables contain long-format results
-#'         for all computed contrasts:
+#' @return A \code{DOTSeqDataSet} object with two new
+#'     \code{S4Vectors::DataFrame} slots. These tables contain 
+#'         long-format results for all computed contrasts:
 #'     \describe{
-#'         \item{\code{interaction_results}}{
+#'         \item{\code{\link{interactionResults}}}{
 #'             A long-format \code{S4Vectors::DataFrame} containing DOU 
 #'             effect sizes (Ribo-seq minus RNA-seq) for all interaction 
 #'             contrasts. Columns include \code{contrast}, and shrunken 
@@ -39,7 +37,7 @@
 #'             \code{sebetahat}, \code{WaldPadj}, \code{PosteriorMean}, 
 #'             \code{lfsr}).
 #'         }
-#'         \item{\code{strategy_results}}{
+#'         \item{\code{\link{strategyResults}}}{
 #'             A long-format \code{S4Vectors::DataFrame} containing
 #'             strategy-specific effect sizes (e.g., Ribo-seq only) for 
 #'             all computed contrasts. Columns include \code{strategy},
@@ -88,7 +86,7 @@
 #'
 #' # Create SummarizedExperiment objects.These objects can be used as input
 #' # for DOTSeq and fitDOU
-#' m <- DOTSeqDataSet(
+#' dot <- DOTSeqDataSet(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,
@@ -97,21 +95,22 @@
 #'
 #' # Keep ORFs where all replicates in at least one condition pass min_count
 #' # Single-ORF genes are removed
-#' m$sumExp <- m$sumExp[rowRanges(m$sumExp)$is_kept == TRUE, ]
+#' dou <- getDOU(dot)
+#' dou <- dou[rowRanges(dou)$is_kept == TRUE, ]
 #'
 #' # Randomly sample 100 ORFs for fitDOU
 #' n <- 100
 #' set.seed(42)
-#' random_rows <- sample(seq_len(nrow(m$sumExp)), size = n)
+#' random_rows <- sample(seq_len(nrow(dou)), size = n)
 #'
 #' # Subset the SummarizedExperiment object
-#' m$sumExp <- m$sumExp[random_rows, ]
+#' dou <- dou[random_rows, ]
 #'
 #' # Model fitting using fitDOU
-#' rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
-#'     sumExp = m$sumExp,
+#' rowData(dou)[["DOUResults"]] <- fitDOU(
+#'     dou = dou,
 #'     formula = ~ condition * strategy,
-#'     emm_specs = ~ condition * strategy,
+#'     specs = ~ condition * strategy,
 #'     dispersion_modeling = "auto",
 #'     lrt = FALSE,
 #'     optimizers = FALSE,
@@ -121,7 +120,7 @@
 #' )
 #'
 #' # Run post hoc contrasts, Wald tests, and effect size shrinkage
-#' m$sumExp <- testDOU(m$sumExp, verbose = TRUE)
+#' dou <- testDOU(dou, verbose = TRUE)
 #'
 #' @references
 #' Lenth R, Piaskowski J (2025). emmeans: Estimated Marginal Means, aka
@@ -133,18 +132,18 @@
 #'
 #'
 testDOU <- function(
-        sumExp,
+        dou,
         contrasts_method = "revpairwise",
         nullweight = 500,
         verbose = TRUE
 ) {
     
-    if (missing(sumExp)) {
-        stop("Argument 'sumExp' is required.")
+    if (missing(dou)) {
+        stop("Argument 'dou' is required.")
     }
     
-    if (!inherits(sumExp, "SummarizedExperiment")) {
-        stop("'sumExp' must be a SummarizedExperiment object.")
+    if (!inherits(dou, "DOTSeqDataSet")) {
+        stop("'dou' must be a DOTSeqDataSet object.")
     }
     
     valid_methods <- c("revpairwise", "pairwise")
@@ -169,7 +168,7 @@ testDOU <- function(
         message("starting post hoc analysis")
     }
 
-    result_list <- rowData(sumExp)[["DOUResults"]]
+    result_list <- rowData(dou)[["DOUResults"]]
 
     valid_indices <- which(vapply(result_list, function(obj) {
         !is.null(posthoc(obj)) && inherits(posthoc(obj), "emmGrid")
@@ -375,15 +374,15 @@ testDOU <- function(
 
     strategy_df$contrast <- Rle(strategy_df$contrast)
     strategy_df$strategy <- Rle(strategy_df$strategy)
-
-    metadata(sumExp)$interaction_results <- interaction_df
-    metadata(sumExp)$strategy_results <- strategy_df
+    
+    interactionResults(dou) <- interaction_df
+    strategyResults(dou) <- strategy_df
     
     if (verbose) {
         message("effect sizes for strategy_specific contrasts calculated and shrunk successfully")
     }
 
-    return(sumExp)
+    return(dou)
 }
 
 
@@ -406,7 +405,7 @@ testDOU <- function(
 #' @param formula Optional. A model formula used to generate the design
 #'     matrix (e.g., \code{~ condition * strategy}). If not provided, 
 #'     the function will try to extract it from 
-#'     \code{metadata(dds)$formula}.
+#'     \code{conditionalFormula(dds)}.
 #'
 #' @param baseline Optional. A character string specifying the baseline
 #'     condition for comparisons. If \code{NULL}, the first level of 
@@ -424,7 +423,8 @@ testDOU <- function(
 #' @importFrom stats model.matrix
 #' @importFrom utils combn
 #' @importFrom DESeq2 resultsNames
-#'
+#' @importFrom S4Vectors metadata metadata<-
+#' 
 #' @keywords internal
 #' @examples
 #' \dontrun{

@@ -13,7 +13,7 @@ sample annotations.}
 \item{formula}{Optional. A model formula used to generate the design
 matrix (e.g., \code{~ condition * strategy}). If not provided,
 the function will try to extract it from
-\code{metadata(dds)$formula}.}
+\code{conditionalFormula(dds)}.}
 
 \item{baseline}{Optional. A character string specifying the baseline
 condition for comparisons. If \code{NULL}, the first level of

@@ -27,7 +27,7 @@
 #'
 #' @keywords internal
 #'
-.calculate_mean_dispersion <- function(
+calculate_mean_dispersion <- function(
         counts, 
         totals
 ) {
@@ -295,12 +295,12 @@ run_diagnostic <- function(
 #' (Multi-Level / Mixed) Regression Models. R package version 0.4.7.
 #' \url{https://github.com/florianhartig/dharma}
 #'
-.fitBetaBinomial <- function(
+fit_beta_binomial <- function(
         ribo_mat,
         rna_mat,
         coldata,
         formula = ~ condition * strategy,
-        emm_specs = ~ condition * strategy,
+        specs = ~ condition * strategy,
         dispersion_modeling = c("auto", "shared", "custom"),
         dispformula = NULL,
         lrt = FALSE,
@@ -737,11 +737,11 @@ run_diagnostic <- function(
                     ))
                 }
                 
-                raw_rho_rna <- .calculate_mean_dispersion(
+                raw_rho_rna <- calculate_mean_dispersion(
                     model_data_this_orf[model_data_this_orf$strategy == rna_level, ]$counts, 
                     model_data_this_orf[model_data_this_orf$strategy == rna_level, ]$success + model_data_this_orf[model_data_this_orf$strategy == rna_level, ]$failure
                 )
-                raw_rho_ribo <- .calculate_mean_dispersion(
+                raw_rho_ribo <- calculate_mean_dispersion(
                     model_data_this_orf[model_data_this_orf$strategy == ribo_level, ]$counts, 
                     model_data_this_orf[model_data_this_orf$strategy == ribo_level, ]$success + model_data_this_orf[model_data_this_orf$strategy == ribo_level, ]$failure
                 )
@@ -766,7 +766,7 @@ run_diagnostic <- function(
                 
                 results$dispersion$fittedVsRawDispDiff <- abs(results$dispersion$fitted_disp_rna - results$dispersion$raw_rho_rna) + abs(results$dispersion$fitted_disp_ribo - results$dispersion$raw_rho_ribo)
                 
-                emm <- emmeans(model_to_return, specs = emm_specs)
+                emm <- emmeans(model_to_return, specs = specs)
                 
                 return(.PostHoc(
                     type = "glmmTMB",
@@ -803,15 +803,14 @@ run_diagnostic <- function(
 #' @seealso \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSet}}, 
 #' \code{\link{testDOU}}
 #' 
-#' @param sumExp A \code{SummarizedExperiment} object, typically a
-#'     \code{DOTSeqDataSet}, containing raw ORF-level counts and 
-#'     sample metadata. This object is used as the input for modeling 
-#'     Differential ORF Usage (DOU) within the DOTSeq framework.
+#' @param dou A \code{\link{DOTSeqDataSet}} object containing raw ORF-level  
+#'     counts and sample metadata. This object is used as the input for  
+#'     modeling Differential ORF Usage (DOU) within the DOTSeq framework.
 #'
 #' @param formula A formula object specifying the model design,
 #'     e.g., \code{~ condition * strategy}.
 #'
-#' @param emm_specs A formula specifying the structure of the estimated
+#' @param specs A formula specifying the structure of the estimated
 #'     marginal means. Default is \code{~condition * strategy}.
 #'
 #' @param dispformula Optional formula object specifying a custom dispersion
@@ -885,24 +884,25 @@ run_diagnostic <- function(
 #' cond$treatment <- NULL
 #'
 #' # Create SummarizedExperiment object
-#' m <- DOTSeqDataSet(
+#' dot <- DOTSeqDataSet(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,
 #'     bed = bed
 #' )
-#'
+#' dou <- getDOU(dot)
+#' 
 #' # Filter and subset ORFs
-#' m$sumExp <- m$sumExp[rowRanges(m$sumExp)$is_kept == TRUE, ]
+#' dou <- dou[rowRanges(dou)$is_kept == TRUE, ]
 #' set.seed(42)
-#' random_rows <- sample(seq_len(nrow(m$sumExp)), size = 100)
-#' m$sumExp <- m$sumExp[random_rows, ]
+#' random_rows <- sample(seq_len(nrow(dou)), size = 100)
+#' dou <- dou[random_rows, ]
 #'
 #' # Fit DOU models
-#' rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
-#'     sumExp = m$sumExp,
+#' rowData(dou)[["DOUResults"]] <- fitDOU(
+#'     dou = dou,
 #'     formula = ~ condition * strategy,
-#'     emm_specs = ~ condition * strategy,
+#'     specs = ~ condition * strategy,
 #'     dispersion_modeling = "auto",
 #'     lrt = FALSE,
 #'     optimizers = FALSE,
@@ -928,9 +928,9 @@ run_diagnostic <- function(
 #'
 #'
 fitDOU <- function(
-        sumExp,
+        dou,
         formula = ~ condition * strategy,
-        emm_specs = ~ condition * strategy,
+        specs = ~ condition * strategy,
         dispformula = NULL,
         dispersion_modeling = "auto",
         lrt = FALSE,
@@ -947,8 +947,8 @@ fitDOU <- function(
         )
     }
     
-    if (!inherits(sumExp, "SummarizedExperiment")) {
-        stop("'sumExp' must be a SummarizedExperiment object.")
+    if (!inherits(dou, "DOTSeqDataSet")) {
+        stop("'dou' must be a DOTSeqDataSet object.")
     }
     
     valid_dispersion_models <- c("auto", "custom", "shared")
@@ -964,12 +964,12 @@ fitDOU <- function(
         }
     }
     
-    count_table <- assay(sumExp)
+    count_table <- assay(dou)
     count_table <- as.matrix(count_table)
     storage.mode(count_table) <- "integer"
     
-    rowdata <- rowData(sumExp)
-    coldata <- colData(sumExp)
+    rowdata <- rowData(dou)
+    coldata <- colData(dou)
     
     # Identify lonely ORFs
     single_orf <- !mcols(rowdata)$gene_id %in% mcols(rowdata)$gene_id[duplicated(mcols(rowdata)$gene_id)]
@@ -1018,12 +1018,12 @@ fitDOU <- function(
         
         models_gene <- tryCatch(
             {
-                .fitBetaBinomial(
+                fit_beta_binomial(
                     ribo_mat = ribo_mat, 
                     rna_mat = rna_mat, 
                     coldata = coldata,
                     formula = formula, 
-                    emm_specs = emm_specs,
+                    specs = specs,
                     dispersion_modeling = dispersion_modeling, 
                     dispformula = dispformula, 
                     lrt = lrt,

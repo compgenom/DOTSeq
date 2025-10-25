@@ -14,18 +14,18 @@
 #' @seealso \code{\link{DOTSeqDataSet}}, \code{\link{fitDOU}}, 
 #' \code{\link{testDOU}}, \code{\link{plotDOT}}
 #'
-#' @param dotseq_dataset A named \code{list} containing pre-constructed DOTSeq
-#'     input objects. This list must include:
+#' @param dot A \code{\link{DOTSeqResults}} object pre-constructed using
+#'     \code{\link{DOTSeqDataSet}}. This list must include:
 #'     \describe{
-#'         \item{\code{sumExp}}{
-#'             A \code{RangedSummarizedExperiment} object containing filtered
+#'         \item{\code{DOU}}{
+#'             A \code{DOTSeqDataSet} object containing filtered
 #'             raw counts, sample metadata, and ORF-level annotations.
 #'         }
-#'         \item{\code{dds}}{
+#'         \item{\code{DTE}}{
 #'             A \code{DESeqDataSet} object used for modeling DTE via DESeq2.
 #'         }
 #'     }
-#'     If \code{dotseq_dataset} is provided, the function skips raw input
+#'     If \code{dot} is provided, the function skips raw input
 #'     parsing and uses these objects directly.
 #'
 #' @param count_table Path to a count table file or a data frame. Must contain
@@ -104,10 +104,10 @@
 #'
 #' @return A named \code{list} containing:
 #'     \describe{
-#'         \item{\code{sumExp}}{
-#'             A \code{SummarizedExperiment} object with DOU results.
+#'         \item{\code{DOU}}{
+#'             A \code{DOTSeqDataSet} object with DOU results.
 #'         }
-#'         \item{\code{dds}}{
+#'         \item{\code{DTE}}{
 #'             A \code{DESeqDataSet} object with DTE results.
 #'         }
 #'     }
@@ -139,7 +139,7 @@
 #' cond <- meta[meta$treatment == "chx", ]
 #' cond$treatment <- NULL
 #'
-#' m <- DOTSeq(
+#' dot <- DOTSeq(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,
@@ -147,25 +147,24 @@
 #'     modules = "DTE"
 #' )
 #'
-#' names(m)
-#' metadata(m$dds)
+#' show(dot)
+#' 
+#' dou <- getDOU(dot)
 #'
 #' set.seed(42)
-#' random_rows <- sample(seq_len(nrow(m$sumExp)), size = 50)
-#' m$sumExp <- m$sumExp[random_rows, ]
+#' random_rows <- sample(seq_len(nrow(dou)), size = 50)
+#' getDOU(dot) <- dou[random_rows, ]
 #'
-#' m <- DOTSeq(dotseq_dataset = m)
-#' metadata(m$sumExp)
+#' dot <- DOTSeq(dot = dot)
 #'
-#' m <- DOTSeqDataSet(
+#' dot <- DOTSeqDataSet(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,
 #'     bed = bed
 #' )
 #'
-#' m <- DOTSeq(dotseq_dataset = m, modules = "DTE")
-#' metadata(m$dds)
+#' dot <- DOTSeq(dot = dot, modules = "DTE")
 #'
 #' @references
 #' Brooks, M. E., Kristensen, K., van Benthem, K. J., Magnusson, A., Berg, C. W.,
@@ -192,7 +191,7 @@
 #' \url{https://github.com/florianhartig/dharma}
 #'
 DOTSeq <- function(
-        dotseq_dataset = NULL,
+        dot = NULL,
         count_table = NULL,
         condition_table = NULL,
         flattened_gtf = NULL,
@@ -229,19 +228,22 @@ DOTSeq <- function(
         start_dou <- Sys.time()
     }
 
-    if (!is.null(dotseq_dataset)) {
-        if (!is.list(dotseq_dataset) || !"sumExp" %in% names(dotseq_dataset)) {
-            stop(
-                "'dotseq_dataset' must be a list containing ", 
-                "at least a 'sumExp' RangedSummarizedExperiment."
-            )
+    if (!is.null(dot)) {
+        if (!is(dot, "DOTSeqResults")) {
+            stop("'dot' must be a DOTSeqResults object.")
         }
-        dot <- dotseq_dataset
+        if (!is(getDOU(dot), "DOTSeqDataSet")) {
+            stop("The 'DOU' slot must be a DOTSeqDataSet object.")
+        }
+        if (!is(getDTE(dot), "DESeqDataSet")) {
+            stop("The 'DTE' slot must be a DESeqDataSet object.")
+        }
+
     } else {
         # Check that all required raw inputs are provided
         if (any(vapply(list(count_table, condition_table, flattened_gtf, bed), is.null, logical(1)))) {
             stop(
-                "Either provide a 'dotseq_dataset' object ", 
+                "Either provide a 'DOTSeqResults' object ", 
                 "or all of 'count_table', 'condition_table', ", 
                 "'flattened_gtf', and 'bed'."
             )
@@ -259,9 +261,11 @@ DOTSeq <- function(
             verbose = verbose
         )
     }
+    
+    dou <- getDOU(dot)
 
     if ("DOU" %in% modules) {
-        if ("DOUResults" %in% names(rowData(dot$sumExp)) || "interaction_results" %in% names(metadata(dot$sumExp))) {
+        if ("DOUResults" %in% names(rowData(dou))) {
             message(
                 "skipping Differential ORF Usage (DOU) analysis; ", 
                 "model fitting has already been performed on this object. ", 
@@ -270,21 +274,21 @@ DOTSeq <- function(
             )
         } else {
             # Total input ORFs
-            nrow_input <- nrow(rowData(dot$sumExp))
+            nrow_input <- nrow(rowData(dou))
 
-            dot$sumExp <- dot$sumExp[rowRanges(dot$sumExp)$is_kept == TRUE, ]
+            dou <- dou[rowRanges(dou)$is_kept == TRUE, ]
 
             # Kept ORFs
-            nrow_kept <- nrow(rowData(dot$sumExp))
+            nrow_kept <- nrow(rowData(dou))
 
             if (verbose) {
                 message("starting Differential ORF Usage (DOU) analysis")
             }
 
-            rowData(dot$sumExp)[["DOUResults"]] <- fitDOU(
-                sumExp = dot$sumExp,
-                formula = metadata(dot$sumExp)$formula,
-                emm_specs = metadata(dot$sumExp)$emm_specs,
+            rowData(dou)[["DOUResults"]] <- fitDOU(
+                dou = dou,
+                formula = conditionalFormula(dou),
+                specs = emmSpecs(dou),
                 dispersion_modeling = dispersion_modeling,
                 dispformula = dispformula,
                 lrt = lrt,
@@ -294,14 +298,14 @@ DOTSeq <- function(
                 verbose = verbose
             )
 
-            dot$sumExp <- testDOU(
-                dot$sumExp,
+            dou <- testDOU(
+                dou,
                 contrasts_method = contrasts_method,
                 nullweight = nullweight,
                 verbose = verbose
             )
 
-            interaction_results <- metadata(dot$sumExp)$interaction_results
+            interaction_results <- interactionResults(dou)
             all_contrasts <- unique(interaction_results$contrast)
 
             if (verbose) {
@@ -335,9 +339,11 @@ DOTSeq <- function(
             )
         }
     }
+    
+    dte <- getDTE(dot)
 
     if ("DTE" %in% modules) {
-        if ("interaction_results" %in% names(metadata(dot$dds))) {
+        if ("interaction_results" %in% names(metadata(dte))) {
             message(
                 "skipping Differential Translation Efficiency (DTE) analysis: ", 
                 "model fitting has already been performed on this object. ", 
@@ -351,16 +357,16 @@ DOTSeq <- function(
             }
 
             # Run the DESeq2 analysis
-            dot$dds <- DESeq(dot$dds)
+            dte <- DESeq(dte)
 
-            terms <- resultsNames(dot$dds)
+            terms <- resultsNames(dte)
             matched_term <- terms[grepl("\\.", terms)]
 
             if (verbose) {
                 message("starting post hoc analysis")
             }
 
-            contrast_vectors_list <- contrast_vectors(dot$dds)
+            contrast_vectors_list <- contrast_vectors(dte)
 
             contrast_results <- list()
             for (c_name in names(contrast_vectors_list)) {
@@ -368,7 +374,7 @@ DOTSeq <- function(
                 #     message("performing empirical Bayesian shrinkage on the effect size for ", c_name)
                 # }
 
-                contrast_results_df <- lfcShrink(dot$dds, contrast = contrast_vectors_list[[c_name]], type = "ashr", quiet = TRUE)
+                contrast_results_df <- lfcShrink(dte, contrast = contrast_vectors_list[[c_name]], type = "ashr", quiet = TRUE)
                 contrast_results_df$orf_id <- rownames(contrast_results_df)
                 rownames(contrast_results_df) <- NULL
                 contrast_results_df$contrast <- c_name
@@ -376,7 +382,7 @@ DOTSeq <- function(
             }
             contrast_results <- do.call(rbind, contrast_results)
 
-            metadata(dot$dds)$interaction_results <- contrast_results
+            interactionResults(dte) <- contrast_results
 
             all_contrasts <- unique(contrast_results$contrast)
 
@@ -412,5 +418,5 @@ DOTSeq <- function(
         }
     }
 
-    return(dot)
+    return(new("DOTSeqResults", DOU = dou, DTE = dte))
 }

@@ -130,14 +130,14 @@ bm_get <- function(attributes, filters, values, mart) {
 #' @export
 #' @examples
 #' # Human gene example
-#' get_id_mapping(
+#' mapIDs(
 #'     c("ENSG00000139618"),
 #'     dataset = "hsapiens_gene_ensembl",
 #'     mart_source = "ensembl"
 #' )
 #' 
 #' # Arabidopsis gene example
-#' # get_id_mapping(
+#' # mapIDs(
 #' #    c("AT1G01010"),
 #' #    dataset = "athaliana_eg_gene",
 #' #    symbol_col = "tair_symbol",
@@ -145,7 +145,7 @@ bm_get <- function(attributes, filters, values, mart) {
 #' # )
 #'
 #' # Plasmodium falciparum gene example with fallback
-#' # get_id_mapping(
+#' # mapIDs(
 #' #    c("PF3D7_0100100"),
 #' #    dataset = "pfalciparum_eg_gene",
 #' #    mart_source = "protists"
@@ -164,7 +164,7 @@ bm_get <- function(attributes, filters, values, mart) {
 #' biological databases and microarray data analysis. Bioinformatics, 
 #' 21, 3439–3440. \doi{10.1093/bioinformatics/bti525}
 #'
-get_id_mapping <- function(
+mapIDs <- function(
         ensembl_ids,
         dataset,
         symbol_col = "external_gene_name",

@@ -18,7 +18,7 @@ test_that("DOTSeq wrapper returns expected structure", {
     cond$treatment <- NULL
 
     # Run DOTSeq wrapper
-    m <- DOTSeq(
+    dot <- DOTSeq(
         count_table = cnt,
         condition_table = cond,
         flattened_gtf = flat,
@@ -27,9 +27,8 @@ test_that("DOTSeq wrapper returns expected structure", {
     )
 
     # Check structure
-    expect_type(m, "list")
-    expect_true("dds" %in% names(m))
-    expect_true("sumExp" %in% names(m))
-    expect_s4_class(m$dds, "DESeqDataSet")
-    expect_s4_class(m$sumExp, "SummarizedExperiment")
+    expect_type(dot, "S4")
+    expect_s4_class(dot, "DOTSeqResults")
+    expect_s4_class(getDTE(dot), "DESeqDataSet")
+    expect_s4_class(getDOU(dot), "DOTSeqDataSet")
 })

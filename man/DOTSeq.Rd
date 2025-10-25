@@ -5,7 +5,7 @@
 \title{Perform Differential ORF Translation Analysis with DOTSeq}
 \usage{
 DOTSeq(
-  dotseq_dataset = NULL,
+  dot = NULL,
   count_table = NULL,
   condition_table = NULL,
   flattened_gtf = NULL,
@@ -28,18 +28,18 @@ DOTSeq(
 )
 }
 \arguments{
-\item{dotseq_dataset}{A named \code{list} containing pre-constructed DOTSeq
-input objects. This list must include:
+\item{dot}{A \code{\link{DOTSeqResults}} object pre-constructed using
+\code{\link{DOTSeqDataSet}}. This list must include:
 \describe{
-\item{\code{sumExp}}{
-A \code{RangedSummarizedExperiment} object containing filtered
+\item{\code{DOU}}{
+A \code{DOTSeqDataSet} object containing filtered
 raw counts, sample metadata, and ORF-level annotations.
 }
-\item{\code{dds}}{
+\item{\code{DTE}}{
 A \code{DESeqDataSet} object used for modeling DTE via DESeq2.
 }
 }
-If \code{dotseq_dataset} is provided, the function skips raw input
+If \code{dot} is provided, the function skips raw input
 parsing and uses these objects directly.}
 
 \item{count_table}{Path to a count table file or a data frame. Must contain
@@ -119,10 +119,10 @@ Default is \code{TRUE}.}
 \value{
 A named \code{list} containing:
 \describe{
-\item{\code{sumExp}}{
-A \code{SummarizedExperiment} object with DOU results.
+\item{\code{DOU}}{
+A \code{DOTSeqDataSet} object with DOU results.
 }
-\item{\code{dds}}{
+\item{\code{DTE}}{
 A \code{DESeqDataSet} object with DTE results.
 }
 }
@@ -159,7 +159,7 @@ names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
 cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
-m <- DOTSeq(
+dot <- DOTSeq(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = flat,
@@ -167,25 +167,24 @@ m <- DOTSeq(
     modules = "DTE"
 )
 
-names(m)
-metadata(m$dds)
+show(dot)
+
+dou <- getDOU(dot)
 
 set.seed(42)
-random_rows <- sample(seq_len(nrow(m$sumExp)), size = 50)
-m$sumExp <- m$sumExp[random_rows, ]
+random_rows <- sample(seq_len(nrow(dou)), size = 50)
+getDOU(dot) <- dou[random_rows, ]
 
-m <- DOTSeq(dotseq_dataset = m)
-metadata(m$sumExp)
+dot <- DOTSeq(dot = dot)
 
-m <- DOTSeqDataSet(
+dot <- DOTSeqDataSet(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = flat,
     bed = bed
 )
 
-m <- DOTSeq(dotseq_dataset = m, modules = "DTE")
-metadata(m$dds)
+dot <- DOTSeq(dot = dot, modules = "DTE")
 
 }
 \references{

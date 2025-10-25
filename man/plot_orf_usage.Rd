@@ -5,7 +5,7 @@
 \title{Plot ORF usage across conditions with significance annotations}
 \usage{
 plot_orf_usage(
-  sumExp,
+  dou,
   gene_id = NULL,
   id_mapping = NULL,
   levels = NULL,
@@ -14,8 +14,8 @@ plot_orf_usage(
 )
 }
 \arguments{
-\item{sumExp}{A \code{SummarizedExperiment} object containing metadata
-with \code{interaction_results}.}
+\item{dou}{A \code{\link{DOTSeqDataSet}} object containing an
+\code{interactionResults} slot.}
 
 \item{gene_id}{A character string specifying the gene ID of interest}
 

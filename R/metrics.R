@@ -3,7 +3,7 @@
 #' This function extracts post hoc results for a given gene ID and
 #' computes condition-specific ORF usage using emmeans contrasts.
 #'
-#' @param sumExp A SummarizedExperiment object containing DOUResults
+#' @param dou A \code{\link{DOTSeqDataSet}} object containing DOUResults
 #' @param gene_id A character string specifying the gene ID of interest
 #'
 #' @return A data.frame with ORF IDs, conditions, and usage estimates
@@ -37,31 +37,52 @@
 #' cond <- meta[meta$treatment == "chx", ]
 #' cond$treatment <- NULL
 #'
-#' m <- DOTSeqDataSet(
+#' dot <- DOTSeqDataSet(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,
 #'     bed = bed
 #' )
-#'
-#' m$sumExp <- m$sumExp[
-#'     SummarizedExperiment::rowData(m$sumExp)$is_kept == TRUE, ]
+#' 
+#' dou <- getDOU(dot)
+#' 
+#' dou <- dou[
+#'     SummarizedExperiment::rowData(dou)$is_kept == TRUE, ]
 #' # Subset only one gene
-#' m$sumExp <- m$sumExp[
-#'     SummarizedExperiment::rowData(m$sumExp)$gene_id == "ENSG00000119402.18", ]
-#'
-#' m <- DOTSeq(dotseq_dataset = m, modules = "DOU")
-#'
-#' usage_df <- calculate_orf_usage(
-#'     m$sumExp,
+#' dou <- dou[
+#'     SummarizedExperiment::rowData(dou)$gene_id == "ENSG00000119402.18", ]
+#'     
+#' getDOU(dot) <- dou
+#' 
+#' dot <- DOTSeq(dotseq_dataset = dot, modules = "DOU")
+#' 
+#' usage_df <- calculateUsage(
+#'     getDOU(dot),
 #'     gene_id = "ENSG00000119402.18"
 #' )
 #' print(usage_df)
 #' 
-calculate_orf_usage <- function(sumExp, gene_id) {
+calculateUsage <- function(dou, gene_id) {
+    
+    if (is.null(dou)) {
+        stop("Please provide gene_id.")
+    }
+    
+    if (!inherits(dou, "DOTSeqDataSet")) {
+        stop("'dou' must be a DOTSeqDataSet object.")
+    }
+    
+    if (is.null(gene_id)) {
+        stop("Please provide gene_id.")
+    }
+    
+    if (!is.character(gene_id)) {
+        stop("'gene_id' must be a character vector.")
+    }
+    
     # Filter by gene ID
-    rowData(sumExp)$ensembl_gene_id <- sub("\\..*", "", rowData(sumExp)$gene_id)
-    se_gene <- sumExp[rowData(sumExp)$ensembl_gene_id == gene_id, ]
+    rowData(dou)$ensembl_gene_id <- sub("\\..*", "", rowData(dou)$gene_id)
+    se_gene <- dou[rowData(dou)$ensembl_gene_id == gene_id, ]
     orf_rows <- rowData(se_gene)
     
     # Extract DOUResults for those ORFs

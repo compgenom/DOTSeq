@@ -27,7 +27,8 @@ reading frames (ORFs) from ribosome profiling (Ribo-seq)
 [@ingolia2009genome, @ingolia2019ribosome] and matched RNA-seq datasets 
 [@lim2025differential]. Translation is a tightly regulated process, 
 where multiple ORFs within the same gene can modulate protein synthesis. 
-Traditional gene-level approaches obscure these regulatory layers. 
+Traditional gene-level approaches, e.g., annota2seq available at 
+Bioconductor [@oertlin2019generally], obscure these regulatory layers. 
 `DOTSeq` addresses this limitation by modelling translation at the ORF 
 level.
 
@@ -152,7 +153,7 @@ the translation-specific interaction effect ($\beta_{\text{int}}$),
 formulas can be customised to include batch and random effects.
 
 ```{r dotseq, warning=FALSE}
-m <- DOTSeq(
+dot <- DOTSeq(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = flat,
@@ -172,16 +173,16 @@ The output of `DOTSeq()` is a list containing two main objects:
 - dds: DTE results (negative binomial GLMs).
 
 ```{r dotseq-objects}
-names(m)
+show(dot)
 ```
 
 Each of these objects includes model fit results and post hoc summaries.
 For example, we can extract the post hoc contrast results stored in 
-the metadata:
+the interactionResults slots:
 
 ```{r posthoc}
-dou_results <- metadata(m$sumExp)$interaction_results
-dte_results <- metadata(m$dds)$interaction_results
+results <- interactionResults(dot)
+results
 ```
 
 These data frames summarise differential translation results for each ORF. 
@@ -210,18 +211,10 @@ of significance and false discovery, also computed by `ashr`.
 - `WaldP` and `WaldPadj`: Wald test results are included for completeness, 
 providing frequentist estimates of significance.
 
-```{r dou}
-dou_results
-```
-
 The DTE effect size (`log2FoldChange`) was derived from 
 `DESeq2::lfcShrink()` within the `DOTSeq()` main function. We specify 
 `type = ashr` to apply adaptive shrinkage and compute all pairwise 
 contrasts between conditions. 
-
-```{r dte}
-dte_results
-```
 
 We can also inspect the `rowData` and `rowRanges` of the 
 `SummarizedExperiment` objects to explore ORF level annotation. This 
@@ -232,7 +225,7 @@ which currently supports uORF, mORF, and dORF. Filtering criteria
 results and the `emmeans` objects for post hoc contrasts.
 
 ```{r rowdata}
-rowData(m$sumExp)
+rowData(getDOU(dot))
 ```
 
 The `rowRanges` slot retains the genomic coordinates corresponding to ORFs, 
@@ -240,7 +233,7 @@ extending from the translational start (AUG) to stop codons. These ranges
 may include intronic regions, depending on the gene structures.
 
 ```{r rowranges}
-rowRanges(m$sumExp)
+rowRanges(getDOU(dot))
 ```
 
 # Visualisation
@@ -248,10 +241,10 @@ rowRanges(m$sumExp)
 results. The following plots can be generated:
 
 ```{r merge}
-dou_mci <- dou_results[dou_results$contrast == "Mitotic_Cycling - Interphase", ]
-dte_mci <- dte_results[dte_results$contrast == "Mitotic_Cycling - Interphase", ]
+rdou <- results$DOU[results$DOU$contrast == "Mitotic_Cycling - Interphase", ]
+rdte <- results$DTE[results$DTE$contrast == "Mitotic_Cycling - Interphase", ]
 
-results <- merge(dou_mci, dte_mci, by = c("orf_id", "contrast"), all = TRUE)
+results <- merge(rdou, rdte, by = c("orf_id", "contrast"), all = TRUE)
 ```
 
 ## Venn diagram: 
@@ -291,7 +284,7 @@ If `rowdata` is given as an input, points can also be colour-coded by
 translation across different ORF types.
 
 ```{r plot-composite-by-orfs, fig.small = TRUE}
-rowdata <- rowData(m$sumExp)
+rowdata <- rowData(getDOU(dot))
 plotDOT(
     plot_type = "composite", 
     color_by = "orf_type",
@@ -312,7 +305,7 @@ displaying gene symbols. The resulting ID mapping dataframe can be
 stored as a dataframe and reused across plots to avoid repeated downloads.
 
 ```{r plot-volcano-by-significance, fig.small = TRUE}
-id_mapping <- plotDOT(
+mapping <- plotDOT(
     plot_type = "volcano", 
     color_by = "significance",
     results = results,
@@ -330,7 +323,7 @@ plotDOT(
     color_by = "orf_type",
     results = results,
     rowdata = rowdata,
-    id_mapping = id_mapping,
+    id_mapping = mapping,
     legend_position = "topright",
     force_new_device = FALSE
 )
@@ -346,7 +339,7 @@ plotDOT(
     ranking_method = "score",
     results = results, 
     rowdata = rowdata, 
-    id_mapping = id_mapping, 
+    id_mapping = mapping, 
     top_genes = 20,
     force_new_device = FALSE
 )
@@ -360,16 +353,16 @@ interpretation of DOU across conditions. If the ID mapping dataframe
 provided, the gene symbol is displayed as the plot title.
 
 ```{r plot-usage-gene-symbol, eval = requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("ggsignif", quietly = TRUE)}
-condition_order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
+order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
 
-gene_id <- "TAF2"
+id <- "TAF2"
 
 plotDOT(
     plot_type = "usage",
-    sumExp = m$sumExp, 
-    gene_id = gene_id, 
-    id_mapping = id_mapping, 
-    condition_order = condition_order,
+    dou = getDOU(dot), 
+    gene_id = id, 
+    id_mapping = mapping, 
+    condition_order = order,
     force_new_device = FALSE
 )
 ```
@@ -380,14 +373,14 @@ ID mapping dataframe. Stable gene IDs (e.g., ENSG00000060339) can be
 used without their version suffix (e.g., .14).
 
 ```{r plot-usage-gene-id, eval = requireNamespace("ggsignif", quietly = TRUE)}
-gene_id <- "ENSG00000060339"
+id <- "ENSG00000060339"
 
 plotDOT(
     plot_type = "usage",
-    sumExp = m$sumExp, 
-    gene_id = gene_id, 
-    id_mapping = id_mapping, 
-    condition_order = condition_order,
+    dou = getDOU(dot),
+    gene_id = id, 
+    id_mapping = mapping, 
+    condition_order = order,
     force_new_device = FALSE
 )
 ```

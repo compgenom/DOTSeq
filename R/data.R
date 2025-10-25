@@ -220,7 +220,11 @@ annotate_orf_type <- function(bed, gff_granges) {
 #'             DESeq2.
 #'         }
 #'     }
-#'
+#'     
+#' @rdname DOTSeqDataSet
+#' 
+#' @importFrom S4Vectors DataFrame SimpleList metadata metadata<-
+#' @importFrom methods new
 #' @importFrom SummarizedExperiment SummarizedExperiment assay
 #' @importFrom SummarizedExperiment colData colData<-
 #' @importFrom SummarizedExperiment rowData rowData<- mcols mcols<-
@@ -251,14 +255,14 @@ annotate_orf_type <- function(bed, gff_granges) {
 #' cond$treatment <- NULL
 #'
 #' # Create SummarizedExperiment object
-#' m <- DOTSeqDataSet(
+#' dot <- DOTSeqDataSet(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,
 #'     bed = bed
 #' )
 #'
-#' head(m$sumExp)
+#' show(dot)
 #'
 DOTSeqDataSet <- function(
     count_table,
@@ -489,11 +493,17 @@ DOTSeqDataSet <- function(
     gr$orf_number <- gr$exon_number
     mcols(gr) <- mcols(gr)[, c("gene_id", "transcripts", "orf_number", "orf_type")]
 
-    # combined_cond$sample <- rownames(combined_cond)
-    sumExp <- SummarizedExperiment::SummarizedExperiment(
+    sumExp <- SummarizedExperiment(
         assays = list(counts = dcounts),
         colData = combined_cond,
         rowRanges = gr
+    )
+    
+    sumExp <- new(
+        "DOTSeqDataSet",
+        sumExp,
+        formula = reduced_formula,
+        specs = emm_specs
     )
 
     # Filtering logic
@@ -550,10 +560,8 @@ DOTSeqDataSet <- function(
     )
 
     # Store formulas
-    metadata(sumExp)$formula <- reduced_formula
-    metadata(sumExp)$emm_specs <- emm_specs
     metadata(dds)$formula <- deseq_fmla$reduced_formula
-    metadata(dds)$emm_specs <- emm_specs
+    metadata(dds)$specs <- emm_specs
 
     if (verbose) {
         message("SummarizedExperiment objects created successfully")
@@ -579,10 +587,7 @@ DOTSeqDataSet <- function(
         }
         start_dou <- Sys.time()
     }
-
-    return(list(
-        sumExp = sumExp,
-        dds = dds
-    ))
+    
+    return(new("DOTSeqResults", DOU = sumExp, DTE = dds))
 }
 

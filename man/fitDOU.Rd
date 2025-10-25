@@ -5,9 +5,9 @@
 \title{Fit Differential ORF Usage Models}
 \usage{
 fitDOU(
-  sumExp,
+  dou,
   formula = ~condition * strategy,
-  emm_specs = ~condition * strategy,
+  specs = ~condition * strategy,
   dispformula = NULL,
   dispersion_modeling = "auto",
   lrt = FALSE,
@@ -18,15 +18,14 @@ fitDOU(
 )
 }
 \arguments{
-\item{sumExp}{A \code{SummarizedExperiment} object, typically a
-\code{DOTSeqDataSet}, containing raw ORF-level counts and
-sample metadata. This object is used as the input for modeling
-Differential ORF Usage (DOU) within the DOTSeq framework.}
+\item{dou}{A \code{\link{DOTSeqDataSet}} object containing raw ORF-level
+counts and sample metadata. This object is used as the input for
+modeling Differential ORF Usage (DOU) within the DOTSeq framework.}
 
 \item{formula}{A formula object specifying the model design,
 e.g., \code{~ condition * strategy}.}
 
-\item{emm_specs}{A formula specifying the structure of the estimated
+\item{specs}{A formula specifying the structure of the estimated
 marginal means. Default is \code{~condition * strategy}.}
 
 \item{dispformula}{Optional formula object specifying a custom dispersion
@@ -102,24 +101,25 @@ cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
 # Create SummarizedExperiment object
-m <- DOTSeqDataSet(
+dot <- DOTSeqDataSet(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = flat,
     bed = bed
 )
+dou <- getDOU(dot)
 
 # Filter and subset ORFs
-m$sumExp <- m$sumExp[rowRanges(m$sumExp)$is_kept == TRUE, ]
+dou <- dou[rowRanges(dou)$is_kept == TRUE, ]
 set.seed(42)
-random_rows <- sample(seq_len(nrow(m$sumExp)), size = 100)
-m$sumExp <- m$sumExp[random_rows, ]
+random_rows <- sample(seq_len(nrow(dou)), size = 100)
+dou <- dou[random_rows, ]
 
 # Fit DOU models
-rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
-    sumExp = m$sumExp,
+rowData(dou)[["DOUResults"]] <- fitDOU(
+    dou = dou,
     formula = ~ condition * strategy,
-    emm_specs = ~ condition * strategy,
+    specs = ~ condition * strategy,
     dispersion_modeling = "auto",
     lrt = FALSE,
     optimizers = FALSE,

@@ -16,20 +16,21 @@ test_that("DOTSeqDataSet returns valid SummarizedExperiment object", {
     cond <- meta[meta$treatment == "chx", ]
     cond$treatment <- NULL
 
-    m <- DOTSeqDataSet(
+    dot <- DOTSeqDataSet(
         count_table = cnt,
         condition_table = cond,
         flattened_gtf = flat,
         bed = bed
     )
 
-    expect_type(m, "list")
-    expect_true("sumExp" %in% names(m))
-    expect_s4_class(m$sumExp, "SummarizedExperiment")
+    expect_type(dot, "S4")
+    expect_s4_class(dot, "DOTSeqResults")
+    
+    dou <- getDOU(dot)
 
     # Check metadata
-    expect_true(nrow(m$sumExp) > 0)
-    expect_true(ncol(m$sumExp) > 0)
-    expect_true("strategy" %in% colnames(colData(m$sumExp)))
-    expect_true("gene_id" %in% colnames(rowData(m$sumExp)))
+    expect_true(nrow(dou) > 0)
+    expect_true(ncol(dou) > 0)
+    expect_true("strategy" %in% colnames(colData(dou)))
+    expect_true("gene_id" %in% colnames(rowData(dou)))
 })

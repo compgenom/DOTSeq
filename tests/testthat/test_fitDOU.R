@@ -20,7 +20,7 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
     cond <- meta[meta$treatment == "chx", ]
     cond$treatment <- NULL
     
-    m <- DOTSeqDataSet(
+    dot <- DOTSeqDataSet(
         count_table = cnt,
         condition_table = cond,
         flattened_gtf = flat,
@@ -28,17 +28,19 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
     )
     
     # Subset for speed
-    m$sumExp <- m$sumExp[rowRanges(m$sumExp)$is_kept == TRUE, ]
+    dou <- getDOU(dot)
+    
+    dou <- dou[rowRanges(dou)$is_kept == TRUE, ]
     set.seed(42)
-    m$sumExp <- m$sumExp[sample(seq_len(nrow(m$sumExp)), size = 25), ]
+    dou <- dou[sample(seq_len(nrow(dou)), size = 25), ]
     
     # Fit models (with diagnostics enabled because DHARMa is available)
     suppressMessages(
         suppressWarnings({
             results <- fitDOU(
-                sumExp = m$sumExp,
+                dou = dou,
                 formula = ~ condition * strategy,
-                emm_specs = ~ condition * strategy,
+                specs = ~ condition * strategy,
                 dispersion_modeling = "auto",
                 lrt = FALSE,
                 optimizers = FALSE,
@@ -50,20 +52,20 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
     )
     
     # Filter successfully fitted models
-    fitted_orfs <- Filter(function(x) model_type(x) == "glmmTMB", results)
+    fitted_orfs <- Filter(function(x) modelType(x) == "glmmTMB", results)
     expect_gt(length(fitted_orfs), 0)
     
     for (res in fitted_orfs) {
-        keys <- names(fit_results(res))
+        keys <- names(fitResults(res))
         
         expect_true("model_fit" %in% keys)
         expect_true("estimates" %in% keys)
         expect_true("dispersion" %in% keys)
         
         if ("tests" %in% keys)
-            expect_type(fit_results(res)$tests, "list")
+            expect_type(fitResults(res)$tests, "list")
         
         expect_true("diagnostics" %in% keys)
-        expect_type(fit_results(res)$diagnostics, "list")
+        expect_type(fitResults(res)$diagnostics, "list")
     }
 })

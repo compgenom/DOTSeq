@@ -376,18 +376,18 @@ create_read_numbers <- function(
 #' cond <- meta[meta$treatment == "chx", ]
 #' cond$treatment <- NULL
 #'
-#' m <- DOTSeqDataSet(
+#' dot <- DOTSeqDataSet(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,
 #'     bed = bed
 #' )
-#'
-#' raw_counts <- assay(m$sumExp)[, grep("Cycling|Interphase",
-#'     colnames(assay(m$sumExp)))]
+#' raw_counts <- assay(getDOU(dot))
+#' raw_counts <- raw_counts[, grep("Cycling|Interphase",
+#'     colnames(raw_counts))]
 #' ribo <- raw_counts[, grep("ribo", colnames(raw_counts))]
 #' rna <- raw_counts[, grep("rna", colnames(raw_counts))]
-#' orfs <- rowData(m$sumExp)
+#' orfs <- rowData(getDOU(dot))
 #' r <- "uORF_up_mORF_down"
 #' g <- 1.5
 #' simData <- simDOT(
@@ -404,7 +404,7 @@ create_read_numbers <- function(
 #' cnt <- cbind(featCol, as.data.frame(simData$simData))
 #' cond <- as.data.frame(simData$colData)
 #'
-#' m <- DOTSeqDataSet(
+#' dot <- DOTSeqDataSet(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,

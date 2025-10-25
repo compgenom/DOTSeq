@@ -5,15 +5,15 @@
 \title{Compute Differential ORF Usage (DOU) Contrasts Using EMMs}
 \usage{
 testDOU(
-  sumExp,
+  dou,
   contrasts_method = "revpairwise",
   nullweight = 500,
   verbose = TRUE
 )
 }
 \arguments{
-\item{sumExp}{A SummarizedExperiment object containing \code{emmGrid}
-objects, typically stored in \code{rowData(sumExp)[['DOUResults']]}.}
+\item{dou}{A \code{\link{DOTSeqDataSet}} object containing \code{emmGrid}
+objects, typically stored in \code{rowData(dou)[['DOUResults']]}.}
 
 \item{contrasts_method}{Character string specifying the method
 for computing contrasts. Default is \code{"revpairwise"}.}
@@ -26,13 +26,11 @@ conservative lfsr estimates. Default is \code{500}.}
 Default is \code{TRUE}.}
 }
 \value{
-A \code{SummarizedExperiment} object (the input
-\code{sumExp} or \code{m$sumExp}) with two new
-\code{S4Vectors::DataFrame} objects stored in its
-\code{metadata} slot. These tables contain long-format results
-for all computed contrasts:
+A \code{DOTSeqDataSet} object with two new
+\code{S4Vectors::DataFrame} slots. These tables contain
+long-format results for all computed contrasts:
 \describe{
-\item{\code{interaction_results}}{
+\item{\code{\link{interactionResults}}}{
 A long-format \code{S4Vectors::DataFrame} containing DOU
 effect sizes (Ribo-seq minus RNA-seq) for all interaction
 contrasts. Columns include \code{contrast}, and shrunken
@@ -40,7 +38,7 @@ and unshrunken metrics (e.g., \code{betahat},
 \code{sebetahat}, \code{WaldPadj}, \code{PosteriorMean},
 \code{lfsr}).
 }
-\item{\code{strategy_results}}{
+\item{\code{\link{strategyResults}}}{
 A long-format \code{S4Vectors::DataFrame} containing
 strategy-specific effect sizes (e.g., Ribo-seq only) for
 all computed contrasts. Columns include \code{strategy},
@@ -87,7 +85,7 @@ cond$treatment <- NULL # remove the treatment column
 
 # Create SummarizedExperiment objects.These objects can be used as input
 # for DOTSeq and fitDOU
-m <- DOTSeqDataSet(
+dot <- DOTSeqDataSet(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = flat,
@@ -96,21 +94,22 @@ m <- DOTSeqDataSet(
 
 # Keep ORFs where all replicates in at least one condition pass min_count
 # Single-ORF genes are removed
-m$sumExp <- m$sumExp[rowRanges(m$sumExp)$is_kept == TRUE, ]
+dou <- getDOU(dot)
+dou <- dou[rowRanges(dou)$is_kept == TRUE, ]
 
 # Randomly sample 100 ORFs for fitDOU
 n <- 100
 set.seed(42)
-random_rows <- sample(seq_len(nrow(m$sumExp)), size = n)
+random_rows <- sample(seq_len(nrow(dou)), size = n)
 
 # Subset the SummarizedExperiment object
-m$sumExp <- m$sumExp[random_rows, ]
+dou <- dou[random_rows, ]
 
 # Model fitting using fitDOU
-rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
-    sumExp = m$sumExp,
+rowData(dou)[["DOUResults"]] <- fitDOU(
+    dou = dou,
     formula = ~ condition * strategy,
-    emm_specs = ~ condition * strategy,
+    specs = ~ condition * strategy,
     dispersion_modeling = "auto",
     lrt = FALSE,
     optimizers = FALSE,
@@ -120,7 +119,7 @@ rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
 )
 
 # Run post hoc contrasts, Wald tests, and effect size shrinkage
-m$sumExp <- testDOU(m$sumExp, verbose = TRUE)
+dou <- testDOU(dou, verbose = TRUE)
 
 }
 \references{

@@ -17,24 +17,26 @@ test_that("testDOU adds post hoc results to fitted ORFs", {
     cond <- meta[meta$treatment == "chx", ]
     cond$treatment <- NULL
 
-    m <- DOTSeqDataSet(
+    dot <- DOTSeqDataSet(
         count_table = cnt,
         condition_table = cond,
         flattened_gtf = flat,
         bed = bed
     )
+    
+    dou <- getDOU(dot)
 
-    m$sumExp <- m$sumExp[rowRanges(m$sumExp)$is_kept == TRUE, ]
+    dou <- dou[rowRanges(dou)$is_kept == TRUE, ]
     set.seed(42)
-    m$sumExp <- m$sumExp[sample(seq_len(nrow(m$sumExp)), size = 25), ]
+    dou <- dou[sample(seq_len(nrow(dou)), size = 25), ]
 
     # Fit model
     suppressMessages(
         suppressWarnings({
-            rowData(m$sumExp)[["DOUResults"]] <- fitDOU(
-                sumExp = m$sumExp,
+            rowData(dou)[["DOUResults"]] <- fitDOU(
+                dou = dou,
                 formula = ~ condition * strategy,
-                emm_specs = ~ condition * strategy,
+                specs = ~ condition * strategy,
                 dispersion_modeling = "auto",
                 lrt = FALSE,
                 optimizers = FALSE,
@@ -45,16 +47,11 @@ test_that("testDOU adds post hoc results to fitted ORFs", {
         })
     )
     # Run post hoc tests
-    m$sumExp <- testDOU(m$sumExp, verbose = FALSE)
+    dou <- testDOU(dou, verbose = FALSE)
 
-    # Check metadata for contrast results
-    meta_data <- metadata(m$sumExp)
-
-    expect_true("interaction_results" %in% names(meta_data))
-    expect_true("strategy_results" %in% names(meta_data))
-
-    interaction_df <- meta_data$interaction_results
-    strategy_df <- meta_data$strategy_results
+    # Check post hoc results
+    interaction_df <- interactionResults(dou)
+    strategy_df <- strategyResults(dou)
 
     expect_s4_class(interaction_df, "DataFrame")
     expect_s4_class(strategy_df, "DataFrame")
