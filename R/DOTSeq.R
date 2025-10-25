@@ -14,7 +14,7 @@
 #' @seealso \code{\link{DOTSeqDataSet}}, \code{\link{fitDOU}}, 
 #' \code{\link{testDOU}}, \code{\link{plotDOT}}
 #'
-#' @param dot A \code{DOTSeqResults} object pre-constructed using
+#' @param dot A \code{DOTSeqObjects} object pre-constructed using
 #'     \code{\link{DOTSeqDataSet}}. This list must include:
 #'     \describe{
 #'         \item{\code{DOU}}{
@@ -229,8 +229,8 @@ DOTSeq <- function(
     }
 
     if (!is.null(dot)) {
-        if (!is(dot, "DOTSeqResults")) {
-            stop("'dot' must be a DOTSeqResults object.")
+        if (!is(dot, "DOTSeqObjects")) {
+            stop("'dot' must be a DOTSeqObjects object.")
         }
         if (!is(getDOU(dot), "DOTSeqDataSet")) {
             stop("The 'DOU' slot must be a DOTSeqDataSet object.")
@@ -243,7 +243,7 @@ DOTSeq <- function(
         # Check that all required raw inputs are provided
         if (any(vapply(list(count_table, condition_table, flattened_gtf, bed), is.null, logical(1)))) {
             stop(
-                "Either provide a 'DOTSeqResults' object ", 
+                "Either provide a 'DOTSeqObjects' object ", 
                 "or all of 'count_table', 'condition_table', ", 
                 "'flattened_gtf', and 'bed'."
             )
@@ -418,5 +418,5 @@ DOTSeq <- function(
         }
     }
 
-    return(new("DOTSeqResults", DOU = dou, DTE = dte))
+    return(new("DOTSeqObjects", DOU = dou, DTE = dte))
 }

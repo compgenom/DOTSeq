@@ -4,9 +4,57 @@
 \name{DOTSeqDataSet-class}
 \alias{DOTSeqDataSet-class}
 \alias{DOTSeqDataSet-validity}
+\alias{fmla}
+\alias{fmla,DOTSeqDataSet-method}
+\alias{fmla,DESeqDataSet-method}
+\alias{specs}
+\alias{specs,DOTSeqDataSet-method}
+\alias{specs,DESeqDataSet-method}
+\alias{interactionResults}
+\alias{interactionResults,DOTSeqDataSet-method}
+\alias{interactionResults,DESeqDataSet-method}
+\alias{interactionResults<-}
+\alias{interactionResults<-,DOTSeqDataSet-method}
+\alias{interactionResults<-,DESeqDataSet-method}
+\alias{strategyResults}
+\alias{strategyResults,DOTSeqDataSet-method}
+\alias{strategyResults<-}
+\alias{strategyResults<-,DOTSeqDataSet-method}
 \alias{DOTSeqDataSet}
 \title{DOTSeqDataSet-class}
 \usage{
+fmla(object)
+
+\S4method{fmla}{DOTSeqDataSet}(object)
+
+\S4method{fmla}{DESeqDataSet}(object)
+
+specs(object)
+
+\S4method{specs}{DOTSeqDataSet}(object)
+
+\S4method{specs}{DESeqDataSet}(object)
+
+interactionResults(object)
+
+\S4method{interactionResults}{DOTSeqDataSet}(object)
+
+\S4method{interactionResults}{DESeqDataSet}(object)
+
+interactionResults(object) <- value
+
+\S4method{interactionResults}{DOTSeqDataSet}(object) <- value
+
+\S4method{interactionResults}{DESeqDataSet}(object) <- value
+
+strategyResults(object)
+
+\S4method{strategyResults}{DOTSeqDataSet}(object)
+
+strategyResults(object) <- value
+
+\S4method{strategyResults}{DOTSeqDataSet}(object) <- value
+
 DOTSeqDataSet(
   count_table,
   condition_table,
@@ -21,6 +69,10 @@ DOTSeqDataSet(
 )
 }
 \arguments{
+\item{object}{A \code{DOTSeqDataSet} object.}
+
+\item{value}{A replacement object (e.g., a \code{DESeqDataSet}).}
+
 \item{count_table}{Path to a count table file or a data frame. Must
 contain columns: \code{Geneid}, \code{Chr}, \code{Start},
 \code{End}, \code{Strand}, \code{Length}, plus one column per
@@ -67,11 +119,65 @@ Keep ORFs where total counts across replicates pass
 
 \item{verbose}{Logical; if \code{TRUE}, prints progress messages.
 Default is \code{TRUE}.}
-
-\item{object}{A \code{DOTSeqDataSet} object.}
 }
 \value{
 TRUE if valid, or a character string describing the error.
+
+A \code{formula} object.
+
+A \code{formula} object.
+
+A \code{formula} object.
+
+A \code{formula} object.
+
+A \code{formula} object.
+
+A \code{formula} object.
+
+A \code{DFrame} or \code{data.frame} containing shrinkage-
+adjusted estimates and contrast statistics. It is not row-aligned and
+will not be subset when subsetting rows of the object.
+
+A \code{DFrame} or \code{data.frame} containing shrinkage-
+adjusted estimates and contrast statistics. It is not row-aligned and
+will not be subset when subsetting rows of the object.
+
+A \code{DFrame} or \code{data.frame} containing shrinkage-
+adjusted estimates and contrast statistics. It is not row-aligned and
+will not be subset when subsetting rows of the object.
+
+A \code{DFrame} or \code{data.frame} containing shrinkage-
+adjusted estimates and contrast statistics. It is not row-aligned and
+will not be subset when subsetting rows of the object.
+
+A \code{DFrame} or \code{data.frame} containing shrinkage-
+adjusted estimates and contrast statistics. It is not row-aligned and
+will not be subset when subsetting rows of the object.
+
+A \code{DFrame} or \code{data.frame} containing shrinkage-
+adjusted estimates and contrast statistics. It is not row-aligned and
+will not be subset when subsetting rows of the object.
+
+A \code{DFrame} or \code{data.frame} containing shrinkage-
+adjusted estimates and contrast statistics. It is not row-aligned and
+will not be subset when subsetting rows of the object.
+
+A \code{DFrame} or \code{data.frame} containing shrinkage-
+adjusted estimates and contrast statistics. It is not row-aligned and
+will not be subset when subsetting rows of the object.
+
+A \code{DFrame} or \code{data.frame} containing shrinkage-
+adjusted estimates and contrast statistics. It is not row-aligned and
+will not be subset when subsetting rows of the object.
+
+A \code{DFrame} or \code{data.frame} containing shrinkage-
+adjusted estimates and contrast statistics. It is not row-aligned and
+will not be subset when subsetting rows of the object.
+
+A \code{DFrame} or \code{data.frame} containing shrinkage-
+adjusted estimates and contrast statistics. It is not row-aligned and
+will not be subset when subsetting rows of the object.
 
 A named \code{list} containing:
 \describe{
@@ -93,6 +199,21 @@ components for Differential ORF Usage (DOU) analysis in the DOTSeq
 framework.
 
 Checks that the slots in a DOTSeqDataSet object are correctly populated.
+
+Retrieves the conditional formula stored in a \code{DOTSeqDataSet}
+or \code{DESeqDataSet} object. This formula defines the fixed effects
+structure used in GLM / GLMM modeling.
+
+Retrieves the \code{\link[emmeans]{emmeans}} specification formula
+used for post hoc contrast generation.
+
+Retrieves the contrast results stored in a \code{DOTSeqDataSet} object.
+These results may include shrinkage-adjusted estimates and contrast
+statistics for interaction-specific contrasts.
+
+Retrieves the contrast results stored in a \code{DOTSeqDataSet} object.
+These results may include shrinkage-adjusted estimates and contrast
+statistics for strategy-specific contrasts.
 
 This function initialize and construct the DOTSeq dataset object.
 This includes loading count and metadata tables, parsing ORF
@@ -141,7 +262,7 @@ names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
 cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
-# Create a DOTSeqResults object
+# Create a DOTSeqObjects object
 dot <- DOTSeqDataSet(
     count_table = cnt,
     condition_table = cond,
@@ -175,7 +296,7 @@ names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
 cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
-# Create a DOTSeqResults object
+# Create a DOTSeqObjects object
 dot <- DOTSeqDataSet(
     count_table = cnt,
     condition_table = cond,

@@ -254,7 +254,7 @@ annotate_orf_type <- function(bed, gff_granges) {
 #' cond <- meta[meta$treatment == "chx", ]
 #' cond$treatment <- NULL
 #'
-#' # Create a DOTSeqResults object
+#' # Create a DOTSeqObjects object
 #' dot <- DOTSeqDataSet(
 #'     count_table = cnt,
 #'     condition_table = cond,
@@ -588,6 +588,6 @@ DOTSeqDataSet <- function(
         start_dou <- Sys.time()
     }
     
-    return(new("DOTSeqResults", DOU = sumExp, DTE = dds))
+    return(new("DOTSeqObjects", DOU = sumExp, DTE = dds))
 }
 

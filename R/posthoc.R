@@ -84,7 +84,7 @@
 #' cond <- meta[meta$treatment == "chx", ]
 #' cond$treatment <- NULL # remove the treatment column
 #'
-#' # Create a DOTSeqResults objects.These objects can be used as input
+#' # Create a DOTSeqObjects objects.These objects can be used as input
 #' # for DOTSeq and fitDOU
 #' dot <- DOTSeqDataSet(
 #'     count_table = cnt,
