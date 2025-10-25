@@ -254,7 +254,7 @@ annotate_orf_type <- function(bed, gff_granges) {
 #' cond <- meta[meta$treatment == "chx", ]
 #' cond$treatment <- NULL
 #'
-#' # Create SummarizedExperiment object
+#' # Create a DOTSeqResults object
 #' dot <- DOTSeqDataSet(
 #'     count_table = cnt,
 #'     condition_table = cond,
@@ -560,7 +560,7 @@ DOTSeqDataSet <- function(
     )
 
     # Store formulas
-    metadata(dds)$formula <- deseq_fmla$reduced_formula
+    # metadata(dds)$formula <- deseq_fmla$reduced_formula
     metadata(dds)$specs <- emm_specs
 
     if (verbose) {

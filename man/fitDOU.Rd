@@ -100,7 +100,7 @@ names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
 cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
-# Create SummarizedExperiment object
+# Create a DOTSeqResults object
 dot <- DOTSeqDataSet(
     count_table = cnt,
     condition_table = cond,

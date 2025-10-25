@@ -35,6 +35,11 @@ getDTE(object) <- value
 
 \S4method{interactionResults}{DOTSeqResults}(object)
 }
+\arguments{
+\item{object}{A \code{DOTSeqResults} object.}
+
+\item{value}{A replacement object (e.g., a \code{DOTSeqDataSet}).}
+}
 \value{
 A \code{DOTSeqDataSet} object containing DOU results.
 }

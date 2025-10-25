@@ -84,7 +84,7 @@
 #' cond <- meta[meta$treatment == "chx", ]
 #' cond$treatment <- NULL # remove the treatment column
 #'
-#' # Create SummarizedExperiment objects.These objects can be used as input
+#' # Create a DOTSeqResults objects.These objects can be used as input
 #' # for DOTSeq and fitDOU
 #' dot <- DOTSeqDataSet(
 #'     count_table = cnt,
@@ -405,7 +405,7 @@ testDOU <- function(
 #' @param formula Optional. A model formula used to generate the design
 #'     matrix (e.g., \code{~ condition * strategy}). If not provided, 
 #'     the function will try to extract it from 
-#'     \code{conditionalFormula(dds)}.
+#'     \code{fmla(dds)}.
 #'
 #' @param baseline Optional. A character string specifying the baseline
 #'     condition for comparisons. If \code{NULL}, the first level of 

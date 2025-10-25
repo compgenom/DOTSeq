@@ -123,14 +123,39 @@ results strategy-specific contrasts}
 }}
 
 \examples{
-# Create a minimal DOTSeqDataSet object
-library(S4Vectors)
-dummy <- new("DOTSeqDataSet",
-    formula = ~ condition * strategy,
-    specs = ~ condition | strategy,
-    interactionResults = S4Vectors::DataFrame(),
-    strategyResults = S4Vectors::DataFrame()
+# Read in count matrix, condition table, and annotation files
+dir <- system.file("extdata", package = "DOTSeq")
+
+cnt <- read.table(
+    file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"),
+    header = TRUE,
+    comment.char = "#"
 )
+names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\\\1", names(cnt))
+
+flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+
+meta <- read.table(file.path(dir, "metadata.txt.gz"))
+names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
+cond <- meta[meta$treatment == "chx", ]
+cond$treatment <- NULL
+
+# Create a DOTSeqResults object
+dot <- DOTSeqDataSet(
+    count_table = cnt,
+    condition_table = cond,
+    flattened_gtf = flat,
+    bed = bed
+)
+
+getDOU(dot)
+
+getDTE(dot)
+
+fmla(getDOU(dot))
+
+specs(getDOU(dot))
 
 # Read in count matrix, condition table, and annotation files
 dir <- system.file("extdata", package = "DOTSeq")
@@ -150,7 +175,7 @@ names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
 cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
-# Create SummarizedExperiment object
+# Create a DOTSeqResults object
 dot <- DOTSeqDataSet(
     count_table = cnt,
     condition_table = cond,

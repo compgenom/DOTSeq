@@ -883,7 +883,7 @@ fit_beta_binomial <- function(
 #' cond <- meta[meta$treatment == "chx", ]
 #' cond$treatment <- NULL
 #'
-#' # Create SummarizedExperiment object
+#' # Create a DOTSeqResults object
 #' dot <- DOTSeqDataSet(
 #'     count_table = cnt,
 #'     condition_table = cond,

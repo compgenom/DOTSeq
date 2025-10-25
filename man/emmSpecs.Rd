@@ -13,9 +13,13 @@ emmSpecs(object)
 \S4method{emmSpecs}{DESeqDataSet}(object)
 }
 \arguments{
-\item{object}{A \code{DOTSeqDataSet} object.}
+\item{object}{A \code{DESeqDataSet} object.}
 }
 \value{
+A \code{formula} object.
+
+A \code{formula} object.
+
 A \code{formula} object.
 }
 \description{
@@ -23,9 +27,9 @@ Retrieves the \code{\link[emmeans]{emmeans}} specification formula
 used for post hoc contrast generation.
 }
 \examples{
-# Create a minimal DOTSeqDataSet object
+# Create a minimal DESeqDataSet object
 library(S4Vectors)
-dummy <- new("DOTSeqDataSet",
+dummy <- new("DESeqDataSet",
     formula = ~ condition * strategy,
     specs = ~ condition | strategy,
     interactionResults = S4Vectors::DataFrame(),

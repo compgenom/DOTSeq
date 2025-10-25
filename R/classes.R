@@ -25,14 +25,39 @@
 #' @rdname DOTSeqDataSet
 #' @export
 #' @examples
-#' # Create a minimal DOTSeqDataSet object
-#' library(S4Vectors)
-#' dummy <- new("DOTSeqDataSet",
-#'     formula = ~ condition * strategy,
-#'     specs = ~ condition | strategy,
-#'     interactionResults = S4Vectors::DataFrame(),
-#'     strategyResults = S4Vectors::DataFrame()
+#' # Read in count matrix, condition table, and annotation files
+#' dir <- system.file("extdata", package = "DOTSeq")
+#'
+#' cnt <- read.table(
+#'     file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"),
+#'     header = TRUE,
+#'     comment.char = "#"
 #' )
+#' names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
+#'
+#' flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+#' bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+#'
+#' meta <- read.table(file.path(dir, "metadata.txt.gz"))
+#' names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
+#' cond <- meta[meta$treatment == "chx", ]
+#' cond$treatment <- NULL
+#'
+#' # Create a DOTSeqResults object
+#' dot <- DOTSeqDataSet(
+#'     count_table = cnt,
+#'     condition_table = cond,
+#'     flattened_gtf = flat,
+#'     bed = bed
+#' )
+#' 
+#' getDOU(dot)
+#' 
+#' getDTE(dot)
+#' 
+#' fmla(getDOU(dot))
+#' 
+#' specs(getDOU(dot))
 #' 
 setClass(
     "DOTSeqDataSet",
@@ -66,7 +91,7 @@ setValidity("DOTSeqDataSet", function(object) {
     if (any(is.na(cnt))) return("NA values are not allowed in the count matrix.")
     if (any(cnt < 0)) return("The count data contains negative values.")
     
-    fmla <- conditionalFormula(object)
+    fmla <- fmla(object)
     specs <- emmSpecs(object)
     interaction_df <- interactionResults(object)
     strategy_df <- strategyResults(object)
@@ -138,98 +163,20 @@ setValidity("DOTSeqDataSet", function(object) {
 #'
 #' @param object A \code{DOTSeqDataSet} or \code{DESeqDataSet} object.
 #' @return A \code{formula} object.
-#' @rdname conditionalFormula
+#' @rdname fmla
 #' @export
-setGeneric("conditionalFormula", function(object) standardGeneric("conditionalFormula"))
+setGeneric("fmla", function(object) standardGeneric("fmla"))
 
-#' @rdname conditionalFormula
-#' @export
-setMethod("conditionalFormula", "DOTSeqDataSet", function(object) object@formula)
-
-#' @rdname conditionalFormula
-#' @export
-#' @examples
-#' # Create a minimal DOTSeqDataSet object
-#' library(S4Vectors)
-#' dummy <- new("DOTSeqDataSet",
-#'     formula = ~ condition * strategy,
-#'     specs = ~ condition | strategy,
-#'     interactionResults = S4Vectors::DataFrame(),
-#'     strategyResults = S4Vectors::DataFrame()
-#' )
-#' conditionalFormula(dummy)
-setMethod("conditionalFormula", "DESeqDataSet", function(object) {
-    if (!"formula" %in% names(metadata(object))) {
-        stop("No 'formula' found in metadata.")
-    }
-    metadata(object)$formula
-})
-
-
-#' Access the emmeans specification formula
-#'
-#' Retrieves the \code{\link[emmeans]{emmeans}} specification formula 
-#' used for post hoc contrast generation.
-#'
 #' @param object A \code{DOTSeqDataSet} object.
 #' @return A \code{formula} object.
-#' @rdname emmSpecs
+#' @rdname fmla
 #' @export
-setGeneric("emmSpecs", function(object) standardGeneric("emmSpecs"))
+setMethod("fmla", "DOTSeqDataSet", function(object) object@formula)
 
-#' @rdname emmSpecs
-#' @export
-setMethod("emmSpecs", "DOTSeqDataSet", function(object) object@specs)
-
-#' @rdname emmSpecs
-#' @export
-#' @examples
-#' # Create a minimal DOTSeqDataSet object
-#' library(S4Vectors)
-#' dummy <- new("DOTSeqDataSet",
-#'     formula = ~ condition * strategy,
-#'     specs = ~ condition | strategy,
-#'     interactionResults = S4Vectors::DataFrame(),
-#'     strategyResults = S4Vectors::DataFrame()
-#' )
-#' emmSpecs(dummy)
-setMethod("emmSpecs", "DESeqDataSet", function(object) {
-    if (!"specs" %in% names(metadata(object))) {
-        stop("No 'specs' found in metadata.")
-    }
-    metadata(object)$specs
-})
-
-
-#' Access `interactionResults``` from post hoc analysis
-#'
-#' Retrieves the contrast results stored in a \code{DOTSeqDataSet} object.
-#' These results may include shrinkage-adjusted estimates and contrast 
-#' statistics
-#'
-#' @param object A \code{DOTSeqDataSet} object.
-#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
-#' adjusted estimates and contrast statistics. It is not row-aligned and 
-#' will not be subset when subsetting rows of the object.
-#' @rdname interactionResults
-#' @export
-setGeneric("interactionResults", function(object) standardGeneric("interactionResults"))
-
-#' @rdname interactionResults
-#' @export
-#' @examples
-#' # Create a minimal DOTSeqDataSet object
-#' library(S4Vectors)
-#' dummy <- new("DOTSeqDataSet",
-#'     formula = ~ condition * strategy,
-#'     specs = ~ condition | strategy,
-#'     interactionResults = S4Vectors::DataFrame(),
-#'     strategyResults = S4Vectors::DataFrame()
-#' )
-#' interactionResults(dummy)
-setMethod("interactionResults", "DOTSeqDataSet", function(object) object@interactionResults)
-
-#' @rdname interactionResults
+#' @param object A \code{DESeqDataSet} object.
+#' @return A \code{formula} object.
+#' @importFrom DESeq2 design
+#' @rdname fmla
 #' @export
 #' @examples
 #' # Create a minimal DESeqDataSet object
@@ -240,6 +187,85 @@ setMethod("interactionResults", "DOTSeqDataSet", function(object) object@interac
 #'     interactionResults = S4Vectors::DataFrame(),
 #'     strategyResults = S4Vectors::DataFrame()
 #' )
+#' fmla(dummy)
+setMethod("fmla", "DESeqDataSet", function(object) design(object))
+
+
+#' Access the emmeans specification formula
+#'
+#' Retrieves the \code{\link[emmeans]{emmeans}} specification formula 
+#' used for post hoc contrast generation.
+#'
+#' @param object A \code{DOTSeqDataSet} or \code{DOTSeqDataSet} object.
+#' @return A \code{formula} object.
+#' @rdname emmSpecs
+#' @export
+setGeneric("emmSpecs", function(object) standardGeneric("emmSpecs"))
+
+#' @param object A \code{DOTSeqDataSet} object.
+#' @return A \code{formula} object.
+#' @rdname emmSpecs
+#' @export
+setMethod("emmSpecs", "DOTSeqDataSet", function(object) object@specs)
+
+#' @param object A \code{DESeqDataSet} object.
+#' @return A \code{formula} object.
+#' @rdname emmSpecs
+#' @export
+#' @examples
+#' # Create a minimal DESeqDataSet object
+#' library(S4Vectors)
+#' dummy <- new("DESeqDataSet",
+#'     formula = ~ condition * strategy,
+#'     specs = ~ condition | strategy,
+#'     interactionResults = S4Vectors::DataFrame(),
+#'     strategyResults = S4Vectors::DataFrame()
+#' )
+#' emmSpecs(dummy)
+setMethod("emmSpecs", "DESeqDataSet", function(object) {
+    if (!"specs" %in% names(metadata(object))) {
+        stop("No 'specs' found in metadata.")
+    }
+    return(metadata(object)$specs)
+})
+
+
+#' Access `interactionResults` from post hoc analysis
+#'
+#' Retrieves the contrast results stored in a \code{DOTSeqDataSet} object.
+#' These results may include shrinkage-adjusted estimates and contrast 
+#' statistics for interaction-specific contrasts.
+#'
+#' @param object A \code{DOTSeqDataSet} or \code{DESeqDataSet} object.
+#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
+#' adjusted estimates and contrast statistics. It is not row-aligned and 
+#' will not be subset when subsetting rows of the object.
+#' @rdname contrastResults
+#' @export
+setGeneric("interactionResults", function(object) standardGeneric("interactionResults"))
+
+#' @param object A \code{DOTSeqDataSet} object.
+#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
+#' adjusted estimates and contrast statistics. It is not row-aligned and 
+#' will not be subset when subsetting rows of the object.
+#' @rdname contrastResults
+#' @export
+setMethod("interactionResults", "DOTSeqDataSet", function(object) object@interactionResults)
+
+#' @param object A \code{DESeqDataSet} object.
+#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
+#' adjusted estimates and contrast statistics. It is not row-aligned and 
+#' will not be subset when subsetting rows of the object.
+#' @rdname contrastResults
+#' @export
+#' @examples
+#' # Create a minimal DESeqDataSet object
+#' library(S4Vectors)
+#' dummy <- new("DESeqDataSet",
+#'     formula = ~ condition * strategy,
+#'     specs = ~ condition | strategy,
+#'     interactionResults = S4Vectors::DataFrame()
+#' )
 #' interactionResults(dummy)
 setMethod("interactionResults", "DESeqDataSet", function(object) {
     if (!"interaction_results" %in% names(metadata(object))) {
@@ -248,12 +274,25 @@ setMethod("interactionResults", "DESeqDataSet", function(object) {
     metadata(object)$interaction_results
 })
 
-#' @rdname interactionResults
+#' @param object A \code{DOTSeqDataSet} or \code{DESeqDataSet} object.
+#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
+#' adjusted estimates and contrast statistics. It is not row-aligned and 
+#' will not be subset when subsetting rows of the object.
+#' @param value A replacement object (e.g., a \code{DOTSeqDataSet}).
+#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
+#' adjusted estimates and contrast statistics. It is not row-aligned and 
+#' will not be subset when subsetting rows of the object.
+#' @rdname contrastResults
 #' @export
 setGeneric("interactionResults<-", function(object, value) standardGeneric("interactionResults<-"))
 
+#' @param object A \code{DOTSeqDataSet} object.
+#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
+#' adjusted estimates and contrast statistics. It is not row-aligned and 
+#' will not be subset when subsetting rows of the object.
+#' @param value A replacement object (e.g., a \code{DOTSeqDataSet}).
 #' @importFrom methods validObject
-#' @rdname interactionResults
+#' @rdname contrastResults
 #' @export
 setReplaceMethod("interactionResults", "DOTSeqDataSet", function(object, value) {
     object@interactionResults <- value
@@ -261,7 +300,12 @@ setReplaceMethod("interactionResults", "DOTSeqDataSet", function(object, value) 
     return(object)
 })
 
-#' @rdname interactionResults
+#' @param object A \code{DESeqDataSet} object.
+#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
+#' adjusted estimates and contrast statistics. It is not row-aligned and 
+#' will not be subset when subsetting rows of the object.
+#' @param value A replacement object (e.g., a \code{DESeqDataSet}).
+#' @rdname contrastResults
 #' @export
 setReplaceMethod("interactionResults", "DESeqDataSet", function(object, value) {
     metadata(object)$interaction_results <- value
@@ -273,66 +317,42 @@ setReplaceMethod("interactionResults", "DESeqDataSet", function(object, value) {
 #'
 #' Retrieves the contrast results stored in a \code{DOTSeqDataSet} object.
 #' These results may include shrinkage-adjusted estimates and contrast 
-#' statistics
+#' statistics for strategy-specific contrasts.
 #'
 #' @param object A \code{DOTSeqDataSet} object.
 #' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
 #' adjusted estimates and contrast statistics. It is not row-aligned and 
 #' will not be subset when subsetting rows of the object.
-#' @rdname strategyResults
+#' @rdname contrastResults
 #' @export
 setGeneric("strategyResults", function(object) standardGeneric("strategyResults"))
 
-#' @rdname strategyResults
+#' @param object A \code{DOTSeqDataSet} object.
+#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
+#' adjusted estimates and contrast statistics. It is not row-aligned and 
+#' will not be subset when subsetting rows of the object.
+#' @rdname contrastResults
 #' @export
-#' @examples
-#' # Create a minimal DOTSeqDataSet object
-#' library(S4Vectors)
-#' dummy <- new("DOTSeqDataSet",
-#'     formula = ~ condition * strategy,
-#'     specs = ~ condition | strategy,
-#'     interactionResults = S4Vectors::DataFrame(),
-#'     strategyResults = S4Vectors::DataFrame()
-#' )
-#' strategyResults(dummy)
 setMethod("strategyResults", "DOTSeqDataSet", function(object) object@strategyResults)
 
-#' @rdname strategyResults
-#' @export
-#' @examples
-#' # Create a minimal DESeqDataSet object
-#' library(S4Vectors)
-#' dummy <- new("DESeqDataSet",
-#'     formula = ~ condition * strategy,
-#'     specs = ~ condition | strategy,
-#'     interactionResults = S4Vectors::DataFrame(),
-#'     strategyResults = S4Vectors::DataFrame()
-#' )
-#' strategyResults(dummy)
-setMethod("strategyResults", "DESeqDataSet", function(object) {
-    if (!"strategy_results" %in% names(metadata(object))) {
-        stop("No 'strategy_results' found in metadata.")
-    }
-    metadata(object)$strategy_results
-})
-
-#' @rdname strategyResults
+#' @param object A \code{DOTSeqDataSet} object.
+#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
+#' adjusted estimates and contrast statistics. It is not row-aligned and 
+#' will not be subset when subsetting rows of the object.
+#' @rdname contrastResults
 #' @export
 setGeneric("strategyResults<-", function(object, value) standardGeneric("strategyResults<-"))
 
+#' @param object A \code{DOTSeqDataSet} object.
+#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
+#' adjusted estimates and contrast statistics. It is not row-aligned and 
+#' will not be subset when subsetting rows of the object.
 #' @importFrom methods validObject
-#' @rdname strategyResults
+#' @rdname contrastResults
 #' @export
 setReplaceMethod("strategyResults", "DOTSeqDataSet", function(object, value) {
     object@strategyResults <- value
     validObject(object)
-    return(object)
-})
-
-#' @rdname strategyResults
-#' @export
-setReplaceMethod("strategyResults", "DESeqDataSet", function(object, value) {
-    metadata(object)$strategy_results <- value
     return(object)
 })
 
@@ -360,19 +380,25 @@ setClass(
     )
 )
 
+#' @param object A \code{DOTSeqResults} object.
 #' @rdname DOTSeqResults
 #' @export
 setGeneric("getDOU", function(object) standardGeneric("getDOU"))
 
+#' @param object A \code{DOTSeqResults} object.
 #' @rdname DOTSeqResults
 #' @return A \code{DOTSeqDataSet} object containing DOU results.
 #' @export
 setMethod("getDOU", "DOTSeqResults", function(object) object@DOU)
 
+#' @param object A \code{DOTSeqResults} object.
+#' @param value A replacement object (e.g., a \code{DOTSeqDataSet}).
 #' @rdname DOTSeqResults
 #' @export
 setGeneric("getDOU<-", function(object, value) standardGeneric("getDOU<-"))
 
+#' @param object A \code{DOTSeqResults} object.
+#' @param value A replacement object (e.g., a \code{DOTSeqDataSet}).
 #' @importFrom methods validObject
 #' @rdname DOTSeqResults
 #' @export
@@ -382,18 +408,25 @@ setReplaceMethod("getDOU", "DOTSeqResults", function(object, value) {
     return(object)
 })
 
+#' @param object A \code{DOTSeqResults} object.
 #' @rdname DOTSeqResults
 #' @export
 setGeneric("getDTE", function(object) standardGeneric("getDTE"))
 
+#' @param object A \code{DOTSeqResults} object.
+#' @param value A replacement object (e.g., a \code{DESeqDataSet}).
 #' @rdname DOTSeqResults
 #' @export
 setMethod("getDTE", "DOTSeqResults", function(object) object@DTE)
 
+#' @param object A \code{DOTSeqResults} object.
+#' @param value A replacement object (e.g., a \code{DESeqDataSet}).
 #' @rdname DOTSeqResults
 #' @export
 setGeneric("getDTE<-", function(object, value) standardGeneric("getDTE<-"))
 
+#' @param object A \code{DOTSeqResults} object.
+#' @param value A replacement object (e.g., a \code{DOTSeqDataSet}).
 #' @importFrom methods validObject
 #' @rdname DOTSeqResults
 #' @export
@@ -403,6 +436,7 @@ setReplaceMethod("getDTE", "DOTSeqResults", function(object, value) {
     return(object)
 })
 
+#' @param object A \code{DOTSeqResults} object.
 #' @rdname DOTSeqResults
 #' @export
 setMethod("show", "DOTSeqResults", function(object) {
@@ -412,6 +446,7 @@ setMethod("show", "DOTSeqResults", function(object) {
     message("Use getDOU(), getDTE(), or interactionResults() to access contents.")
 })
 
+#' @param object A \code{DOTSeqResults} object.
 #' @rdname DOTSeqResults
 #' @export
 setMethod("interactionResults", "DOTSeqResults", function(object) {
