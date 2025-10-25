@@ -36,7 +36,7 @@ Retrieves the model type string from a \code{PostHoc} object.
 
 Retrieves model results, parameters, and diagnostics.
 
-Retrieves the post hoc summary object (e.g. from \code{emmeans}).
+Retrieves the post hoc summary object (e.g. from \code{\link[emmeans]{emmeans}}).
 }
 \section{Functions}{
 \itemize{

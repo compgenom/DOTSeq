@@ -5,21 +5,21 @@
 #' framework.
 #'
 #' This class contains raw counts, sample metadata, and additional slots 
-#' for the model formula, emmeans specifications, and contrast results. 
-#' It supports flexible modeling of translation-specific effects using 
-#' GLM / GLMM and post hoc contrasts.
+#' for the model formula, \code{\link[emmeans]{emmeans}} specifications, 
+#' and contrast results. It supports flexible modeling of 
+#' translation-specific effects using GLM / GLMM and post hoc contrasts.
 #'
 #' @slot formula A \code{formula} object specifying the model design 
 #' (e.g., ~ condition * strategy).
-#' @slot specs A \code{formula} object used to generate emmeans 
-#' specifications for post hoc contrasts.
+#' @slot specs A \code{formula} object used to generate 
+#' \code{\link[emmeans]{emmeans}} specifications for post hoc contrasts.
 #' @slot interactionResults A \code{DFrame} or \code{data.frame} containing 
 #' results interaction-specific contrasts
 #' @slot strategyResults A \code{DFrame} or \code{data.frame} containing 
 #' results strategy-specific contrasts
 #'
-#' @seealso \code{\link{SummarizedExperiment}}, \code{\link{glmmTMB}},
-#' \code{\link{emmeans}}
+#' @seealso \code{\link[SummarizedExperiment]{SummarizedExperiment}}, 
+#' \code{\link[glmmTMB]{glmmTMB}}, \code{\link[emmeans]{emmeans}}
 #' 
 #' @name DOTSeqDataSet-class
 #' @rdname DOTSeqDataSet
@@ -36,125 +36,14 @@ setClass(
     )
 )
 
-#' Access the model formula used in DOTSeq analysis
+#' Validity method for DOTSeqDataSet
 #'
-#' Retrieves the conditional formula stored in a \code{DOTSeqDataSet} 
-#' object. This formula defines the fixed effects structure used in 
-#' GLM / GLMM modeling.
+#' Checks that the slots in a DOTSeqDataSet object are correctly populated.
 #'
 #' @param object A \code{DOTSeqDataSet} object.
-#' @return A \code{formula} object.
+#' @return TRUE if valid, or a character string describing the error.
+#' @name DOTSeqDataSet-validity
 #' @rdname DOTSeqDataSet
-#' @export
-setGeneric("conditionalFormula", function(object) standardGeneric("conditionalFormula"))
-
-#' @export
-setMethod("conditionalFormula", "DOTSeqDataSet", function(object) object@formula)
-setMethod("conditionalFormula", "DESeqDataSet", function(object) {
-    if (!"formula" %in% names(metadata(object))) {
-        stop("No 'formula' found in metadata.")
-    }
-    metadata(object)$formula
-})
-
-
-#' Access the emmeans specification formula
-#'
-#' Retrieves the emmeans specification formula used for post hoc 
-#' contrast generation.
-#'
-#' @param object A \code{DOTSeqDataSet} object.
-#' @return A \code{formula} object.
-#' @rdname DOTSeqDataSet
-#' @export
-setGeneric("emmSpecs", function(object) standardGeneric("emmSpecs"))
-
-#' @export
-setMethod("emmSpecs", "DOTSeqDataSet", function(object) object@specs)
-setMethod("emmSpecs", "DESeqDataSet", function(object) {
-    if (!"specs" %in% names(metadata(object))) {
-        stop("No 'specs' found in metadata.")
-    }
-    metadata(object)$specs
-})
-
-
-#' Access `interactionResults``` from post hoc analysis
-#'
-#' Retrieves the contrast results stored in a \code{DOTSeqDataSet} object.
-#' These results may include shrinkage-adjusted estimates and contrast 
-#' statistics
-#'
-#' @param object A \code{DOTSeqDataSet} object.
-#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
-#' adjusted estimates and contrast statistics. It is not row-aligned and 
-#' will not be subset when subsetting rows of the object.
-#' @rdname DOTSeqDataSet
-#' @export
-setGeneric("interactionResults", function(object) standardGeneric("interactionResults"))
-setMethod("interactionResults", "DOTSeqDataSet", function(object) object@interactionResults)
-setMethod("interactionResults", "DESeqDataSet", function(object) {
-    if (!"interaction_results" %in% names(metadata(object))) {
-        stop("No 'interaction_results' found in metadata.")
-    }
-    metadata(object)$interaction_results
-})
-
-#' @export
-setGeneric("interactionResults<-", function(object, value) standardGeneric("interactionResults<-"))
-
-#' @export
-setReplaceMethod("interactionResults", "DOTSeqDataSet", function(object, value) {
-    object@interactionResults <- value
-    validObject(object)
-    object
-})
-
-#' @export
-setReplaceMethod("interactionResults", "DESeqDataSet", function(object, value) {
-    metadata(object)$interaction_results <- value
-    object
-})
-
-
-#' Access `strategyResults``` from post hoc analysis
-#'
-#' Retrieves the contrast results stored in a \code{DOTSeqDataSet} object.
-#' These results may include shrinkage-adjusted estimates and contrast 
-#' statistics
-#'
-#' @param object A \code{DOTSeqDataSet} object.
-#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
-#' adjusted estimates and contrast statistics. It is not row-aligned and 
-#' will not be subset when subsetting rows of the object.
-#' @rdname DOTSeqDataSet
-#' @export
-setGeneric("strategyResults", function(object) standardGeneric("strategyResults"))
-setMethod("strategyResults", "DOTSeqDataSet", function(object) object@strategyResults)
-setMethod("strategyResults", "DESeqDataSet", function(object) {
-    if (!"strategy_results" %in% names(metadata(object))) {
-        stop("No 'strategy_results' found in metadata.")
-    }
-    metadata(object)$strategy_results
-})
-
-#' @export
-setGeneric("strategyResults<-", function(object, value) standardGeneric("strategyResults<-"))
-
-#' @export
-setReplaceMethod("strategyResults", "DOTSeqDataSet", function(object, value) {
-    object@strategyResults <- value
-    validObject(object)
-    object
-})
-
-#' @export
-setReplaceMethod("strategyResults", "DESeqDataSet", function(object, value) {
-    metadata(object)$strategy_results <- value
-    object
-})
-
-
 #' @importFrom SummarizedExperiment assayNames assay
 setValidity("DOTSeqDataSet", function(object) {
     
@@ -232,13 +121,160 @@ setValidity("DOTSeqDataSet", function(object) {
 })
 
 
-#' DOTSeqResult-class
+#' Access the model formula used in DOTSeq analysis
+#'
+#' Retrieves the conditional formula stored in a \code{DOTSeqDataSet} 
+#' or \code{DESeqDataSet} object. This formula defines the fixed effects 
+#' structure used in GLM / GLMM modeling.
+#'
+#' @param object A \code{DOTSeqDataSet} or \code{DESeqDataSet} object.
+#' @return A \code{formula} object.
+#' @rdname conditionalFormula
+#' @export
+setGeneric("conditionalFormula", function(object) standardGeneric("conditionalFormula"))
+
+#' @rdname conditionalFormula
+#' @export
+setMethod("conditionalFormula", "DOTSeqDataSet", function(object) object@formula)
+
+#' @rdname conditionalFormula
+#' @export
+setMethod("conditionalFormula", "DESeqDataSet", function(object) {
+    if (!"formula" %in% names(metadata(object))) {
+        stop("No 'formula' found in metadata.")
+    }
+    metadata(object)$formula
+})
+
+
+#' Access the emmeans specification formula
+#'
+#' Retrieves the \code{\link[emmeans]{emmeans}} specification formula 
+#' used for post hoc contrast generation.
+#'
+#' @param object A \code{DOTSeqDataSet} object.
+#' @return A \code{formula} object.
+#' @rdname emmSpecs
+#' @export
+setGeneric("emmSpecs", function(object) standardGeneric("emmSpecs"))
+
+#' @rdname emmSpecs
+#' @export
+setMethod("emmSpecs", "DOTSeqDataSet", function(object) object@specs)
+
+#' @rdname emmSpecs
+#' @export
+setMethod("emmSpecs", "DESeqDataSet", function(object) {
+    if (!"specs" %in% names(metadata(object))) {
+        stop("No 'specs' found in metadata.")
+    }
+    metadata(object)$specs
+})
+
+
+#' Access `interactionResults``` from post hoc analysis
+#'
+#' Retrieves the contrast results stored in a \code{DOTSeqDataSet} object.
+#' These results may include shrinkage-adjusted estimates and contrast 
+#' statistics
+#'
+#' @param object A \code{DOTSeqDataSet} object.
+#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
+#' adjusted estimates and contrast statistics. It is not row-aligned and 
+#' will not be subset when subsetting rows of the object.
+#' @rdname interactionResults
+#' @export
+setGeneric("interactionResults", function(object) standardGeneric("interactionResults"))
+
+#' @rdname interactionResults
+#' @export
+setMethod("interactionResults", "DOTSeqDataSet", function(object) object@interactionResults)
+
+#' @rdname interactionResults
+#' @export
+setMethod("interactionResults", "DESeqDataSet", function(object) {
+    if (!"interaction_results" %in% names(metadata(object))) {
+        stop("No 'interaction_results' found in metadata.")
+    }
+    metadata(object)$interaction_results
+})
+
+#' @rdname interactionResults
+#' @export
+setGeneric("interactionResults<-", function(object, value) standardGeneric("interactionResults<-"))
+
+#' @importFrom methods validObject
+#' @rdname interactionResults
+#' @export
+setReplaceMethod("interactionResults", "DOTSeqDataSet", function(object, value) {
+    object@interactionResults <- value
+    validObject(object)
+    return(object)
+})
+
+#' @rdname interactionResults
+#' @export
+setReplaceMethod("interactionResults", "DESeqDataSet", function(object, value) {
+    metadata(object)$interaction_results <- value
+    return(object)
+})
+
+
+#' Access `strategyResults``` from post hoc analysis
+#'
+#' Retrieves the contrast results stored in a \code{DOTSeqDataSet} object.
+#' These results may include shrinkage-adjusted estimates and contrast 
+#' statistics
+#'
+#' @param object A \code{DOTSeqDataSet} object.
+#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
+#' adjusted estimates and contrast statistics. It is not row-aligned and 
+#' will not be subset when subsetting rows of the object.
+#' @rdname strategyResults
+#' @export
+setGeneric("strategyResults", function(object) standardGeneric("strategyResults"))
+
+#' @rdname strategyResults
+#' @export
+setMethod("strategyResults", "DOTSeqDataSet", function(object) object@strategyResults)
+
+#' @rdname strategyResults
+#' @export
+setMethod("strategyResults", "DESeqDataSet", function(object) {
+    if (!"strategy_results" %in% names(metadata(object))) {
+        stop("No 'strategy_results' found in metadata.")
+    }
+    metadata(object)$strategy_results
+})
+
+#' @rdname strategyResults
+#' @export
+setGeneric("strategyResults<-", function(object, value) standardGeneric("strategyResults<-"))
+
+#' @importFrom methods validObject
+#' @rdname strategyResults
+#' @export
+setReplaceMethod("strategyResults", "DOTSeqDataSet", function(object, value) {
+    object@strategyResults <- value
+    validObject(object)
+    return(object)
+})
+
+#' @rdname strategyResults
+#' @export
+setReplaceMethod("strategyResults", "DESeqDataSet", function(object, value) {
+    metadata(object)$strategy_results <- value
+    return(object)
+})
+
+
+#' DOTSeqResults-class
 #'
 #' A wrapper class to store both DOU and DTE results from DOTSeq analysis.
 #'
 #' @slot DOU A \code{DOTSeqDataSet} object.
 #' @slot DTE A \code{DESeqDataSet} object.
-#' @rdname DOTSeqDataSet
+#' @rdname DOTSeqResults
 #' @export
 setClass(
     "DOTSeqResults",
@@ -248,38 +284,49 @@ setClass(
     )
 )
 
+#' @rdname DOTSeqResults
 #' @export
 setGeneric("getDOU", function(object) standardGeneric("getDOU"))
 
+#' @rdname DOTSeqResults
 #' @export
 setMethod("getDOU", "DOTSeqResults", function(object) object@DOU)
 
+#' @rdname DOTSeqResults
 #' @export
 setGeneric("getDOU<-", function(object, value) standardGeneric("getDOU<-"))
 
+#' @importFrom methods validObject
+#' @rdname DOTSeqResults
 #' @export
 setReplaceMethod("getDOU", "DOTSeqResults", function(object, value) {
     object@DOU <- value
     validObject(object)
-    object
+    return(object)
 })
 
+#' @rdname DOTSeqResults
 #' @export
 setGeneric("getDTE", function(object) standardGeneric("getDTE"))
 
+#' @rdname DOTSeqResults
 #' @export
 setMethod("getDTE", "DOTSeqResults", function(object) object@DTE)
 
+#' @rdname DOTSeqResults
 #' @export
 setGeneric("getDTE<-", function(object, value) standardGeneric("getDTE<-"))
 
+#' @importFrom methods validObject
+#' @rdname DOTSeqResults
 #' @export
 setReplaceMethod("getDTE", "DOTSeqResults", function(object, value) {
-    object@DOU <- value
+    object@DTE <- value
     validObject(object)
-    object
+    return(object)
 })
 
+#' @rdname DOTSeqResults
 #' @export
 setMethod("show", "DOTSeqResults", function(object) {
     message("DOTSeqResults")
@@ -288,6 +335,7 @@ setMethod("show", "DOTSeqResults", function(object) {
     message("Use getDOU(), getDTE(), or interactionResults() to access contents.")
 })
 
+#' @rdname DOTSeqResults
 #' @export
 setMethod("interactionResults", "DOTSeqResults", function(object) {
     list(
@@ -318,7 +366,7 @@ setMethod("interactionResults", "DOTSeqResults", function(object) {
 #'     test statistics.
 #'
 #' @slot posthoc An object of class \code{ANY} storing post hoc summary
-#'     objects (e.g., from \code{emmeans}).
+#'     objects (e.g., from \code{\link[emmeans]{emmeans}}).
 #'
 #' @export
 #'
@@ -358,7 +406,8 @@ setMethod("interactionResults", "DOTSeqResults", function(object) {
 #'     test statistics.
 #'
 #' @param posthoc An optional object storing post hoc summary objects
-#'     (e.g., from \code{emmeans}). Default is \code{NA_real_}.
+#'     (e.g., from \code{\link[emmeans]{emmeans}}). Default is 
+#'     \code{NA_real_}.
 #'
 #' @return A \code{PostHoc} S4 object.
 #'
@@ -424,7 +473,7 @@ setMethod("fitResults", "PostHoc", function(object) object@results)
 
 #' @title Access the post hoc summary from a PostHoc object
 #' @description 
-#' Retrieves the post hoc summary object (e.g. from \code{emmeans}).
+#' Retrieves the post hoc summary object (e.g. from \code{\link[emmeans]{emmeans}}).
 #' @param object A \code{PostHoc} object.
 #' @return A post hoc summary object.
 #' @rdname PostHoc-accessors

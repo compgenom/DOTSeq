@@ -14,7 +14,8 @@ Default is \code{"fitError"}.}
 test statistics.}
 
 \item{posthoc}{An optional object storing post hoc summary objects
-(e.g., from \code{emmeans}). Default is \code{NA_real_}.}
+(e.g., from \code{\link[emmeans]{emmeans}}). Default is
+\code{NA_real_}.}
 }
 \value{
 A \code{PostHoc} S4 object.

@@ -3,22 +3,10 @@
 \docType{class}
 \name{DOTSeqDataSet-class}
 \alias{DOTSeqDataSet-class}
-\alias{conditionalFormula}
-\alias{emmSpecs}
-\alias{interactionResults}
-\alias{strategyResults}
-\alias{DOTSeqResults-class}
+\alias{DOTSeqDataSet-validity}
 \alias{DOTSeqDataSet}
 \title{DOTSeqDataSet-class}
 \usage{
-conditionalFormula(object)
-
-emmSpecs(object)
-
-interactionResults(object)
-
-strategyResults(object)
-
 DOTSeqDataSet(
   count_table,
   condition_table,
@@ -33,8 +21,6 @@ DOTSeqDataSet(
 )
 }
 \arguments{
-\item{object}{A \code{DOTSeqDataSet} object.}
-
 \item{count_table}{Path to a count table file or a data frame. Must
 contain columns: \code{Geneid}, \code{Chr}, \code{Start},
 \code{End}, \code{Strand}, \code{Length}, plus one column per
@@ -81,19 +67,11 @@ Keep ORFs where total counts across replicates pass
 
 \item{verbose}{Logical; if \code{TRUE}, prints progress messages.
 Default is \code{TRUE}.}
+
+\item{object}{A \code{DOTSeqDataSet} object.}
 }
 \value{
-A \code{formula} object.
-
-A \code{formula} object.
-
-A \code{DFrame} or \code{data.frame} containing shrinkage-
-adjusted estimates and contrast statistics. It is not row-aligned and
-will not be subset when subsetting rows of the object.
-
-A \code{DFrame} or \code{data.frame} containing shrinkage-
-adjusted estimates and contrast statistics. It is not row-aligned and
-will not be subset when subsetting rows of the object.
+TRUE if valid, or a character string describing the error.
 
 A named \code{list} containing:
 \describe{
@@ -114,22 +92,7 @@ A \code{RangedSummarizedExperiment} object extended to store modeling
 components for Differential ORF Usage (DOU) analysis in the DOTSeq
 framework.
 
-Retrieves the conditional formula stored in a \code{DOTSeqDataSet}
-object. This formula defines the fixed effects structure used in
-GLM / GLMM modeling.
-
-Retrieves the emmeans specification formula used for post hoc
-contrast generation.
-
-Retrieves the contrast results stored in a \code{DOTSeqDataSet} object.
-These results may include shrinkage-adjusted estimates and contrast
-statistics
-
-Retrieves the contrast results stored in a \code{DOTSeqDataSet} object.
-These results may include shrinkage-adjusted estimates and contrast
-statistics
-
-A wrapper class to store both DOU and DTE results from DOTSeq analysis.
+Checks that the slots in a DOTSeqDataSet object are correctly populated.
 
 This function initialize and construct the DOTSeq dataset object.
 This includes loading count and metadata tables, parsing ORF
@@ -139,9 +102,9 @@ beta-binomial and negative binomial models.
 }
 \details{
 This class contains raw counts, sample metadata, and additional slots
-for the model formula, emmeans specifications, and contrast results.
-It supports flexible modeling of translation-specific effects using
-GLM / GLMM and post hoc contrasts.
+for the model formula, \code{\link[emmeans]{emmeans}} specifications,
+and contrast results. It supports flexible modeling of
+translation-specific effects using GLM / GLMM and post hoc contrasts.
 }
 \section{Slots}{
 
@@ -149,18 +112,14 @@ GLM / GLMM and post hoc contrasts.
 \item{\code{formula}}{A \code{formula} object specifying the model design
 (e.g., ~ condition * strategy).}
 
-\item{\code{specs}}{A \code{formula} object used to generate emmeans
-specifications for post hoc contrasts.}
+\item{\code{specs}}{A \code{formula} object used to generate
+\code{\link[emmeans]{emmeans}} specifications for post hoc contrasts.}
 
 \item{\code{interactionResults}}{A \code{DFrame} or \code{data.frame} containing
 results interaction-specific contrasts}
 
 \item{\code{strategyResults}}{A \code{DFrame} or \code{data.frame} containing
 results strategy-specific contrasts}
-
-\item{\code{DOU}}{A \code{DOTSeqDataSet} object.}
-
-\item{\code{DTE}}{A \code{DESeqDataSet} object.}
 }}
 
 \examples{
@@ -194,6 +153,6 @@ show(dot)
 
 }
 \seealso{
-\code{\link{SummarizedExperiment}}, \code{\link{glmmTMB}},
-\code{\link{emmeans}}
+\code{\link[SummarizedExperiment]{SummarizedExperiment}},
+\code{\link[glmmTMB]{glmmTMB}}, \code{\link[emmeans]{emmeans}}
 }

@@ -28,7 +28,7 @@ DOTSeq(
 )
 }
 \arguments{
-\item{dot}{A \code{\link{DOTSeqResults}} object pre-constructed using
+\item{dot}{A \code{DOTSeqResults} object pre-constructed using
 \code{\link{DOTSeqDataSet}}. This list must include:
 \describe{
 \item{\code{DOU}}{

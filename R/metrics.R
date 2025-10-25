@@ -54,7 +54,7 @@
 #'     
 #' getDOU(dot) <- dou
 #' 
-#' dot <- DOTSeq(dotseq_dataset = dot, modules = "DOU")
+#' dot <- DOTSeq(dot = dot, modules = "DOU")
 #' 
 #' usage_df <- calculateUsage(
 #'     getDOU(dot),

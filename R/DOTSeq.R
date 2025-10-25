@@ -14,7 +14,7 @@
 #' @seealso \code{\link{DOTSeqDataSet}}, \code{\link{fitDOU}}, 
 #' \code{\link{testDOU}}, \code{\link{plotDOT}}
 #'
-#' @param dot A \code{\link{DOTSeqResults}} object pre-constructed using
+#' @param dot A \code{DOTSeqResults} object pre-constructed using
 #'     \code{\link{DOTSeqDataSet}}. This list must include:
 #'     \describe{
 #'         \item{\code{DOU}}{

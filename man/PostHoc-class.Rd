@@ -27,7 +27,7 @@ the type is typically \code{"glmmTMB"}.}
 test statistics.}
 
 \item{\code{posthoc}}{An object of class \code{ANY} storing post hoc summary
-objects (e.g., from \code{emmeans}).}
+objects (e.g., from \code{\link[emmeans]{emmeans}}).}
 }}
 
 \examples{
