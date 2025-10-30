@@ -314,6 +314,7 @@ stored as a dataframe and reused across plots to avoid repeated downloads.
 mapping <- plotDOT(
     plot_type = "volcano", 
     results = results,
+    id_mapping = TRUE,
     plot_params = list(color_by = "significance", top_hits = 3, legend_position = "topright"),
     force_new_device = FALSE
 )

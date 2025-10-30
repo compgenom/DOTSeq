@@ -1,5 +1,4 @@
-test_that("DOTSeq wrapper returns expected structure", {
-    # Load test data from extdata
+test_that("DOTSeqDataSets returns valid DOTSeqDataSets object", {
     dir <- system.file("extdata", package = "DOTSeq")
 
     cnt <- read.table(
@@ -9,7 +8,7 @@ test_that("DOTSeq wrapper returns expected structure", {
     )
     names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
 
-    gtf <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+    flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
     bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
 
     meta <- read.table(file.path(dir, "metadata.txt.gz"))
@@ -17,18 +16,21 @@ test_that("DOTSeq wrapper returns expected structure", {
     cond <- meta[meta$treatment == "chx", ]
     cond$treatment <- NULL
 
-    # Run DOTSeq wrapper
-    raw <- list(
+    dot <- DOTSeqDataSets(
         count_table = cnt,
         condition_table = cond,
-        flattened_gtf = gtf,
+        flattened_gtf = flat,
         flattened_bed = bed
     )
-    dot <- DOTSeq(datasets = raw, modules = "DTE")
-    
-    # Check structure
+
     expect_type(dot, "S4")
     expect_s4_class(dot, "DOTSeqDataSets")
-    expect_s4_class(getDTE(dot), "DTEData")
-    expect_s4_class(getDOU(dot), "DOUData")
+    
+    dou <- getDOU(dot)
+
+    # Check metadata
+    expect_true(nrow(dou) > 0)
+    expect_true(ncol(dou) > 0)
+    expect_true("strategy" %in% colnames(colData(dou)))
+    expect_true("gene_id" %in% colnames(rowData(dou)))
 })

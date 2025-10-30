@@ -12,7 +12,7 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
     )
     names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
     
-    flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+    gtf <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
     bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
     
     meta <- read.table(file.path(dir, "metadata.txt.gz"))
@@ -20,11 +20,11 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
     cond <- meta[meta$treatment == "chx", ]
     cond$treatment <- NULL
     
-    dot <- DOTSeqDataSet(
+    dot <- DOTSeqDataSets(
         count_table = cnt,
         condition_table = cond,
-        flattened_gtf = flat,
-        bed = bed
+        flattened_gtf = gtf,
+        flattened_bed = bed
     )
     
     # Subset for speed
@@ -38,7 +38,7 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
     suppressMessages(
         suppressWarnings({
             results <- fitDOU(
-                dou = dou,
+                data = dou,
                 formula = ~ condition * strategy,
                 specs = ~ condition * strategy,
                 dispersion_modeling = "auto",

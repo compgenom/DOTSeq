@@ -16,38 +16,17 @@ test_that("plotDOT generates all plot types without error", {
         orf_id = orf_ids,
         lfsr = runif(50, 0, 0.1),
         padj = runif(50, 0, 0.1),
-        PosteriorMean = rnorm(50),
+        posterior = rnorm(50),
         log2FoldChange = rnorm(50)
-    )
-    
-    # Create rowdata_df
-    orf_types <- sample(c("uORF", "mORF", "dORF"), 50, replace = TRUE)
-    rowdata_df <- data.frame(
-        orf_id = orf_ids,
-        gene_id = gene_ids,
-        orf_type = orf_types,
-        row.names = orf_ids
     )
     
     # Plot Venn diagram and composite plots
     expect_message(
         plotDOT(
             results = results_df,
-            rowdata = rowdata_df,
             plot_type = "composite",
             verbose = FALSE,
-            force_new_device = TRUE
-        ),
-        regexp = "Spearman"
-    )
-    
-    expect_message(
-        plotDOT(
-            results = results_df,
-            rowdata = rowdata_df,
-            plot_type = "composite",
-            verbose = FALSE,
-            force_new_device = TRUE
+            force_new_device = FALSE
         ),
         regexp = "Spearman"
     )
