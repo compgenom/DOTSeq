@@ -8,7 +8,7 @@ plotDOT(
   plot_type = "volcano",
   results = NULL,
   data = NULL,
-  id_mapping = NULL,
+  id_mapping = FALSE,
   include_go = FALSE,
   gene_id = NULL,
   dou_params = list(est_col = "posterior", est_thresh = 1, signif_col = "lfsr",
@@ -43,7 +43,7 @@ plots except for \code{"venn"}. Should contain \code{DOUResults} in
 \code{rowData()} and post hoc results in the \code{interaction} slot.}
 
 \item{id_mapping}{Optional data frame mapping Ensembl IDs to gene
-symbols. Can be reused across plots.}
+symbols. Can be reused across plots. Default is \code{FALSE}}
 
 \item{include_go}{Logical; if \code{TRUE}, includes GO annotations
 in \code{id_mapping}. Default is \code{FALSE}.}

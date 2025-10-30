@@ -227,7 +227,7 @@ annotate_orf_type <- function(bed, gff_granges) {
 #' @importFrom SummarizedExperiment SummarizedExperiment assay
 #' @importFrom SummarizedExperiment colData colData<-
 #' @importFrom SummarizedExperiment rowData rowData<- mcols mcols<-
-#' @importFrom Bioc.gff import
+#' @importFrom rtracklayer import
 #' @importFrom DESeq2 DESeqDataSetFromMatrix
 #' @importFrom utils read.table tail
 #' @importFrom stats relevel
