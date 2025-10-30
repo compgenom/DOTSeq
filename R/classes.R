@@ -1,30 +1,30 @@
-#' DOTSeqDataSet-class
+#' DOUData-class
 #'
 #' A \code{RangedSummarizedExperiment} object extended to store modeling 
-#' components for Differential ORF Usage (DOU) analysis in the DOTSeq 
-#' framework.
+#' components for Differential ORF Usage (DOU) analysis in the 
+#' \pkg{DOTSeq} framework.
 #'
 #' This class contains raw counts, sample metadata, and additional slots 
 #' for the model formula, \code{\link[emmeans]{emmeans}} specifications, 
 #' and contrast results. It supports flexible modeling of 
 #' translation-specific effects using GLM / GLMM and post hoc contrasts.
 #'
-#' @param object A \code{DOTSeqDataSet} object.
 #' @slot formula A \code{formula} object specifying the model design 
 #' (e.g., ~ condition * strategy).
 #' @slot specs A \code{formula} object used to generate 
 #' \code{\link[emmeans]{emmeans}} specifications for post hoc contrasts.
-#' @slot interactionResults A \code{DFrame} or \code{data.frame} containing 
-#' results interaction-specific contrasts
-#' @slot strategyResults A \code{DFrame} or \code{data.frame} containing 
-#' results strategy-specific contrasts
+#' @slot interaction A \code{DFrame} containing results 
+#' from interaction-specific contrasts.
+#' @slot strategy A \code{DFrame} containing results 
+#' from strategy-specific contrasts.
 #'
-#' @seealso \code{\link[SummarizedExperiment]{SummarizedExperiment}}, 
+#' @seealso \code{\link[SummarizedExperiment]{RangedSummarizedExperiment}}, 
 #' \code{\link[glmmTMB]{glmmTMB}}, \code{\link[emmeans]{emmeans}}
-#' 
-#' @name DOTSeqDataSet-class
-#' @rdname DOTSeqDataSet
-#' @export
+#'
+#' @name DOUData-class
+#' @rdname DOUData-class
+#' @aliases DOUData-class
+#' @exportClass DOUData
 #' @examples
 #' # Read in count matrix, condition table, and annotation files
 #' dir <- system.file("extdata", package = "DOTSeq")
@@ -44,43 +44,40 @@
 #' cond <- meta[meta$treatment == "chx", ]
 #' cond$treatment <- NULL
 #'
-#' # Create a DOTSeqObjects object
-#' dot <- DOTSeqDataSet(
+#' # Create a DOTSeqDataSets object
+#' dot <- DOTSeqDataSets(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,
-#'     bed = bed
+#'     flattened_bed = bed
 #' )
 #' 
 #' getDOU(dot)
 #' 
 #' getDTE(dot)
 #' 
-#' fmla(getDOU(dot))
-#' 
-#' specs(getDOU(dot))
-#' 
 setClass(
-    "DOTSeqDataSet",
+    "DOUData",
     contains = "RangedSummarizedExperiment",
     slots = list(
         formula = "formula",
         specs = "formula",
-        interactionResults = "DFrame",
-        strategyResults = "DFrame"
+        interaction = "DFrame",
+        strategy = "DFrame"
     )
 )
 
-#' Validity method for DOTSeqDataSet
+
+#' Validity method for DOUData
 #'
-#' Checks that the slots in a DOTSeqDataSet object are correctly populated.
+#' Checks that the slots in a DOUData object are correctly populated.
 #'
-#' @param object A \code{DOTSeqDataSet} object.
+#' @param object A \code{\link{DOUData-class}} object.
 #' @return TRUE if valid, or a character string describing the error.
-#' @name DOTSeqDataSet-validity
-#' @rdname DOTSeqDataSet
+#' @rdname DOUData-validity
+#' @name DOUData-validity
 #' @importFrom SummarizedExperiment assayNames assay
-setValidity("DOTSeqDataSet", function(object) {
+setValidity("DOUData", function(object) {
     
     # Check counts
     if (!("counts" %in% assayNames(object))) {
@@ -94,13 +91,13 @@ setValidity("DOTSeqDataSet", function(object) {
     
     fmla <- fmla(object)
     specs <- specs(object)
-    interaction_df <- interactionResults(object)
-    strategy_df <- strategyResults(object)
+    interaction_df <- getContrasts(object, type = "interaction")
+    strategy_df <- getContrasts(object, type = "strategy")
     
     if (!is(fmla, "formula")) return("The 'formula' slot must be a formula object.")
     if (!is(specs, "formula")) return("The 'specs' slot must be a formula object.")
     if (!(is(interaction_df, "DFrame")) || !(is(strategy_df, "DFrame"))) {
-        return("The 'interactionResults' and 'strategyResults' slots must be a DFrame object.")
+        return("The 'interaction' and 'strategy' slots must be a DFrame object.")
     }
     
     # Validate formula variables
@@ -156,30 +153,295 @@ setValidity("DOTSeqDataSet", function(object) {
 })
 
 
-#' Access the model formula used in DOTSeq analysis
+#' DTEData-class
 #'
-#' Retrieves the conditional formula stored in a \code{DOTSeqDataSet} 
-#' or \code{DESeqDataSet} object. This formula defines the fixed effects 
-#' structure used in GLM / GLMM modeling.
+#' A \code{DESeqDataSet} object extended to store modeling 
+#' components for Differential Translation Efficiency (DTE) analysis in 
+#' the \pkg{DOTSeq} framework.
+#' 
+#' This class contains raw counts, sample metadata, and additional slots 
+#' for the \code{\link[emmeans]{emmeans}} specifications, and contrast 
+#' results. 
+#' 
+#' Inherits all slots from \code{DESeqDataSet}, and adds:
+#' - specs: A \code{formula} object used to generate 
+#' \code{\link[emmeans]{emmeans}} specifications for post hoc contrasts.
+#' - interaction: A \code{DFrame} or \code{data.frame} containing 
+#' results interaction-specific contrasts
+#' - strategy: A \code{DFrame} or \code{data.frame} containing 
+#' results strategy-specific contrasts
+#' @seealso \code{\link[DESeq2]{DESeqDataSet-class}}
+#' @name DTEData-class
+#' @rdname DTEData-class
+#' @aliases DTEData-class
+#' @exportClass DTEData
+#' @examples
+#' # Read in count matrix, condition table, and annotation files
+#' dir <- system.file("extdata", package = "DOTSeq")
 #'
-#' @param object A \code{DOTSeqDataSet} or \code{DESeqDataSet} object.
-#' @return A \code{formula} object.
-#' @rdname DOTSeqDataSet
+#' cnt <- read.table(
+#'     file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"),
+#'     header = TRUE,
+#'     comment.char = "#"
+#' )
+#' names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
+#'
+#' flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+#' bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+#'
+#' meta <- read.table(file.path(dir, "metadata.txt.gz"))
+#' names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
+#' cond <- meta[meta$treatment == "chx", ]
+#' cond$treatment <- NULL
+#'
+#' # Create a DOTSeqDataSets object
+#' dot <- DOTSeqDataSets(
+#'     count_table = cnt,
+#'     condition_table = cond,
+#'     flattened_gtf = flat,
+#'     flattened_bed = bed
+#' )
+#' 
+#' getDOU(dot)
+#' 
+#' getDTE(dot)
+#' 
+setClass(
+    "DTEData",
+    contains = "DESeqDataSet",
+    slots = list(
+        formula = "formula",
+        specs = "formula",
+        interaction = "DFrame",
+        strategy = "DFrame"
+    )
+)
+
+
+#' @importFrom DESeq2 DESeqDataSet
+setClassUnion("DESeqOrDTE", c("DESeqDataSet", "DTEData"))
+
+#' DOTSeqDataSets-class
+#'
+#' A wrapper class to store both DOU and DTE results from \pkg{DOTSeq} 
+#' analysis.
+#'
+#' @slot DOU A \code{\link{DOUData-class}} object.
+#' @slot DTE A \code{\link{DTEData-class}} object.
+#' @return A \code{DOTSeqDataSets} S4 object containing DOU and DTE results.
+#' @name DOTSeqDataSets-class
+#' @rdname DOTSeqDataSets-class
+#' @exportClass DOTSeqDataSets
+#' @examples
+#' # Read in count matrix, condition table, and annotation files
+#' dir <- system.file("extdata", package = "DOTSeq")
+#'
+#' cnt <- read.table(
+#'     file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"),
+#'     header = TRUE,
+#'     comment.char = "#"
+#' )
+#' names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
+#'
+#' flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+#' bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+#'
+#' meta <- read.table(file.path(dir, "metadata.txt.gz"))
+#' names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
+#' cond <- meta[meta$treatment == "chx", ]
+#' cond$treatment <- NULL
+#'
+#' # Create a DOTSeqDataSets object
+#' dot <- DOTSeqDataSets(
+#'     count_table = cnt,
+#'     condition_table = cond,
+#'     flattened_gtf = flat,
+#'     flattened_bed = bed
+#' )
+#' 
+#' getDOU(dot)
+#' 
+#' getDTE(dot)
+#' 
+setClass(
+    "DOTSeqDataSets",
+    slots = list(
+        DOU = "DOUData",
+        DTE = "DESeqOrDTE"
+    )
+)
+
+#' Show method for DOTSeqDataSets objects
+#'
+#' Displays a summary of the DOTSeqDataSets object.
+#'
+#' @param object A \code{DOTSeqDataSets} object.
+#' @name DOTSeqDataSets-class
+#' @rdname DOTSeqDataSets-class
+#' @aliases show,DOTSeqDataSets-method
 #' @export
+setMethod("show", "DOTSeqDataSets", function(object) {
+    message("DOTSeqDataSets")
+    message("  DOU: ", class(object@DOU))
+    message("  DTE: ", class(object@DTE))
+    message("Use getDOU() or getDTE() to access contents.")
+    message("Use getContrasts() if post hoc inference has been performed.")
+})
+
+
+#' Accessor and replacement methods for DOU slot
+#'
+#' These methods allow access to and replacement of the \code{\link{DOUData-class}} 
+#' object stored within a \code{DOTSeqDataSets} container.
+#'
+#' @param object A \code{DOTSeqDataSets} object.
+#' @param value A replacement object (e.g., a \code{\link{DOUData-class}}).
+#' @return For the accessor, a \code{\link{DOUData-class}} object. For the replacement, 
+#' an updated \code{DOTSeqDataSets} object.
+#' @rdname getDOU-method
+#' @export
+#' @examples
+#' # Read in count matrix, condition table, and annotation files
+#' dir <- system.file("extdata", package = "DOTSeq")
+#'
+#' cnt <- read.table(
+#'     file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"),
+#'     header = TRUE,
+#'     comment.char = "#"
+#' )
+#' names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
+#'
+#' gtf <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+#' bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+#'
+#' meta <- read.table(file.path(dir, "metadata.txt.gz"))
+#' names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
+#' cond <- meta[meta$treatment == "chx", ]
+#' cond$treatment <- NULL
+#'
+#' # Create a DOTSeqDataSets object
+#' d <- DOTSeqDataSets(
+#'     count_table = cnt,
+#'     condition_table = cond,
+#'     flattened_gtf = gtf,
+#'     flattened_bed = bed
+#' )
+#' 
+#' getDOU(d)
+#' 
+#' getDTE(d)
+#' 
+setGeneric("getDOU", function(object) standardGeneric("getDOU"))
+
+#' @rdname getDOU-method
+#' @export
+setMethod("getDOU", "DOTSeqDataSets", function(object) object@DOU)
+
+#' @rdname getDOU-method
+#' @export
+setGeneric("getDOU<-", function(object, value) standardGeneric("getDOU<-"))
+
+#' @rdname getDOU-method
+#' @importFrom methods validObject
+#' @export
+setReplaceMethod("getDOU", "DOTSeqDataSets", function(object, value) {
+    object@DOU <- value
+    validObject(object)
+    return(object)
+})
+
+
+
+#' Accessor and replacement methods for DTE slot
+#'
+#' These methods allow access to and replacement of the \code{\link{DTEData-class}} 
+#' object stored within a \code{DOTSeqDataSets} container.
+#'
+#' @param object A \code{DOTSeqDataSets} object.
+#' @param value A replacement object (e.g., a \code{\link{DTEData-class}}).
+#' @return For the accessor, a \code{\link{DTEData-class}} object. For the replacement, 
+#' an updated \code{DOTSeqDataSets} object.
+#' @rdname getDTE-method
+#' @export
+#' @examples
+#' # Read in count matrix, condition table, and annotation files
+#' dir <- system.file("extdata", package = "DOTSeq")
+#'
+#' cnt <- read.table(
+#'     file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"),
+#'     header = TRUE,
+#'     comment.char = "#"
+#' )
+#' names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
+#'
+#' flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+#' bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+#'
+#' meta <- read.table(file.path(dir, "metadata.txt.gz"))
+#' names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
+#' cond <- meta[meta$treatment == "chx", ]
+#' cond$treatment <- NULL
+#'
+#' # Create a DOTSeqDataSets object
+#' dot <- DOTSeqDataSets(
+#'     count_table = cnt,
+#'     condition_table = cond,
+#'     flattened_gtf = flat,
+#'     flattened_bed = bed
+#' )
+#' 
+#' getDOU(dot)
+#' 
+#' getDTE(dot)
+#' 
+setGeneric("getDTE", function(object) standardGeneric("getDTE"))
+
+#' @rdname getDTE-method
+#' @export
+setMethod("getDTE", "DOTSeqDataSets", function(object) object@DTE)
+
+#' @rdname getDTE-method
+#' @export
+setGeneric("getDTE<-", function(object, value) standardGeneric("getDTE<-"))
+
+#' @rdname getDTE-method
+#' @importFrom methods validObject
+#' @export
+setReplaceMethod("getDTE", "DOTSeqDataSets", function(object, value) {
+    object@DTE <- value
+    validObject(object)
+    return(object)
+})
+
+
+# setValidity("DTEData", function(object) {
+#   if (!inherits(design(object), "formula")) {
+#     return("The design must be a formula object.")
+#   }
+#   TRUE
+# })
+
+
+#' Access the model formula used in \pkg{DOTSeq} analysis
+#'
+#' Retrieves the conditional formula stored in a 
+#' \code{\link{DOUData-class}} or \code{\link{DTEData-class}} object. 
+#' This formula defines the fixed effects structure used in GLM / 
+#' GLMM modeling.
+#'
+#' @param object A \code{\link{DOUData-class}} or 
+#' \code{\link{DTEData-class}} object.
+#' @return A \code{formula} object.
+#' @keywords internal
+#' @rdname fmla-method
 setGeneric("fmla", function(object) standardGeneric("fmla"))
 
-#' @param object A \code{DOTSeqDataSet} object.
-#' @return A \code{formula} object.
-#' @rdname DOTSeqDataSet
-#' @export
-setMethod("fmla", "DOTSeqDataSet", function(object) object@formula)
+#' @rdname fmla-method
+setMethod("fmla", "DOUData", function(object) object@formula)
 
-#' @param object A \code{DESeqDataSet} object.
-#' @return A \code{formula} object.
+#' @rdname fmla-method
 #' @importFrom DESeq2 design
-#' @rdname DOTSeqDataSet
-#' @export
-setMethod("fmla", "DESeqDataSet", function(object) design(object))
+setMethod("fmla", "DTEData", function(object) design(object))
 
 
 #' Access the emmeans specification formula
@@ -187,246 +449,122 @@ setMethod("fmla", "DESeqDataSet", function(object) design(object))
 #' Retrieves the \code{\link[emmeans]{emmeans}} specification formula 
 #' used for post hoc contrast generation.
 #'
-#' @param object A \code{DOTSeqDataSet} or \code{DOTSeqDataSet} object.
+#' @param object A \code{\link{DOUData-class}} or \code{\link{DTEData-class}} object.
 #' @return A \code{formula} object.
-#' @rdname DOTSeqDataSet
-#' @export
+#' @keywords internal
+#' @rdname specs-method
 setGeneric("specs", function(object) standardGeneric("specs"))
 
-#' @param object A \code{DOTSeqDataSet} object.
-#' @return A \code{formula} object.
-#' @rdname DOTSeqDataSet
-#' @export
-setMethod("specs", "DOTSeqDataSet", function(object) object@specs)
+#' @rdname specs-method
+setMethod("specs", "DOUData", function(object) object@specs)
 
-#' @param object A \code{DESeqDataSet} object.
-#' @return A \code{formula} object.
-#' @rdname DOTSeqDataSet
-#' @export
-setMethod("specs", "DESeqDataSet", function(object) {
-    if (!"specs" %in% names(metadata(object))) {
-        stop("No 'specs' found in metadata.")
-    }
-    return(metadata(object)$specs)
-})
+#' @rdname specs-method
+setMethod("specs", "DTEData", function(object) object@specs)
 
 
-#' Access `interactionResults` from post hoc analysis
+#' Access and replace contrast results from post hoc analysis
 #'
-#' Retrieves the contrast results stored in a \code{DOTSeqDataSet} object.
-#' These results may include shrinkage-adjusted estimates and contrast 
-#' statistics for interaction-specific contrasts.
+#' These methods retrieve or replace either interaction-specific or 
+#' strategy-specific contrast results from a \code{\link{DOUData-class}}, 
+#' \code{\link{DTEData-class}}, or \code{DOTSeqDataSets} object.
 #'
-#' @param object A \code{DOTSeqDataSet} or \code{DESeqDataSet} object.
-#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
-#' adjusted estimates and contrast statistics. It is not row-aligned and 
-#' will not be subset when subsetting rows of the object.
-#' @rdname DOTSeqDataSet
-#' @export
-setGeneric("interactionResults", function(object) standardGeneric("interactionResults"))
-
-#' @param object A \code{DOTSeqDataSet} object.
-#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
-#' adjusted estimates and contrast statistics. It is not row-aligned and 
-#' will not be subset when subsetting rows of the object.
-#' @rdname DOTSeqDataSet
-#' @export
-setMethod("interactionResults", "DOTSeqDataSet", function(object) object@interactionResults)
-
-#' @param object A \code{DESeqDataSet} object.
-#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
-#' adjusted estimates and contrast statistics. It is not row-aligned and 
-#' will not be subset when subsetting rows of the object.
-#' @rdname DOTSeqDataSet
-#' @export
-setMethod("interactionResults", "DESeqDataSet", function(object) {
-    if (!"interaction_results" %in% names(metadata(object))) {
-        stop("No 'interaction_results' found in metadata.")
-    }
-    metadata(object)$interaction_results
-})
-
-#' @param object A \code{DOTSeqDataSet} or \code{DESeqDataSet} object.
-#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
-#' adjusted estimates and contrast statistics. It is not row-aligned and 
-#' will not be subset when subsetting rows of the object.
-#' @param value A replacement object (e.g., a \code{DOTSeqDataSet}).
-#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
-#' adjusted estimates and contrast statistics. It is not row-aligned and 
-#' will not be subset when subsetting rows of the object.
-#' @rdname DOTSeqDataSet
-#' @export
-setGeneric("interactionResults<-", function(object, value) standardGeneric("interactionResults<-"))
-
-#' @param object A \code{DOTSeqDataSet} object.
-#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
-#' adjusted estimates and contrast statistics. It is not row-aligned and 
-#' will not be subset when subsetting rows of the object.
-#' @param value A replacement object (e.g., a \code{DOTSeqDataSet}).
-#' @importFrom methods validObject
-#' @rdname DOTSeqDataSet
-#' @export
-setReplaceMethod("interactionResults", "DOTSeqDataSet", function(object, value) {
-    object@interactionResults <- value
-    validObject(object)
-    return(object)
-})
-
-#' @param object A \code{DESeqDataSet} object.
-#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
-#' adjusted estimates and contrast statistics. It is not row-aligned and 
-#' will not be subset when subsetting rows of the object.
-#' @param value A replacement object (e.g., a \code{DESeqDataSet}).
-#' @rdname DOTSeqDataSet
-#' @export
-setReplaceMethod("interactionResults", "DESeqDataSet", function(object, value) {
-    metadata(object)$interaction_results <- value
-    return(object)
-})
-
-
-#' Access `strategyResults``` from post hoc analysis
-#'
-#' Retrieves the contrast results stored in a \code{DOTSeqDataSet} object.
-#' These results may include shrinkage-adjusted estimates and contrast 
-#' statistics for strategy-specific contrasts.
-#'
-#' @param object A \code{DOTSeqDataSet} object.
-#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
-#' adjusted estimates and contrast statistics. It is not row-aligned and 
-#' will not be subset when subsetting rows of the object.
-#' @rdname DOTSeqDataSet
-#' @export
-setGeneric("strategyResults", function(object) standardGeneric("strategyResults"))
-
-#' @param object A \code{DOTSeqDataSet} object.
-#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
-#' adjusted estimates and contrast statistics. It is not row-aligned and 
-#' will not be subset when subsetting rows of the object.
-#' @rdname DOTSeqDataSet
-#' @export
-setMethod("strategyResults", "DOTSeqDataSet", function(object) object@strategyResults)
-
-#' @param object A \code{DOTSeqDataSet} object.
-#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
-#' adjusted estimates and contrast statistics. It is not row-aligned and 
-#' will not be subset when subsetting rows of the object.
-#' @rdname DOTSeqDataSet
-#' @export
-setGeneric("strategyResults<-", function(object, value) standardGeneric("strategyResults<-"))
-
-#' @param object A \code{DOTSeqDataSet} object.
-#' @return A \code{DFrame} or \code{data.frame} containing shrinkage-
-#' adjusted estimates and contrast statistics. It is not row-aligned and 
-#' will not be subset when subsetting rows of the object.
-#' @importFrom methods validObject
-#' @rdname DOTSeqDataSet
-#' @export
-setReplaceMethod("strategyResults", "DOTSeqDataSet", function(object, value) {
-    object@strategyResults <- value
-    validObject(object)
-    return(object)
-})
-
-
-#' DOTSeqObjects-class
-#'
-#' A wrapper class to store both DOU and DTE results from DOTSeq analysis.
-#'
-#' @slot DOU A \code{DOTSeqDataSet} object.
-#' @slot DTE A \code{DESeqDataSet} object.
-#' @rdname DOTSeqObjects
+#' @param object A \code{\link{DOUData-class}} or \code{\link{DTEData-class}} object.
+#' @param type A character string, either \code{"interaction"} or 
+#' \code{"strategy"}.
+#' @param value A \code{DFrame} or \code{data.frame} to replace the 
+#' contrast results.
+#' @return For the accessor, a \code{DFrame} or \code{data.frame} 
+#' containing contrast results. For the replacement, an updated 
+#' \code{\link{DOUData-class}}, \code{\link{DTEData-class}} or \code{DOTSeqDataSets} object.
+#' @rdname getContrasts-method
 #' @export
 #' @examples
-#' # Create dummy objects
-#' dou <- new("DOTSeqDataSet")
-#' dte <- new("DESeqDataSet")
-#' res <- new("DOTSeqObjects", DOU = dou, DTE = dte)
-#' getDOU(res)
-#' getDTE(res)
-setClass(
-    "DOTSeqObjects",
-    slots = list(
-        DOU = "DOTSeqDataSet",
-        DTE = "DESeqDataSet"
-    )
-)
+#' # Read in count matrix, condition table, and annotation files
+#' dir <- system.file("extdata", package = "DOTSeq")
+#'
+#' cnt <- read.table(
+#'     file.path(dir, "featureCounts.cell_cycle_subset.txt.gz"),
+#'     header = TRUE,
+#'     comment.char = "#"
+#' )
+#' names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
+#'
+#' flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+#' bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
+#'
+#' meta <- read.table(file.path(dir, "metadata.txt.gz"))
+#' names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
+#' cond <- meta[meta$treatment == "chx", ]
+#' cond$treatment <- NULL
+#'
+#' # Create a DOTSeqDataSets object
+#' dot <- DOTSeqDataSets(
+#'     count_table = cnt,
+#'     condition_table = cond,
+#'     flattened_gtf = flat,
+#'     flattened_bed = bed
+#' )
+#' 
+#' getDOU(dot)
+#' 
+#' getDTE(dot)
+#' 
+setGeneric("getContrasts", function(object, type = c("interaction", "strategy")) standardGeneric("getContrasts"))
 
-#' @param object A \code{DOTSeqObjects} object.
-#' @rdname DOTSeqObjects
+#' @rdname getContrasts-method
 #' @export
-setGeneric("getDOU", function(object) standardGeneric("getDOU"))
+setMethod("getContrasts", "DOUData", function(object, type = c("interaction", "strategy")) {
+    type <- match.arg(type)
+    if (type == "interaction") object@interaction else object@strategy
+})
 
-#' @param object A \code{DOTSeqObjects} object.
-#' @rdname DOTSeqObjects
-#' @return A \code{DOTSeqDataSet} object containing DOU results.
+#' @rdname getContrasts-method
 #' @export
-setMethod("getDOU", "DOTSeqObjects", function(object) object@DOU)
+setMethod("getContrasts", "DTEData", function(object, type = c("interaction", "strategy")) {
+    type <- match.arg(type)
+    if (type == "interaction") object@interaction else object@strategy
+})
 
-#' @param object A \code{DOTSeqObjects} object.
-#' @param value A replacement object (e.g., a \code{DOTSeqDataSet}).
-#' @rdname DOTSeqObjects
+#' @rdname getContrasts-method
 #' @export
-setGeneric("getDOU<-", function(object, value) standardGeneric("getDOU<-"))
+setMethod("getContrasts", "DOTSeqDataSets", function(object, type = c("interaction", "strategy")) {
+    type <- match.arg(type)
+    
+    dou_res <- getContrasts(object@DOU, type = type)
+    dte_res <- getContrasts(object@DTE, type = type)
+    
+    if (is.null(dou_res)) warning("No DOU contrast results found.")
+    if (is.null(dte_res)) warning("No DTE contrast results found.")
+    
+    return(list(DOU = dou_res, DTE = dte_res))
+})
 
-#' @param object A \code{DOTSeqObjects} object.
-#' @param value A replacement object (e.g., a \code{DOTSeqDataSet}).
+#' @rdname getContrasts-method
+#' @export
+setGeneric("getContrasts<-", function(object, type = c("interaction", "strategy"), value) standardGeneric("getContrasts<-"))
+
+#' @rdname getContrasts-method
 #' @importFrom methods validObject
-#' @rdname DOTSeqObjects
 #' @export
-setReplaceMethod("getDOU", "DOTSeqObjects", function(object, value) {
-    object@DOU <- value
+setReplaceMethod("getContrasts", "DOUData", function(object, type = c("interaction", "strategy"), value) {
+    type <- match.arg(type)
+    if (!is(value, "DFrame")) stop("Replacement value must be a DFrame.")
+    if (type == "interaction") object@interaction <- value else object@strategy <- value
     validObject(object)
     return(object)
 })
 
-#' @param object A \code{DOTSeqObjects} object.
-#' @rdname DOTSeqObjects
-#' @export
-setGeneric("getDTE", function(object) standardGeneric("getDTE"))
-
-#' @param object A \code{DOTSeqObjects} object.
-#' @param value A replacement object (e.g., a \code{DESeqDataSet}).
-#' @rdname DOTSeqObjects
-#' @export
-setMethod("getDTE", "DOTSeqObjects", function(object) object@DTE)
-
-#' @param object A \code{DOTSeqObjects} object.
-#' @param value A replacement object (e.g., a \code{DESeqDataSet}).
-#' @rdname DOTSeqObjects
-#' @export
-setGeneric("getDTE<-", function(object, value) standardGeneric("getDTE<-"))
-
-#' @param object A \code{DOTSeqObjects} object.
-#' @param value A replacement object (e.g., a \code{DOTSeqDataSet}).
+#' @rdname getContrasts-method
 #' @importFrom methods validObject
-#' @rdname DOTSeqObjects
 #' @export
-setReplaceMethod("getDTE", "DOTSeqObjects", function(object, value) {
-    object@DTE <- value
+setReplaceMethod("getContrasts", "DTEData", function(object, type = c("interaction", "strategy"), value) {
+    type <- match.arg(type)
+    if (!is(value, "DFrame")) stop("Replacement value must be a DFrame.")
+    if (type == "interaction") object@interaction <- value else object@strategy <- value
     validObject(object)
     return(object)
 })
 
-#' @param object A \code{DOTSeqObjects} object.
-#' @rdname DOTSeqObjects
-#' @export
-setMethod("show", "DOTSeqObjects", function(object) {
-    message("DOTSeqObjects")
-    message("  DOU: ", class(object@DOU))
-    message("  DTE: ", class(object@DTE))
-    message("Use getDOU(), getDTE(), or interactionResults() to access contents.")
-})
-
-#' @param object A \code{DOTSeqObjects} object.
-#' @rdname DOTSeqObjects
-#' @export
-setMethod("interactionResults", "DOTSeqObjects", function(object) {
-    list(
-        DOU = interactionResults(object@DOU),
-        DTE = interactionResults(object@DTE)
-    )
-})
 
 
 #' @title The PostHoc class for DOTSeq
@@ -437,20 +575,20 @@ setMethod("interactionResults", "DOTSeqObjects", function(object) {
 #' diagnostics and metadata for each ORF.
 #'
 #' Objects of this class are typically created by the user-level function
-#' \code{fitDOU()}, or manually using the \code{PostHoc()} constructor. In the
-#' DOTSeq pipeline, each ORF is assigned a \code{PostHoc} object, which is
-#' stored in a \code{DataFrame} and embedded in the \code{rowData} slot of a
-#' \code{SummarizedExperiment}.
+#' \code{fitDOU()}, or manually using the \code{PostHoc()} constructor. 
+#' In the \pkg{DOTSeq} workflow, each ORF is assigned a \code{PostHoc} 
+#' object, which is stored in a \code{DataFrame} and embedded in the 
+#' \code{rowData} slot of a \code{SummarizedExperiment}.
 #'
 #' @slot type A \code{character(1)} string indicating the model type.
-#'     Default is \code{"fitError"}. If the model is successfully fitted,
-#'     the type is typically \code{"glmmTMB"}.
+#' Default is \code{"fitError"}. If the model is successfully fitted,
+#' the type is typically \code{"glmmTMB"}.
 #'
 #' @slot results A \code{list} containing model results, parameters, and
-#'     test statistics.
+#' test statistics.
 #'
 #' @slot posthoc An object of class \code{ANY} storing post hoc summary
-#'     objects (e.g., from \code{\link[emmeans]{emmeans}}).
+#' objects (e.g., from \code{\link[emmeans]{emmeans}}).
 #'
 #' @export
 #'
@@ -480,18 +618,18 @@ setMethod("interactionResults", "DOTSeqObjects", function(object) {
 #' @description
 #' This function constructs a new \code{PostHoc} object, which stores the
 #' results of a statistical model fitted to ORF-level data. It is typically
-#' used internally by the DOTSeq pipeline or manually for testing and
+#' used internally by the \pkg{DOTSeq} workflow or manually for testing and
 #' diagnostics.
 #'
 #' @param type A \code{character(1)} string indicating the model type.
-#'     Default is \code{"fitError"}.
+#' Default is \code{"fitError"}.
 #'
 #' @param results A \code{list} containing model results, parameters, and
-#'     test statistics.
+#' test statistics.
 #'
 #' @param posthoc An optional object storing post hoc summary objects
-#'     (e.g., from \code{\link[emmeans]{emmeans}}). Default is 
-#'     \code{NA_real_}.
+#' (e.g., from \code{\link[emmeans]{emmeans}}). Default is 
+#' \code{NA_real_}.
 #'
 #' @return A \code{PostHoc} S4 object.
 #'

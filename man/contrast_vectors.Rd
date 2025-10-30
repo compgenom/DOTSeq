@@ -13,7 +13,7 @@ sample annotations.}
 \item{formula}{Optional. A model formula used to generate the design
 matrix (e.g., \code{~ condition * strategy}). If not provided,
 the function will try to extract it from
-\code{fmla(dds)}.}
+\code{design(dds)}.}
 
 \item{baseline}{Optional. A character string specifying the baseline
 condition for comparisons. If \code{NULL}, the first level of
@@ -41,24 +41,24 @@ in complex designs involving interaction terms.
 }
 \examples{
 \dontrun{
-    # Generate contrast vectors from a DESeqDataSet
-    contrast_list <- contrast_vectors(
-        dds,
-        formula = ~ condition * strategy
-    )
+# Generate contrast vectors from a DESeqDataSet
+contrast_list <- contrast_vectors(
+    dds,
+    formula = ~ condition * strategy
+)
 
-    # Use a contrast vector with DESeq2
-    res <- lfcShrink(
-        dot$dds,
-        contrast = contrast_list[[1]],
-        type = "ashr"
-    )
+# Use a contrast vector with DESeq2
+res <- lfcShrink(
+    dot$dds,
+    contrast = contrast_list[[1]],
+    type = "ashr"
+)
 }
 
 }
 \references{
 Love, M.I., Huber, W., Anders, S. (2014) Moderated estimation of fold
 change and dispersion for RNA-seq data with DESeq2. Genome Biology,
-15:550. \doi{10.1186/s13059-014-0550-8}
+15:550. DOI: 10.1186/s13059-014-0550-8
 }
 \keyword{internal}

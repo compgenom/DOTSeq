@@ -11,10 +11,10 @@ beta-binomial GLM/GLMM fitted to ORF-level data. It is also used to store
 diagnostics and metadata for each ORF.
 
 Objects of this class are typically created by the user-level function
-\code{fitDOU()}, or manually using the \code{PostHoc()} constructor. In the
-DOTSeq pipeline, each ORF is assigned a \code{PostHoc} object, which is
-stored in a \code{DataFrame} and embedded in the \code{rowData} slot of a
-\code{SummarizedExperiment}.
+\code{fitDOU()}, or manually using the \code{PostHoc()} constructor.
+In the \pkg{DOTSeq} workflow, each ORF is assigned a \code{PostHoc}
+object, which is stored in a \code{DataFrame} and embedded in the
+\code{rowData} slot of a \code{SummarizedExperiment}.
 }
 \section{Slots}{
 

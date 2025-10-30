@@ -8,18 +8,18 @@ utils::globalVariables(c("condition", "usage", "orf_id"))
 #' to three decimal places. If the value is missing or NA, it returns "N/A".
 #'
 #' @param rowdata A data frame containing differential results, including 
-#'     columns for `orf_id`, `contrast`, and the specified p-value column.
-#'     
+#' columns for `orf_id`, `contrast`, and the specified p-value column.
+#' 
 #' @param orf A character string specifying the ORF ID to look up.
 #' 
 #' @param contrast_name A character string specifying the contrast name 
-#'     (e.g., "Treatment - Control").
-#'     
-#' @param dou_padj_col A character string specifying the column name to 
-#'     extract the adjusted p-value from. Defaults to `"lfsr"`.
+#' (e.g., "Treatment - Control").
+#' 
+#' @param dou_signif_col A character string specifying the column name to 
+#' extract the adjusted p-value from. Defaults to `"lfsr"`.
 #'
 #' @return A character string representing the formatted p-value 
-#'     (e.g., `"0.023"`).
+#' (e.g., `"0.023"`).
 #' 
 #' @keywords internal
 #' 
@@ -27,14 +27,14 @@ get_lfsr_annotation <- function(
         rowdata, 
         orf, 
         contrast_name, 
-        dou_padj_col = "lfsr"
+        dou_signif_col = "lfsr"
 ) {
     
-    if (!dou_padj_col %in% colnames(rowdata)) {
-        stop(sprintf("Column '%s' not found in rowdata.", dou_padj_col))
+    if (!dou_signif_col %in% colnames(rowdata)) {
+        stop(sprintf("Column '%s' not found in rowdata.", dou_signif_col))
     }
     
-    lfsr_value <- rowdata[rowdata$orf_id == orf & rowdata$contrast == contrast_name, dou_padj_col]
+    lfsr_value <- rowdata[rowdata$orf_id == orf & rowdata$contrast == contrast_name, dou_signif_col]
     
     return(as.numeric(lfsr_value))
 }
@@ -47,28 +47,29 @@ get_lfsr_annotation <- function(
 #' p-values (e.g., LFSR). Requires 
 #' \href{https://CRAN.R-project.org/package=ggplot2}{ggplot2} and 
 #' \href{https://CRAN.R-project.org/package=ggsignif}{ggsignif}.
-#'     
-#' @param dou A \code{\link{DOTSeqDataSet}} object containing an 
-#'     `interactionResults` slot.
-#'     
+#' 
+#' @param data A \code{\link{DOUData-class}} object with an 
+#' `interaction` slot storing interaction-specific post hoc 
+#' contrast results.
+#' 
 #' @param gene_id A character string specifying the gene ID of interest
-#'     
+#' 
 #' @param id_mapping Optional data frame with gene symbols (e.g., 
-#'     from biomaRt). Used to label heatmap rows with gene symbols.
-#'     
+#' from biomaRt). Used to label heatmap rows with gene symbols.
+#' 
 #' @param levels Optional character vector specifying the order of 
-#'     conditions on the x-axis.
-#'     
-#' @param dou_padj_threshold Numeric threshold for significance 
-#'     annotation (default is `0.05`).
+#' conditions on the x-axis.
+#' 
+#' @param dou_signif_thresh Numeric threshold for significance 
+#' annotation (default is `0.05`).
 #'
 #' @param colors Color palette for 
-#'     \code{\link[ggplot2]{scale_fill_brewer}}. Default is 
-#'     \code{Set2}.
-#'     
+#' \code{\link[ggplot2]{scale_fill_brewer}}. Default is 
+#' \code{Set2}.
+#' 
 #' @return A \code{ggplot} object visualizing ORF usage across 
 #' conditions, with significance annotations for contrasts passing 
-#' `dou_padj_threshold`. ORFs with non-significant contrasts are 
+#' `dou_signif_thresh`. ORFs with non-significant contrasts are 
 #' not annotated.
 #' 
 #' @keywords internal
@@ -77,11 +78,11 @@ get_lfsr_annotation <- function(
 #' @importFrom SummarizedExperiment mcols mcols<- 
 #' 
 plot_orf_usage <- function(
-        dou, 
+        data, 
         gene_id = NULL,
         id_mapping = NULL,
         levels = NULL, 
-        dou_padj_threshold = 0.05,
+        dou_signif_thresh = 0.05,
         colors = "Set2"
 ) {
     
@@ -93,12 +94,12 @@ plot_orf_usage <- function(
         )
     }
     
-    annot_df <- interactionResults(dou)
+    annot_df <- getContrasts(data, type = "interaction")
     if (is.null(annot_df)) {
-        stop("No interactionResults found in ", dou)
+        stop("No interaction slot found in ", data)
     }
     
-    rowranges <- rowRanges(dou)
+    rowranges <- rowRanges(data)
     orfs <- data.frame(
         orf_id = rownames(mcols(rowranges)),
         orf_number = mcols(rowranges)$orf_number,
@@ -136,7 +137,7 @@ plot_orf_usage <- function(
     
     # Calculate ORF usage from fitted models
     usage_df <- calculateUsage(
-        dou = dou,
+        data = data,
         gene_id = gene_id_clean
     )
 
@@ -188,7 +189,7 @@ plot_orf_usage <- function(
         
         for (contrast in contrasts_to_annotate) {
             lfsr <- get_lfsr_annotation(annot_df, orf, contrast)
-            if (as.numeric(lfsr) > dou_padj_threshold) next
+            if (as.numeric(lfsr) > dou_signif_thresh) next
             lfsr_formatted <- format.pval(lfsr, digits = 3, eps = .Machine$double.eps)
             # message(
             #     "ORF ID: ", orf, 
@@ -224,24 +225,24 @@ plot_orf_usage <- function(
 #' \href{https://CRAN.R-project.org/package=eulerr}{eulerr}.
 #'
 #' @param results A data frame containing DTE and DOU results. Must include
-#'     row names corresponding to ORF identifiers, and columns for adjusted
-#'     p-values from both tests.
+#' row names corresponding to ORF identifiers, and columns for adjusted
+#' p-values from both tests.
 #'
-#' @param dou_padj_col Character string specifying the column name for DOU
-#'     significance values. Should correspond to local false sign rate 
-#'     (lfsr). Default is \code{"lfsr"}.
+#' @param dou_signif_col Character string specifying the column name for DOU
+#' significance values. Should correspond to local false sign rate 
+#' (lfsr). Default is \code{"lfsr"}.
 #'
-#' @param dte_padj_col Character string specifying the column name for DTE
-#'     adjusted p-values. Default is \code{"padj"}.
+#' @param dte_signif_col Character string specifying the column name for DTE
+#' adjusted p-values. Default is \code{"padj"}.
 #'
-#' @param dou_padj_threshold Numeric threshold for DOU LFSR significance.
-#'     Default is \code{0.05}.
+#' @param dou_signif_thresh Numeric threshold for DOU LFSR significance.
+#' Default is \code{0.05}.
 #'
-#' @param dte_padj_threshold Numeric threshold for DTE adjusted p-value
-#'     significance. Default is \code{0.05}.
+#' @param dte_signif_thresh Numeric threshold for DTE adjusted p-value
+#' significance. Default is \code{0.05}.
 #'
 #' @return A Venn diagram (Euler plot) showing the number of ORFs 
-#'     significant in DTE only, DOU only, or both.
+#' significant in DTE only, DOU only, or both.
 #'
 #' @details
 #' Significance is determined using a threshold of 0.05 on the adjusted
@@ -260,10 +261,10 @@ plot_orf_usage <- function(
 #'
 plot_venn <- function(
         results,
-        dou_padj_col = "lfsr",
-        dte_padj_col = "padj",
-        dou_padj_threshold = 0.05,
-        dte_padj_threshold = 0.05
+        dou_signif_col = "lfsr",
+        dte_signif_col = "padj",
+        dou_signif_thresh = 0.05,
+        dte_signif_thresh = 0.05
 ) {
     
     if (!requireNamespace("eulerr", quietly=TRUE)) {
@@ -273,19 +274,19 @@ plot_venn <- function(
         )
     }
     
-    padj_sig <- !is.na(results[[dte_padj_col]]) &
-        results[[dte_padj_col]] < dte_padj_threshold
-    fdr_sig <- !is.na(results[[dou_padj_col]]) &
-        results[[dou_padj_col]] < dou_padj_threshold
+    signif_sig <- !is.na(results[[dte_signif_col]]) &
+        results[[dte_signif_col]] < dte_signif_thresh
+    fdr_sig <- !is.na(results[[dou_signif_col]]) &
+        results[[dou_signif_col]] < dou_signif_thresh
     
-    padj_set <- rownames(results)[padj_sig]
+    signif_set <- rownames(results)[signif_sig]
     fdr_set <- rownames(results)[fdr_sig]
     
     # Create Euler fit
     fit <- eulerr::euler(c(
-        "DTE" = length(setdiff(padj_set, fdr_set)),
-        "DOU" = length(setdiff(fdr_set, padj_set)),
-        "DTE&DOU" = length(intersect(padj_set, fdr_set))
+        "DTE" = length(setdiff(signif_set, fdr_set)),
+        "DOU" = length(setdiff(fdr_set, signif_set)),
+        "DTE&DOU" = length(intersect(signif_set, fdr_set))
     ))
     
     # Define color-blind friendly palette
@@ -321,83 +322,83 @@ plot_venn <- function(
 #' signals across ORFs.
 #'
 #' @param results A data frame containing DTE and DOU post hoc
-#'     contrast results. Must include columns for DTE and DOU
-#'     estimates and their significance values.
+#' contrast results. Must include columns for DTE and DOU
+#' estimates and their significance values.
 #'
 #' @param rowdata Optional data frame containing ORF metadata,
-#'     with row names corresponding to \code{orf_id}. Must
-#'     include an \code{orf_type} column with values "uORF",
-#'     "mORF", or "dORF" if \code{color_by = "orf_type"}.
+#' with row names corresponding to \code{orf_id}. Must
+#' include an \code{orf_type} column with values "uORF",
+#' "mORF", or "dORF" if \code{color_by = "orf_type"}.
 #'
 #' @param color_by Character string specifying how to color
-#'     points:
-#'     \itemize{
-#'         \item{\code{"significance"}: Colors by DTE-only,
-#'         DOU-only, both significant}
-#'         \item{\code{"orf_type"}: Colors by ORF type (requires
-#'         \code{rowdata})}
-#'     }
-#'     Default is \code{"significance"}.
+#' points:
+#' \itemize{
+#'     \item{\code{"significance"}: Colors by DTE-only,
+#'     DOU-only, both significant}
+#'     \item{\code{"orf_type"}: Colors by ORF type (requires
+#'     \code{rowdata})}
+#' }
+#' Default is \code{"significance"}.
 #'
 #' @param marginal_plot_type Character string specifying the
-#'     type of marginal plot: \code{"histogram"} or \code{"density"}. 
-#'     Default is \code{"density"}.
+#' type of marginal plot: \code{"histogram"} or \code{"density"}. 
+#' Default is \code{"density"}.
 #'
 #' @param dou_estimates_col Column name for DOU posterior
-#'     estimates. Default is \code{"PosteriorMean"}.
+#' estimates. Default is \code{"posterior"}.
 #'
-#' @param dou_padj_col Column name for DOU significance values
-#'     (e.g., local false sign rate). Default is \code{"lfsr"}.
+#' @param dou_signif_col Column name for DOU significance values
+#' (e.g., local false sign rate). Default is \code{"lfsr"}.
 #'
 #' @param dte_estimates_col Column name for DTE estimates
-#'     (e.g., log2 fold-change). Default is \code{"log2FoldChange"}.
+#' (e.g., log2 fold-change). Default is \code{"log2FoldChange"}.
 #'
-#' @param dte_padj_col Column name for DTE adjusted p-values.
-#'     Default is \code{"padj"}.
+#' @param dte_signif_col Column name for DTE adjusted p-values.
+#' Default is \code{"padj"}.
 #'
-#' @param dou_padj_threshold Numeric threshold for DOU significance. 
-#'     Default is \code{0.05}.
+#' @param dou_signif_thresh Numeric threshold for DOU significance. 
+#' Default is \code{0.05}.
 #'
-#' @param dte_padj_threshold Numeric threshold for DTE significance. 
-#'     Default is \code{0.05}.
+#' @param dte_signif_thresh Numeric threshold for DTE significance. 
+#' Default is \code{0.05}.
 #'
 #' @param flip_sign Logical; if \code{TRUE}, flips the sign of
-#'     DOU estimates to align directionality with DTE. Default
-#'     is \code{FALSE}.
+#' DOU estimates to align directionality with DTE. Default
+#' is \code{FALSE}.
 #'
 #' @param lhist Integer; number of bins for marginal histograms.
-#'     Default is \code{20}.
+#' Default is \code{20}.
 #'
 #' @param colors A named list of colors used for plotting. Must include:
-#'     \itemize{
-#'         \item{\code{dte}, \code{dou}, \code{both},
-#'         \code{none}: for significance-based coloring}
-#'         \item{\code{uorf}, \code{morf}, \code{dorf}: for ORF
-#'         type-based coloring}
-#'     }
-#'     Each value should be a valid color string or result of
-#'     \code{adjustcolor()}.
-#'     
+#' \itemize{
+#'     \item{\code{dte}, \code{dou}, \code{both},
+#'     \code{none}: for significance-based coloring}
+#'     \item{\code{uorf}, \code{morf}, \code{dorf}: for ORF
+#'     type-based coloring}
+#' }
+#' Each value should be a valid color string or result of
+#' \code{adjustcolor()}.
+#' 
 #' @param legend_position Position of the legend. Options include
-#'     \code{"bottomright"}, \code{"bottom"}, \code{"bottomleft"},
-#'     \code{"left"}, \code{"topleft"}, \code{"top"},
-#'     \code{"topright"}, \code{"right"}, \code{"center"}.
-#'     
+#' \code{"bottomright"}, \code{"bottom"}, \code{"bottomleft"},
+#' \code{"left"}, \code{"topleft"}, \code{"top"},
+#' \code{"topright"}, \code{"right"}, \code{"center"}.
+#' 
 #' @return A composite plot consisting of:
-#'     \describe{
-#'         \item{Scatter plot}{
-#'             Displays DTE (log2 fold-change) vs DOU
-#'             (log-odds change) estimates, colored by
-#'             significance or ORF type.
-#'         }
-#'         \item{Marginal plots}{
-#'             Show the distribution of DTE and DOU estimates
-#'             along the top and right margins, using either
-#'             histograms or density curves.
-#'         }
+#' \describe{
+#'     \item{Scatter plot}{
+#'         Displays DTE (log2 fold-change) vs DOU
+#'         (log-odds change) estimates, colored by
+#'         significance or ORF type.
 #'     }
-#'     Additionally, the function returns the Spearman correlation 
-#'     between DTE and DOU estimates.
+#'     \item{Marginal plots}{
+#'         Show the distribution of DTE and DOU estimates
+#'         along the top and right margins, using either
+#'         histograms or density curves.
+#'     }
+#' }
+#' Additionally, the function returns the Spearman correlation 
+#' between DTE and DOU estimates.
 #'
 #' @details
 #' The function uses base R graphics and a custom layout matrix to 
@@ -417,12 +418,12 @@ plot_composite <- function(
         rowdata = NULL,
         color_by = c("significance", "orf_type"),
         marginal_plot_type = c("histogram", "density"),
-        dou_estimates_col = "PosteriorMean",
-        dou_padj_col = "lfsr",
+        dou_estimates_col = "posterior",
+        dou_signif_col = "lfsr",
         dte_estimates_col = "log2FoldChange",
-        dte_padj_col = "padj",
-        dou_padj_threshold = 0.05,
-        dte_padj_threshold = 0.05,
+        dte_signif_col = "padj",
+        dou_signif_thresh = 0.05,
+        dte_signif_thresh = 0.05,
         flip_sign = FALSE,
         lhist = 20,
         colors = list(
@@ -461,13 +462,13 @@ plot_composite <- function(
     results <- na.omit(results)
     
     # Significance flags
-    padj_sig <- !is.na(results[[dte_padj_col]]) & 
-        results[[dte_padj_col]] < dte_padj_threshold
-    fdr_sig <- !is.na(results[[dou_padj_col]]) & 
-        results[[dou_padj_col]] < dou_padj_threshold
-    both_sig <- padj_sig & fdr_sig
-    padj_only <- padj_sig & !fdr_sig
-    fdr_only <- fdr_sig & !padj_sig
+    signif_sig <- !is.na(results[[dte_signif_col]]) & 
+        results[[dte_signif_col]] < dte_signif_thresh
+    fdr_sig <- !is.na(results[[dou_signif_col]]) & 
+        results[[dou_signif_col]] < dou_signif_thresh
+    both_sig <- signif_sig & fdr_sig
+    signif_only <- signif_sig & !fdr_sig
+    fdr_only <- fdr_sig & !signif_sig
     
     # Colors
     col_dte <- colors$dte
@@ -581,8 +582,8 @@ plot_composite <- function(
     
     if (color_by == "significance") {
         points(
-            results[[dte_estimates_col]][padj_only], 
-            results[[dou_estimates_col]][padj_only], 
+            results[[dte_estimates_col]][signif_only], 
+            results[[dou_estimates_col]][signif_only], 
             col = col_dte
         )
         points(
@@ -653,91 +654,91 @@ plot_composite <- function(
 #' local false sign rate (LFSR). Points can be colored either by 
 #' significance in DTE/DOU or by ORF type (uORF, mORF, dORF). Optional 
 #' gene labeling is supported via an ID mapping table. The y-axis is 
-#' capped at the nearest multiple of \code{dou_padj_ceiling} for 
+#' capped at the nearest multiple of \code{dou_signif_ceil} for 
 #' cleaner plotting.
 #'
 #' @param results A data frame containing DOU and optionally DTE
-#'     results. Must include columns for DOU estimates and LFSR.
-#'     If \code{color_by = "orf_type"}, must also include an
-#'     \code{orf_type} column with values "uORF", "mORF", or "dORF".
+#' results. Must include columns for DOU estimates and LFSR.
+#' If \code{color_by = "orf_type"}, must also include an
+#' \code{orf_type} column with values "uORF", "mORF", or "dORF".
 #'
 #' @param rowdata Optional data frame containing ORF metadata,
-#'     with row names corresponding to \code{orf_id}. Used to
-#'     merge ORF type information.
+#' with row names corresponding to \code{orf_id}. Used to
+#' merge ORF type information.
 #'
 #' @param id_mapping Optional data frame with gene symbols. Used
-#'     to label points with gene symbols. Must include
-#'     \code{ensembl_gene_id} and symbol columns.
+#' to label points with gene symbols. Must include
+#' \code{ensembl_gene_id} and symbol columns.
 #'
 #' @param color_by Character string specifying how to color points:
-#'     \itemize{
-#'         \item{\code{"significance"}: Colors by DTE-only,
-#'         DOU-only, both significant}
-#'         \item{\code{"orf_type"}: Colors by ORF type (requires
-#'         \code{orf_type} column)}
-#'     }
-#'     Default is \code{"significance"}.
+#' \itemize{
+#'     \item{\code{"significance"}: Colors by DTE-only,
+#'     DOU-only, both significant}
+#'     \item{\code{"orf_type"}: Colors by ORF type (requires
+#'     \code{orf_type} column)}
+#' }
+#' Default is \code{"significance"}.
 #'
 #' @param dou_estimates_col Column name for DOU effect size estimates. 
-#'     Default is \code{"PosteriorMean"}.
+#' Default is \code{"posterior"}.
 #'
-#' @param dou_padj_col Column name for DOU significance values (LFSR). 
-#'     Default is \code{"lfsr"}.
+#' @param dou_signif_col Column name for DOU significance values (LFSR). 
+#' Default is \code{"lfsr"}.
 #'
 #' @param dte_estimates_col Column name for DTE effect size estimates. 
-#'     Default is \code{"log2FoldChange"}.
+#' Default is \code{"log2FoldChange"}.
 #'
-#' @param dte_padj_col Column name for DTE adjusted p-values.
-#'     Default is \code{"padj"}.
-#'     
-#' @param dte_padj_threshold Numeric threshold for DTE adjusted p-value
-#'     significance. Default is \code{0.05}.
-#'     
+#' @param dte_signif_col Column name for DTE adjusted p-values.
+#' Default is \code{"padj"}.
+#' 
+#' @param dte_signif_thresh Numeric threshold for DTE adjusted p-value
+#' significance. Default is \code{0.05}.
+#' 
 #' @param flip_sign Logical. If \code{TRUE}, flips the sign of DOU 
-#'     estimates for plotting. Default is \code{FALSE}.
+#' estimates for plotting. Default is \code{FALSE}.
 #'
-#' @param dou_estimates_threshold Numeric threshold for DOU
-#'     effect size significance. Default is \code{1}.
+#' @param dou_estimates_thresh Numeric threshold for DOU
+#' effect size significance. Default is \code{1}.
 #'
-#' @param dou_padj_threshold Numeric threshold for DOU LFSR significance.
-#'     Default is \code{0.05}.
+#' @param dou_signif_thresh Numeric threshold for DOU LFSR significance.
+#' Default is \code{0.05}.
 #'
-#' @param dou_padj_ceiling Numeric value to define the rounding ceiling
-#'     for -log10(LFSR). The maximum y-axis value will be rounded up 
-#'     to the nearest multiple of this value. Default is \code{10}.
+#' @param dou_signif_ceil Numeric value to define the rounding ceiling
+#' for -log10(LFSR). The maximum y-axis value will be rounded up 
+#' to the nearest multiple of this value. Default is \code{10}.
 #'
-#' @param dte_padj_threshold Numeric threshold for DTE adjusted
-#'     p-value significance. Default is \code{0.05}.
+#' @param dte_signif_thresh Numeric threshold for DTE adjusted
+#' p-value significance. Default is \code{0.05}.
 #'
-#' @param extreme_threshold Optional numeric threshold for
-#'     labeling extreme points based on -log10(LFSR).
+#' @param extreme_thresh Optional numeric threshold for
+#' labeling extreme points based on -log10(LFSR).
 #'
-#' @param label_topn Optional numeric. If provided, labels the
-#'     top N most significant points.
+#' @param top_hits Optional numeric. If provided, labels the
+#' top N most significant points.
 #'
 #' @param legend_position Position of the legend. Options include
-#'     \code{"bottomright"}, \code{"bottom"}, \code{"bottomleft"},
-#'     \code{"left"}, \code{"topleft"}, \code{"top"},
-#'     \code{"topright"}, \code{"right"}, \code{"center"}.
+#' \code{"bottomright"}, \code{"bottom"}, \code{"bottomleft"},
+#' \code{"left"}, \code{"topleft"}, \code{"top"},
+#' \code{"topright"}, \code{"right"}, \code{"center"}.
 #'
 #' @param colors A named list of colors used for plotting. Must
-#'     include:
-#'     \itemize{
-#'         \item{\code{dte}, \code{dou}, \code{both},
-#'         \code{none}: for significance-based coloring}
-#'         \item{\code{uorf}, \code{morf}, \code{dorf}: for ORF
-#'         type-based coloring}
-#'     }
-#'     Each value should be a valid color string or result of
-#'     \code{adjustcolor()}.
+#' include:
+#' \itemize{
+#'     \item{\code{dte}, \code{dou}, \code{both},
+#'     \code{none}: for significance-based coloring}
+#'     \item{\code{uorf}, \code{morf}, \code{dorf}: for ORF
+#'     type-based coloring}
+#' }
+#' Each value should be a valid color string or result of
+#' \code{adjustcolor()}.
 #'
 #' @param verbose Logical. If \code{TRUE}, prints messages about
-#'     plot scaling and thresholds. Default is \code{TRUE}.
+#' plot scaling and thresholds. Default is \code{TRUE}.
 #'
 #' @return A volcano plot is displayed in a new graphics device.
-#'     Points are colored by significance or ORF type, depending
-#'     on the \code{color_by} argument. Optionally, top or
-#'     extreme points are labeled.
+#' Points are colored by significance or ORF type, depending
+#' on the \code{color_by} argument. Optionally, top or
+#' extreme points are labeled.
 #'
 #' @importFrom graphics plot points abline legend text
 #' @importFrom grDevices adjustcolor
@@ -750,17 +751,17 @@ plot_volcano <- function(
         rowdata = NULL,
         id_mapping = NULL,
         color_by = c("significance", "orf_type"),
-        dou_estimates_col = "PosteriorMean",
-        dou_padj_col = "lfsr",
+        dou_estimates_col = "posterior",
+        dou_signif_col = "lfsr",
         dte_estimates_col = "log2FoldChange",
-        dte_padj_col = "padj",
-        dte_padj_threshold = 0.05,
+        dte_signif_col = "padj",
+        dte_signif_thresh = 0.05,
         flip_sign = FALSE,
-        dou_estimates_threshold = 1,
-        dou_padj_threshold = 0.05,
-        dou_padj_ceiling = 10,
-        extreme_threshold = NULL,
-        label_topn = NULL,
+        dou_estimates_thresh = 1,
+        dou_signif_thresh = 0.05,
+        dou_signif_ceil = 10,
+        extreme_thresh = NULL,
+        top_hits = NULL,
         legend_position = "topright",
         colors = list(
             dte = adjustcolor("#0072B2", alpha.f = 0.6),
@@ -796,22 +797,22 @@ plot_volcano <- function(
         results[[dou_estimates_col]] <- results[[dou_estimates_col]] * -1
     }
     
-    results$loglfsr <- -log10(results[[dou_padj_col]])
-    loglfsr_ceiling <- ceiling(
+    results$loglfsr <- -log10(results[[dou_signif_col]])
+    loglfsr_ceil <- ceiling(
         max(
             results$loglfsr[is.finite(results$loglfsr)], 
             na.rm = TRUE
-        ) / dou_padj_ceiling
-    ) * dou_padj_ceiling
+        ) / dou_signif_ceil
+    ) * dou_signif_ceil
     
     if (verbose) {
         message(
-            "capping volcano plot y-axis at -log10(", dou_padj_col, ") = ", 
-            loglfsr_ceiling
+            "capping volcano plot y-axis at -log10(", dou_signif_col, ") = ", 
+            loglfsr_ceil
         )
     }
     
-    results$loglfsr[results$loglfsr > loglfsr_ceiling] <- loglfsr_ceiling
+    results$loglfsr[results$loglfsr > loglfsr_ceil] <- loglfsr_ceil
     
     ylim_max <- max(results$loglfsr, na.rm = TRUE) * 1.1
     ylim_min <- 0
@@ -823,13 +824,13 @@ plot_volcano <- function(
     par(mfrow = c(1, 1), mar = c(5, 4, 2, 2) + 0.1, fig = c(0, 1, 0, 1))
     
     if (color_by == "significance") {
-        padj_sig <- !is.na(results[[dte_padj_col]]) & 
-            results[[dte_padj_col]] < dte_padj_threshold
-        fdr_sig <- !is.na(results[[dou_padj_col]]) & 
-            results[[dou_padj_col]] < dou_padj_threshold
-        both_sig <- padj_sig & fdr_sig
-        padj_only <- padj_sig & !fdr_sig
-        fdr_only <- fdr_sig & !padj_sig
+        signif_sig <- !is.na(results[[dte_signif_col]]) & 
+            results[[dte_signif_col]] < dte_signif_thresh
+        fdr_sig <- !is.na(results[[dou_signif_col]]) & 
+            results[[dou_signif_col]] < dou_signif_thresh
+        both_sig <- signif_sig & fdr_sig
+        signif_only <- signif_sig & !fdr_sig
+        fdr_only <- fdr_sig & !signif_sig
         col_dte <- colors$dte
         col_dou <- colors$dou
         col_both <- colors$both
@@ -847,8 +848,8 @@ plot_volcano <- function(
         )
         
         points(
-            results[[dou_estimates_col]][padj_only], 
-            results$loglfsr[padj_only], 
+            results[[dou_estimates_col]][signif_only], 
+            results$loglfsr[signif_only], 
             col = col_dte
         )
         points(
@@ -914,12 +915,12 @@ plot_volcano <- function(
     }
     
     # Labeling
-    if (!is.null(extreme_threshold)) {
-        idx_to_label <- which(results$loglfsr > extreme_threshold)
-    } else if (is.numeric(label_topn)) {
+    if (!is.null(extreme_thresh)) {
+        idx_to_label <- which(results$loglfsr > extreme_thresh)
+    } else if (is.numeric(top_hits)) {
         idx_to_label <- head(
             order(results$loglfsr, decreasing = TRUE), 
-            label_topn
+            top_hits
         )
     } else {
         idx_to_label <- NULL
@@ -948,9 +949,9 @@ plot_volcano <- function(
         )
     }
     
-    abline(h = -log10(dou_padj_threshold), col = "black", lty = 2)
+    abline(h = -log10(dou_signif_thresh), col = "black", lty = 2)
     abline(
-        v = c(-dou_estimates_threshold, dou_estimates_threshold), 
+        v = c(-dou_estimates_thresh, dou_estimates_thresh), 
         col = "black", 
         lty = 2
     )
@@ -968,79 +969,79 @@ plot_volcano <- function(
 #' based on DOU profiles, and retrieves gene symbols for labeling.
 #'
 #' @param results A data frame from \code{testDOT} containing DOU estimates
-#'     and significance values. Must include columns for ORF IDs, gene IDs,
-#'     effect size estimates, and LFSR values.
+#' and significance values. Must include columns for ORF IDs, gene IDs,
+#' effect size estimates, and LFSR values.
 #'
 #' @param rowdata A data frame containing ORF-level metadata, including ORF
-#'     type (e.g., mORF, uORF).
+#' type (e.g., mORF, uORF).
 #'
 #' @param id_mapping Optional data frame with gene symbols (e.g., from 
-#'     biomaRt). Used to label heatmap rows with gene symbols.
+#' biomaRt). Used to label heatmap rows with gene symbols.
 #'
 #' @param estimates_col Character string specifying the column name for DOU
-#'     effect size estimates. Default is \code{"PosteriorMean"}.
-#'     
-#' @param estimates_threshold Numeric threshold for effect size.
-#'     Default is \code{1}.
-#'     
-#' @param padj_col Character string specifying the column name for 
-#'     significance values (LFSR). Default is \code{"lfsr"}.
+#' effect size estimates. Default is \code{"posterior"}.
+#' 
+#' @param estimates_thresh Numeric threshold for effect size.
+#' Default is \code{1}.
+#' 
+#' @param signif_col Character string specifying the column name for 
+#' significance values (LFSR). Default is \code{"lfsr"}.
 #'
-#' @param padj_threshold Numeric threshold for filtering significant ORFs
-#'     based on LFSR. Default is \code{0.05}.
-#'     
-#' @param ranking_method Character string specifying how genes should be 
-#'   ranked for visualization. Options are:
-#'   - `"score"`: ranks genes by a composite score defined as 
-#'     `abs(effect size) × (1 - lfsr)`, which prioritizes genes with large 
-#'     and confident differential ORF usage.
-#'   - `"significance"`: ranks genes by the median significance values 
-#'     across ORFs, prioritizing statistical confidence regardless of 
-#'     effect size. Default is `"significance"`.
-#'   
-#' @param top_genes Optional numeric. If specified, limits the heatmap to the
-#'     top N genes ranked by effect size magnitude and significance.
+#' @param signif_thresh Numeric threshold for filtering significant ORFs
+#' based on LFSR. Default is \code{0.05}.
+#' 
+#' @param rank_by Character string specifying how genes should be 
+#' ranked for visualization. Options are:
+#' - `"score"`: ranks genes by a composite score defined as 
+#' `abs(effect size) × (1 - lfsr)`, which prioritizes genes with large 
+#' and confident differential ORF usage.
+#' - `"significance"`: ranks genes by the median significance values 
+#' across ORFs, prioritizing statistical confidence regardless of 
+#' effect size. Default is `"significance"`.
+#' 
+#' @param top_hits Optional numeric. If specified, limits the heatmap to the
+#' top N genes ranked by effect size magnitude and significance.
 #'
 #' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU estimates
-#'     to align directionality with differential translation.
-#'     Default is \code{TRUE}.
+#' to align directionality with differential translation.
+#' Default is \code{TRUE}.
 #'
 #' @param sorf_type Character string specifying the short ORF type to compare
-#'     with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.
-#'     Default is \code{"uORF"}.
+#' with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.
+#' Default is \code{"uORF"}.
 #' @param colors A named list of three colors for heatmap gradient:
-#'     \itemize{
-#'         \item{\code{low}: color for low values (e.g., "blue")}
-#'         \item{\code{middle}: color for mid values (e.g., "white")}
-#'         \item{\code{high}: color for high values (e.g., "red")}
-#'     }
-#'     
+#' \itemize{
+#'     \item{\code{low}: color for low values (e.g., "blue")}
+#'     \item{\code{middle}: color for mid values (e.g., "white")}
+#'     \item{\code{high}: color for high values (e.g., "red")}
+#' }
+#' 
 #' @return A list containing:
-#'     \describe{
-#'         \item{ordered_matrix}{
-#'             Matrix of DOU estimates for significant genes, ordered by
-#'             hierarchical clustering.
-#'         }
-#'         \item{row_dend_clean}{
-#'             Dendrogram object for clustered gene rows.
-#'         }
-#'         \item{highlight_df}{
-#'             Data frame indicating which ORF-gene tiles to highlight in
-#'             the heatmap.
-#'         }
-#'         \item{gene_labels}{
-#'             Vector of gene symbols or Ensembl IDs for heatmap row labeling.
-#'         }
-#'         \item{color_palette}{
-#'             Color palette used for heatmap visualization.
-#'         }
-#'         \item{color_breaks}{
-#'             Breaks used for color scaling in the heatmap.
-#'         }
-#'         \item{abs_max}{
-#'             Maximum absolute value used for symmetric color scaling.
-#'         }
+#' \describe{
+#'     \item{ordered_matrix}{
+#'         Matrix of DOU estimates for significant genes, ordered by
+#'         hierarchical clustering.
 #'     }
+#'     \item{row_dend_clean}{
+#'         Dendrogram object for clustered gene rows.
+#'     }
+#'     \item{highlight_df}{
+#'         Data frame indicating which ORF-gene tiles to highlight in
+#'         the heatmap.
+#'     }
+#'     \item{gene_labels}{
+#'         Vector of gene symbols or Ensembl IDs for heatmap row labeling.
+#'     }
+#'     \item{color_palette}{
+#'         Color palette used for heatmap visualization.
+#'     }
+#'     \item{color_breaks}{
+#'         Breaks used for color scaling in the heatmap.
+#'     }
+#'     \item{abs_max}{
+#'         Maximum absolute value used for symmetric color scaling.
+#'     }
+#' }
 #'
 #' @details
 #' This function supports visualization of differential ribosome loading
@@ -1061,12 +1062,12 @@ cistronic_data <- function(
         results,
         rowdata,
         id_mapping = NULL,
-        estimates_col = "PosteriorMean",
-        estimates_threshold = 1,
-        padj_col = "lfsr",
-        padj_threshold = 0.05,
-        ranking_method = "significance",
-        top_genes = NULL,
+        estimates_col = "posterior",
+        estimates_thresh = 1,
+        signif_col = "lfsr",
+        signif_thresh = 0.05,
+        rank_by = "significance",
+        top_hits = NULL,
         flip_sign = FALSE,
         sorf_type = "uORF",
         colors = list(
@@ -1079,7 +1080,7 @@ cistronic_data <- function(
     results <- na.omit(results)
     results$gene_id <- sub("\\..*", "", results$orf_id)
     
-    sig_genes <- results[results[[padj_col]] < padj_threshold, ]$gene_id
+    sig_genes <- results[results[[signif_col]] < signif_thresh, ]$gene_id
     sig_res <- results[results$gene_id %in% sig_genes, ]
     
     rowdata$DOUResults <- NULL
@@ -1090,19 +1091,19 @@ cistronic_data <- function(
         "gene_id",
         "orf_type",
         estimates_col,
-        padj_col
+        signif_col
     )]
     sig_res <- sig_res[sig_res$orf_type %in% c("mORF", sorf_type), ]
     
-    sig_res$capped_lfsr <- pmax(sig_res[[padj_col]], .Machine$double.eps)
+    sig_res$capped_lfsr <- pmax(sig_res[[signif_col]], .Machine$double.eps)
 
-    if (ranking_method == "score") {
+    if (rank_by == "score") {
         gene_scores <- aggregate(
             abs(sig_res[[estimates_col]]) * (1 - sig_res$capped_lfsr) ~ 
                 sig_res$gene_id,
             FUN = median
         )
-    } else if (ranking_method == "significance") {
+    } else if (rank_by == "significance") {
         gene_scores <- aggregate(
             sig_res$capped_lfsr ~ sig_res$gene_id,
             FUN = median
@@ -1135,14 +1136,14 @@ cistronic_data <- function(
     sig_mat <- sig_mat[order(sig_mat$score, decreasing = TRUE), ]
     rownames(sig_mat) <- sig_mat$gene_id
     
-    if (is.numeric(top_genes)) {
+    if (is.numeric(top_hits)) {
         sig_filt <- sig_mat[
-            (abs(sig_mat[[sorf_type]]) > estimates_threshold) & (abs(sig_mat$mORF) > estimates_threshold), 
+            (abs(sig_mat[[sorf_type]]) > estimates_thresh) & (abs(sig_mat$mORF) > estimates_thresh), 
         ]
-        if (nrow(sig_filt) > top_genes) {
-            sig_mat <- head(sig_filt, top_genes)
+        if (nrow(sig_filt) > top_hits) {
+            sig_mat <- head(sig_filt, top_hits)
         } else {
-            sig_mat <- head(sig_mat, top_genes)
+            sig_mat <- head(sig_mat, top_hits)
         }
     }
     
@@ -1222,33 +1223,33 @@ cistronic_data <- function(
 #' passed via a named list produced by \code{cistronic_data()}.
 #'
 #' @param paired_data A named list containing heatmap data and metadata,
-#'     typically the output from \code{cistronic_data()}. Must include the
-#'     following elements:
-#'     \describe{
-#'         \item{ordered_matrix}{
-#'             Matrix of DOU estimates for significant genes, ordered by
-#'             hierarchical clustering.
-#'         }
-#'         \item{row_dend_clean}{
-#'             Dendrogram object for clustered gene rows.
-#'         }
-#'         \item{highlight_df}{
-#'             Data frame indicating which ORF-gene tiles to highlight in
-#'             the heatmap.
-#'         }
-#'         \item{gene_labels}{
-#'             Vector of gene symbols or Ensembl IDs for heatmap row labeling.
-#'         }
-#'         \item{color_palette}{
-#'             Color palette used for heatmap visualization.
-#'         }
-#'         \item{color_breaks}{
-#'             Breaks used for color scaling in the heatmap.
-#'         }
-#'         \item{abs_max}{
-#'             Maximum absolute value used for symmetric color scaling.
-#'         }
+#' typically the output from \code{cistronic_data()}. Must include the
+#' following elements:
+#' \describe{
+#'     \item{ordered_matrix}{
+#'         Matrix of DOU estimates for significant genes, ordered by
+#'         hierarchical clustering.
 #'     }
+#'     \item{row_dend_clean}{
+#'         Dendrogram object for clustered gene rows.
+#'     }
+#'     \item{highlight_df}{
+#'         Data frame indicating which ORF-gene tiles to highlight in
+#'         the heatmap.
+#'     }
+#'     \item{gene_labels}{
+#'         Vector of gene symbols or Ensembl IDs for heatmap row labeling.
+#'     }
+#'     \item{color_palette}{
+#'         Color palette used for heatmap visualization.
+#'     }
+#'     \item{color_breaks}{
+#'         Breaks used for color scaling in the heatmap.
+#'     }
+#'     \item{abs_max}{
+#'         Maximum absolute value used for symmetric color scaling.
+#'     }
+#' }
 #'
 #' @return A heatmap with a dendrogram and color key.
 #'
@@ -1441,154 +1442,118 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' Generate Differential ORF Translation (DOT) Visualization Suite
 #'
 #' @description
-#' Generates a comprehensive suite of visualizations to explore 
-#' Differential ORF Usage (DOU) and Translation Efficiency (DTE) results 
-#' This includes Venn diagrams, volcano plots, composite scatter plots 
-#' with marginal distributions, and heatmaps. It integrates Ensembl gene 
-#' symbols and highlights significant ORFs based on empirical Bayes 
-#' shrinkage (via the \code{\link[ashr]{ash}} package). It is designed 
-#' to provide an overview of translation-specific changes across conditions.
-#'
-#' @seealso \code{\link{DOTSeq}}
-#'
-#' @param plot_type A single string specifying the type of plot to generate.
-#'     Options include \code{"venn"}, \code{"composite"}, \code{"volcano"},
-#'     \code{"heatmap"}, and \code{"usage"}. Default is \code{"volcano"}.
-#'     
-#' @param color_by Character string specifying how to color
-#'     points:
-#'     \itemize{
-#'         \item{\code{"significance"}: Colors by DTE-only,
-#'         DOU-only, both significant}
-#'         \item{\code{"orf_type"}: Colors by ORF type (requires
-#'         \code{rowdata})}
-#'     }
-#'     Default is \code{"significance"}.
-#'         
-#' @param results Required for plotting \code{"venn"}, \code{"composite"}, 
-#'     \code{"volcano"}, and \code{"heatmap"}. A data frame containing 
-#'     DOU and DTE estimates and significance values. Must include 
-#'     ORF-level identifiers and columns specified by 
-#'     \code{dou_estimates_col}, \code{dou_padj_col}, 
-#'     \code{dte_estimates_col}, and \code{dte_padj_col}. Default is 
-#'     \code{NULL}.
-#'
-#' @param dou Required for plotting \code{"usage"}. A 
-#'     \code{\link{DOTSeqDataSet}} object containing `emmGrid` objects 
-#'     stored in \code{rowData(dou)[['DOUResults']]}. It should  
-#'     also contain post hoc results stored in the 
-#'     \code{\link{interactionResults}} slot. Default is \code{NULL}.
-#'
-#' @param rowdata Optional data frame containing ORF information,
-#'     with row names corresponding to \code{orf_id}. Typically 
-#'     extracted from a `SummarizedExperiment` object. Must include
-#'     an \code{orf_type} column with values "uORF", "mORF", or "dORF" 
-#'     if \code{color_by = "orf_type"}. Default is \code{NULL}.
-#'
-#' @param id_mapping Optional data frame containing gene symbols for 
-#'     the input Ensembl IDs. Can be generated by providing 
-#'     \code{dou} or \code{rowdata} as input when plotting 
-#'     \code{"volcano"} or \code{"heatmap"}. Once generated, it can be 
-#'     reused for plotting \code{"volcano"}, \code{"heatmap"}, and 
-#'     \code{"usage"} to avoid repeated downloads. Default is \code{NULL}.
-#'
-#' @param include_go Logical; if \code{TRUE}, includes GO annotations
-#'     (\code{go_id}, \code{name_1006}, \code{namespace_1003}) in the 
-#'     \code{id_mapping} output. Default is \code{FALSE}.
-#'     
-#' @param gene_id Required for plotting \code{"usage"}. Character string 
-#'     specifying the gene ID of interest. Default is \code{NULL}.
+#' Generates a suite of visualizations to explore Differential ORF Usage 
+#' (DOU) and Translation Efficiency (DTE) results. Supports volcano 
+#' plots, Venn diagrams, composite scatter plots, heatmaps, and usage 
+#' plots. Integrates Ensembl gene symbols and highlights significant 
+#' ORFs based on empirical Bayes shrinkage (via the \pkg{ashr} package's 
+#' \code{\link[ashr]{ash}} function).
 #' 
-#' @param dou_estimates_col Character string specifying the column name 
-#'     for DOU effect size estimates. Default is \code{"PosteriorMean"}.
-#'     
-#' @param dou_estimates_threshold Numeric threshold for DOU effect size
-#'     significance in volcano plot. Default is \code{1}.
-#'     
-#' @param dou_padj_col Character string specifying the column name for 
-#'     DOU significance values (LFSR). Default is \code{"lfsr"}.
-#'     
-#' @param dou_padj_threshold Numeric threshold for DOU LFSR significance.
-#'     Default is \code{0.05}.
+#' @param plot_type Type of plot to generate. Options include 
+#' \code{"volcano"}, \code{"venn"}, \code{"composite"}, \code{"heatmap"}, 
+#' and \code{"usage"}. Default is \code{"volcano"}.
 #'
-#' @param dou_padj_ceiling Numeric value to define the rounding ceiling 
-#'     for -log10(LFSR). The maximum y-axis value will be rounded up to 
-#'     the nearest multiple of this value. Default is \code{10}.
+#' @param results A data frame containing DOU and DTE estimates and 
+#' significance values. Required for all plots except \code{"usage"}. 
+#' Must include ORF-level identifiers and columns 
+#' specified in \code{dou_params} and \code{dte_params}.
 #'
-#' @param extreme_threshold Optional numeric threshold for labeling 
-#'     extreme points in the volcano plot (based on -log10 LFSR).
-#'     
-#' @param dte_estimates_col Character string specifying the column name 
-#'     for DTE effect size estimates. Default is \code{"log2FoldChange"}.
+#' @param data A \code{\link{DOUData-class}} object required for all
+#' plots except for \code{"venn"}. Should contain \code{DOUResults} in 
+#' \code{rowData()} and post hoc results in the \code{interaction} slot.
 #'
-#' @param dte_padj_col Character string specifying the column name for 
-#'     DTE adjusted p-values. Default is \code{"padj"}.
-#'     
-#' @param dte_padj_threshold Numeric threshold for DTE adjusted
-#'     p-value significance. Default is \code{0.05}.
-#'     
-#' @param label_topn Optional numeric. If specified, labels the top N 
-#'     most significant points in the volcano plot.
+#' @param id_mapping Optional data frame mapping Ensembl IDs to gene 
+#' symbols. Can be reused across plots.
 #'
-#' @param ranking_method Character string specifying how genes should be 
-#'   ranked for visualization on the heatmap. Options are:
-#'   - `"score"`: ranks genes by a composite score defined as 
-#'     `abs(effect size) × (1 - lfsr)`, which prioritizes genes with large 
-#'     and confident differential ORF usage.
-#'   - `"significance"`: ranks genes by the median lfsr across ORFs, prioritizing 
-#'     statistical confidence regardless of effect size.
-#'     Default is `"significance"`.
-#'   
-#' @param top_genes Optional numeric. If specified, limits the heatmap  
-#'     to the top N genes ranked by DOU magnitude and significance.
+#' @param include_go Logical; if \code{TRUE}, includes GO annotations 
+#' in \code{id_mapping}. Default is \code{FALSE}.
 #'
-#' @param sorf_type Character string specifying the short ORF type to 
-#'     compare with mORFs. Accepts \code{"uORF"} or \code{"dORF"}.
+#' @param gene_id Character string specifying the gene ID for usage 
+#' plots. Default is \code{NULL}.
 #'
-#' @param dataset Character string specifying the Ensembl dataset name
-#'     (e.g., \code{"hsapiens_gene_ensembl"}).
+#' @param dou_params A named list of parameters for DOU filtering 
+#' and display:
+#' \itemize{
+#'     \item{\code{est_col}: Column name for DOU effect size (e.g., 
+#'     \code{"posterior"})}
+#'     \item{\code{est_thresh}: Threshold for effect size significance}
+#'     \item{\code{signif_col}: Column name for DOU significance 
+#'     (e.g., \code{"lfsr"})}
+#'     \item{\code{signif_thresh}: Threshold for significance}
+#'     \item{\code{signif_ceil}: Ceiling for -log10 significance 
+#'     axis}
+#'     \item{\code{extreme_thresh}: Optional threshold for labeling 
+#'     extreme points}
+#' }
 #'
-#' @param symbol_col Character string specifying the column name for gene
-#'     symbols in the annotation data. Default is \code{"hgnc_symbol"}.
+#' @param dte_params A named list of parameters for DTE filtering:
+#' \itemize{
+#'     \item{\code{est_col}: Column name for DTE effect size (e.g., 
+#'     \code{"log2FoldChange"})}
+#'     \item{\code{signif_col}: Column name for DTE significance (e.g., 
+#'     \code{"padj"})}
+#'     \item{\code{signif_thresh}: Threshold for significance}
+#' }
 #'
-#' @param mart_source Character string specifying the BioMart source.  
-#'     One of \code{"ensembl"}, \code{"plants"}, \code{"fungi"}, 
-#'     \code{"protists"}, \code{"metazoa"}, or \code{"bacteria"}.
-#'     
-#' @param colors A named list of colors used across plots:
-#'     \itemize{
-#'         \item{\code{dte}, \code{dou}, \code{both}, \code{none}:
-#'         for significance-based coloring}
-#'         \item{\code{uorf}, \code{morf}, \code{dorf}: for ORF
-#'         type-based coloring}
-#'         \item{\code{low}, \code{middle}, \code{high}: for
-#'         heatmap gradient}
-#'         \item{\code{usage}: for condition-specific coloring}
-#'     }
-#'
-#' @param legend_position Character string specifying the
+#' @param plot_params A named list controlling labeling of top hits:
+#' \itemize{
+#'     \item{\code{top_hits}: Number of top hits to label or show in 
+#'     volcano plot and heatmap}
+#'     \item{\code{color_by}:  How to color points. Options:
+#'         \itemize{
+#'             \item{\code{"significance"}: Based on DTE-only, DOU-only, 
+#'             or both}
+#'             \item{\code{"orf_type"}: Based on ORF type (requires 
+#'             \code{rowdata})}
+#'         }
+#'.    }
+#'     \item{\code{rank_by}: Ranking method (\code{"significance"} or 
+#'     \code{"score"})}
+#'     \item{\code{legend_position}: Character string specifying the
 #'     position of the legend in the volcano and composite scatter plots. 
 #'     Options include: \code{"bottomright"}, \code{"bottom"}, 
 #'     \code{"bottomleft"}, \code{"left"}, \code{"topleft"}, 
 #'     \code{"top"}, \code{"topright"}, \code{"right"}, \code{"center"}.
-#'     Default is \code{"topright"}.
-#'     
-#' @param condition_order Optional character vector specifying the order of 
-#'     conditions on the \code{"usage"} plot x-axis.
-#'     
-#' @param flip_sign Logical; if \code{TRUE}, flips the sign of DOU 
-#'     estimates to align directionality with DTE. Default is \code{TRUE}.
-#'     
+#'     Default is \code{"topright"}.}
+#'     \item{\code{order_by}: Optional character vector 
+#'     specifying the order of conditions on the \code{"usage"} 
+#'     plot x-axis.}
+#'     \item{\code{flip_sign}: Logical; if \code{TRUE}, flips the sign of DOU 
+#' estimates to align directionality with DTE. Default is \code{TRUE}.}
+#' }
+#'
+#' @param annotation_params A named list for BioMart annotation:
+#' \itemize{
+#'     \item{\code{sorf_type}: Short ORF type (\code{"uORF"} or 
+#'     \code{"dORF"})}
+#'     \item{\code{dataset}: Ensembl dataset name}
+#'     \item{\code{symbol_col}: Column name for gene symbols}
+#'     \item{\code{mart_source}: BioMart source (\code{"ensembl"}, 
+#'     \code{"plants"}, etc.)}
+#' }
+#'
+#' @param colors A named list of colors used across plots:
+#' \itemize{
+#'     \item{\code{dte}, \code{dou}, \code{both}, \code{none}: for 
+#'     significance-based coloring}
+#'     \item{\code{uorf}, \code{morf}, \code{dorf}: for ORF 
+#'     type-based coloring}
+#'     \item{\code{low}, \code{middle}, \code{high}: for heatmap 
+#'     gradient}
+#'     \item{\code{usage}: for condition-specific coloring}
+#' }
+#' 
 #' @param force_new_device Logical; if \code{TRUE}, detects graphics
-#'     error and resets graphics state unconditionally. 
-#'     Default is \code{TRUE}.
+#' error and resets graphics state unconditionally. 
+#' Default is \code{TRUE}.
 #'
 #' @param verbose Logical; if \code{TRUE}, prints progress messages.
-#'     Default is \code{TRUE}.
+#' Default is \code{TRUE}.
 #'
 #' @return A data frame containing gene symbols retrieved from Ensembl, 
-#'     used for labeling and heatmap visualization.
+#' used for labeling and heatmap visualization.
 #'
+#' @export
 #' @details
 #' This function orchestrates multiple visualization components to 
 #' explore differential translation across ORFs. It uses 
@@ -1602,7 +1567,8 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #'
 #' @importFrom graphics par layout
 #' @importFrom grid grid.newpage grid.draw
-#'
+#' @importFrom utils modifyList
+#' 
 #' @export
 #' @examples
 #' # Example ORF-level results
@@ -1616,32 +1582,18 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #'   padj = c(0.02, 0.01, 0.1)
 #' )
 #'
-#' rowdata_df <- data.frame(
-#'   orf_id = c(
-#'     "ENSG00000139618.19:O001",
-#'     "ENSG00000139618.19:O002",
-#'     "ENSG00000157764.15:O003"
-#'   ),
-#'   gene_id = c(
-#'     "ENSG00000139618.19",
-#'     "ENSG00000139618.19",
-#'     "ENSG00000157764.15"
-#'   ),
-#'   orf_type = c("mORF", "dORF", "mORF")
-#' )
-#'
-#' plotDOT(plot_type = "venn", results = results_df, rowdata = rowdata_df)
+#' plotDOT(plot_type = "venn", results = results_df)
 #'
 #' @references
 #' Durinck S, Spellman P, Birney E, Huber W (2009). Mapping identifiers
 #' for the integration of genomic datasets with the R/Bioconductor
 #' package biomaRt. Nature Protocols, 4, 1184–1191.
-#' \doi{10.1038/nprot.2009.97}
+#' DOI: 10.1038/nprot.2009.97
 #'
 #' Durinck S, Moreau Y, Kasprzyk A, Davis S, De Moor B, Brazma A,
 #' Huber W (2005). BioMart and Bioconductor: a powerful link between
 #' biological databases and microarray data analysis. Bioinformatics,
-#' 21, 3439–3440. \doi{10.1093/bioinformatics/bti525}
+#' 21, 3439–3440. DOI: 10.1093/bioinformatics/bti525
 #'
 #' Larsson J, Gustafsson P (2018). “A Case Study in Fitting
 #' Area-Proportional Euler Diagrams with Ellipses Using eulerr.”
@@ -1651,29 +1603,38 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #'
 plotDOT <- function(
         plot_type = "volcano",
-        color_by = "significance",
         results = NULL,
-        dou = NULL,
-        rowdata = NULL,
+        data = NULL,
         id_mapping = NULL,
         include_go = FALSE,
         gene_id = NULL,
-        dou_estimates_col = "PosteriorMean",
-        dou_estimates_threshold = 1,
-        dou_padj_col = "lfsr",
-        dou_padj_threshold = 0.05,
-        dou_padj_ceiling = 10,
-        extreme_threshold = NULL,
-        dte_estimates_col = "log2FoldChange",
-        dte_padj_col = "padj",
-        dte_padj_threshold = 0.05,
-        label_topn = 3,
-        top_genes = 20,
-        ranking_method = "significance",
-        sorf_type = "uORF",
-        dataset = "hsapiens_gene_ensembl",
-        symbol_col = "hgnc_symbol",
-        mart_source = "ensembl",
+        dou_params = list(
+            est_col = "posterior",
+            est_thresh = 1,
+            signif_col = "lfsr",
+            signif_thresh = 0.05,
+            signif_ceil = 10,
+            extreme_thresh = NULL
+        ),
+        dte_params = list(
+            est_col = "log2FoldChange",
+            signif_col = "padj",
+            signif_thresh = 0.05
+        ),
+        plot_params = list(
+            top_hits = 20,
+            color_by = "significance",
+            rank_by = "significance",
+            legend_position = "topright",
+            order_by = NULL,
+            flip_sign = FALSE
+        ),
+        annotation_params = list(
+            sorf_type = "uORF",
+            dataset = "hsapiens_gene_ensembl",
+            symbol_col = "hgnc_symbol",
+            mart_source = "ensembl"
+        ),
         colors = list(
             dte = adjustcolor("#0072B2", alpha.f = 0.6),
             dou = adjustcolor("#E69F00", alpha.f = 0.6),
@@ -1687,228 +1648,287 @@ plotDOT <- function(
             high = "red",
             usage = "Set2"
         ),
-        legend_position = "topright",
-        condition_order = NULL,
-        flip_sign = FALSE,
         force_new_device = TRUE,
         verbose = TRUE
 ) {
     
+    # Validate plot_types
     valid_types <- c("venn", "composite", "volcano", "heatmap", "usage")
     plot_type <- match.arg(plot_type, choices = valid_types)
     
-    valid_color_by <- c("significance", "orf_type")
-    color_by <- match.arg(color_by, choices = valid_color_by)
     
-    valid_ranking <- c("significance", "score")
-    ranking_method <- match.arg(ranking_method, choices = valid_ranking)
+    # Validate dou_params
+    default_dou_params <- list(
+        est_col = "posterior",
+        est_thresh = 1,
+        signif_col = "lfsr",
+        signif_thresh = 0.05,
+        signif_ceil = 10,
+        extreme_thresh = NULL
+    )
     
-    # Set default marginal_plot_type based on color_by
-    marginal_plot_type <- if (color_by == "significance") "histogram" else "density"
+    valid_dou_params <- list(
+        est_col = c("betahat", "posterior"),
+        signif_col = c("waldpval", "waldpadj", "qvalue", "lfdr", "lfsr")
+    )
+    
+    # Merge defaults with user overrides
+    dou_params <- modifyList(default_dou_params, dou_params)
+    dou_params$est_col <- match.arg(
+        dou_params$est_col, 
+        choices = valid_dou_params$est_col
+    )
+    dou_params$signif_col <- match.arg(
+        dou_params$signif_col, 
+        choices = valid_dou_params$signif_col
+    )
+    
+    
+    # Validate dte_params
+    default_dte_params <- list(
+        est_col = "log2FoldChange",
+        signif_col = "padj",
+        signif_thresh = 0.05
+    )
+    
+    valid_dte_params <- list(
+        signif_col = c("pvalue", "padj")
+    )
+    
+    dte_params$signif_col <- match.arg(
+        dte_params$signif_col, 
+        choices = valid_dte_params$signif_col
+    )
+    
+    
+    # Validate plot_params
+    default_plot_params <- list(
+        top_hits = 20,
+        color_by = "significance",
+        rank_by = "significance",
+        legend_position = "topright",
+        order_by = NULL,
+        flip_sign = FALSE
+    )
+    
+    valid_plot_params <- list(
+        color_by = c("significance", "orf_type"),
+        rank_by = c("significance", "score"),
+        legend_position = c(
+            "bottomright", "bottom", "bottomleft", "left", 
+            "topleft", "top", "topright", "right", "center"
+        )
+    )
+    
+    plot_params <- modifyList(default_plot_params, plot_params)
+    plot_params$color_by <- match.arg(
+        plot_params$color_by, 
+        choices = valid_plot_params$color_by
+    )
+    plot_params$rank_by <- match.arg(
+        plot_params$rank_by, 
+        choices = valid_plot_params$rank_by
+    )
+    plot_params$legend_position <- match.arg(
+        plot_params$legend_position, 
+        choices = valid_plot_params$legend_position
+    )
+    
+    marginal_plot_type <- if (plot_params$color_by == "significance") "histogram" else "density"
+    
+    
+    # Validate annotation_params
+    default_annotation_params <- list(
+        sorf_type = "uORF",
+        dataset = "hsapiens_gene_ensembl",
+        symbol_col = "hgnc_symbol",
+        mart_source = "ensembl"
+    )
+    
+    valid_source <- list(
+        sorf_type = c("uORF", "dORF"),
+        mart_source = c(
+            "ensembl",
+            "plants",
+            "fungi",
+            "protists",
+            "metazoa",
+            "bacteria"
+        )
+    )
+    
+    annotation_params <- modifyList(default_annotation_params, annotation_params)
+    annotation_params$sorf_type <- match.arg(
+        annotation_params$sorf_type, 
+        choices = annotation_params$sorf_type
+    )
+    annotation_params$mart_source <- match.arg(
+        annotation_params$mart_source, 
+        choices = annotation_params$mart_source
+    )
+    
     
     if (!is.null(results)) {
         results <- as.data.frame(results)
+    } else if (plot_type %in% c("venn", "composite", "volcano", "heatmap")) {
+        stop("A results dataframe is required for plotting: ", plot_type)
+    }
+    
+    if (!is.null(data)) {
+        rowdata <- rowData(data)
     } else {
-        if (plot_type %in% c("venn", "composite", "volcano", "heatmap")) {
-            stop("A results dataframe is required for plotting: ", plot_type)
-        }
+        rowdata <- NULL
     }
     
-    if (!is.null(dou) && is.null(rowdata)) {
-        rowdata <- rowData(dou)
-    }
-    
-    # Retrieve gene annotation if needed
-    if (
-        any(c("heatmap", "volcano") %in% plot_type) && is.null(id_mapping)
-    ) {
-        if (verbose) {
-            message("retrieving gene annotation from BioMart")
-        }
-        
-        id_mapping_attempt <- tryCatch(
-            {
-                mapIDs(
-                    ensembl_ids = get_significant_genes(results),
-                    dataset = dataset,
-                    symbol_col = symbol_col,
-                    mart_source = mart_source,
-                    include_go = include_go
-                )
-            },
-            error = function(e) {
-                if (verbose) {
-                    message("Failed to retrieve gene annotation: ", e$message)
-                }
-                NULL
-            }
-        )
+    if (any(c("heatmap", "volcano") %in% plot_type) && is.null(id_mapping)) {
+        if (verbose) message("retrieving gene annotation from BioMart")
+        id_mapping_attempt <- tryCatch({
+            mapIDs(
+                ensembl_ids = get_significant_genes(results),
+                dataset = annotation_params$dataset,
+                symbol_col = annotation_params$symbol_col,
+                mart_source = annotation_params$mart_source,
+                include_go = include_go
+            )
+        }, error = function(e) {
+            if (verbose) message("Failed to retrieve gene annotation: ", e$message)
+            NULL
+        })
         if (!is.null(id_mapping_attempt)) {
             id_mapping <- id_mapping_attempt
         }
     }
     
-    # Venn plot
     if (plot_type == "venn") {
         reset_graphics(function() {
             grid::grid.newpage()
             grid::grid.draw(plot_venn(
                 results = results,
-                dou_padj_col = dou_padj_col,
-                dte_padj_col = dte_padj_col,
-                dou_padj_threshold = dou_padj_threshold,
-                dte_padj_threshold = dte_padj_threshold
+                dou_signif_col = dou_params$signif_col,
+                dte_signif_col = dte_params$signif_col,
+                dou_signif_thresh = dou_params$signif_thresh,
+                dte_signif_thresh = dte_params$signif_thresh
             ))
             if (verbose) message("Venn diagram plotted")
         }, force_new_device = force_new_device)
     }
     
-    # Composite plots
     if (plot_type == "composite") {
-        if ((color_by == "orf_type") && (is.null(rowdata))) {
+        if (plot_params$color_by == "orf_type" && is.null(rowdata)) {
             warning("rowdata is missing; falling back to color_by = 'significance'.")
-            color_by <- "significance"
+            plot_params$color_by <- "significance"
             marginal_plot_type <- "histogram"
         }
         reset_graphics(function() {
             correlation_results <- plot_composite(
                 results = results,
                 rowdata = rowdata,
-                color_by = color_by,
+                color_by = plot_params$color_by,
                 marginal_plot_type = marginal_plot_type,
-                dou_estimates_col = dou_estimates_col,
-                dou_padj_col = dou_padj_col,
-                dte_estimates_col = dte_estimates_col,
-                dte_padj_col = dte_padj_col,
-                flip_sign = flip_sign,
+                dou_estimates_col = dou_params$est_col,
+                dou_signif_col = dou_params$signif_col,
+                dte_estimates_col = dte_params$est_col,
+                dte_signif_col = dte_params$signif_col,
+                flip_sign = plot_params$flip_sign,
                 lhist = 20,
                 colors = colors,
-                legend_position = legend_position
+                legend_position = plot_params$legend_position
             )
-            
             message(
                 "Spearman correlation between DOU and DTE estimates: ",
                 round(correlation_results$estimate[["rho"]], 3),
                 ", p-value: ",
                 format.pval(correlation_results$p.value, digits = 3, eps = 1e-16)
             )
-            
             if (verbose) message("composite plot colored by significance plotted")
         }, force_new_device = force_new_device)
     }
     
-    # Volcano plot
     if (plot_type == "volcano") {
-        if ((color_by == "orf_type") && (is.null(rowdata))) {
+        if (plot_params$color_by == "orf_type" && is.null(rowdata)) {
             warning("rowdata is missing; falling back to color_by = 'significance'.")
-            color_by <- "significance"
+            plot_params$color_by <- "significance"
         }
         reset_graphics(function() {
             plot_volcano(
                 results = results,
                 rowdata = rowdata,
                 id_mapping = id_mapping,
-                color_by = color_by,
-                dou_estimates_col = dou_estimates_col,
-                dou_padj_col = dou_padj_col,
-                dte_estimates_col = dte_estimates_col,
-                dte_padj_col = dte_padj_col,
-                dou_estimates_threshold = dou_estimates_threshold,
-                dou_padj_threshold = dou_padj_threshold,
-                dou_padj_ceiling = dou_padj_ceiling,
-                extreme_threshold = extreme_threshold,
-                label_topn = label_topn,
+                color_by = plot_params$color_by,
+                dou_estimates_col = dou_params$est_col,
+                dou_signif_col = dou_params$signif_col,
+                dte_estimates_col = dte_params$est_col,
+                dte_signif_col = dte_params$signif_col,
+                dou_estimates_thresh = dou_params$est_thresh,
+                dou_signif_thresh = dou_params$signif_thresh,
+                dou_signif_ceil = dou_params$signif_ceil,
+                extreme_thresh = dou_params$extreme_thresh,
+                top_hits = plot_params$top_hits,
                 colors = colors,
-                legend_position = legend_position,
-                verbose = TRUE
+                legend_position = plot_params$legend_position,
+                verbose = verbose
             )
             if (verbose) message("volcano plot colored by significance plotted")
         }, force_new_device = force_new_device)
     }
     
-    # Heatmap plot
     if (plot_type == "heatmap") {
-        if (verbose) {
-            message("plotting heatmap for the top ", top_genes, " DOU genes")
-        }
-        paired_data <- tryCatch(
-            {
-                cistronic_data(
-                    results = results,
-                    rowdata = rowdata,
-                    id_mapping = id_mapping,
-                    estimates_col = dou_estimates_col,
-                    estimates_threshold = dou_estimates_threshold,
-                    padj_col = dou_padj_col,
-                    padj_threshold = dou_padj_threshold,
-                    ranking_method = ranking_method,
-                    flip_sign = flip_sign,
-                    sorf_type = sorf_type,
-                    top_genes = top_genes,
-                    colors = colors
-                )
-            },
-            error = function(e) {
-                if (verbose) {
-                    message("Failed to prepare heatmap data: ", e$message)
-                }
-                NULL
-            }
-        )
+        if (verbose) message("plotting heatmap for the top ", plot_params$top_hits, " DOU genes")
+        paired_data <- tryCatch({
+            cistronic_data(
+                results = results,
+                rowdata = rowdata,
+                id_mapping = id_mapping,
+                estimates_col = dou_params$est_col,
+                estimates_thresh = dou_params$est_thresh,
+                signif_col = dou_params$signif_col,
+                signif_thresh = dou_params$signif_thresh,
+                rank_by = plot_params$rank_by,
+                flip_sign = plot_params$flip_sign,
+                sorf_type = annotation_params$sorf_type,
+                top_hits = plot_params$top_hits,
+                colors = colors
+            )
+        }, error = function(e) {
+            if (verbose) message("Failed to prepare heatmap data: ", e$message)
+            NULL
+        })
         
         if (!is.null(paired_data)) {
             reset_graphics(function() {
-                warning(
-                    "Plotting device too small or corrupted. ",
-                    "Please increase the plot window size and rerun with ",
-                    "plot_type = 'heatmap'.",
-                    "\nTo avoid re-downloading gene symbols, reuse the ",
-                    "id_mapping object like this:",
-                    "\n\n# Example usage:",
-                    "\ngene_annot <- plotDOT(results, rowdata, ",
-                    "plot_type = 'heatmap')",
-                    "\nplotDOT(results, rowdata, id_mapping = gene_annot, ",
-                    "plot_type = 'heatmap')"
-                )
                 plot_heatmap(paired_data)
-                if (verbose) {
-                    message("heatmap plotted")
-                }
+                if (verbose) message("heatmap plotted")
             }, force_new_device = force_new_device)
         }
     }
     
     if (plot_type == "usage") {
         
-        if (is.null(gene_id)) {
-            stop("Please provide gene_id.")
-        }
+        if (is.null(gene_id)) stop("Please provide gene_id.")
         
-        if (!is.character(gene_id)) {
-            stop("'gene_id' must be a character vector.")
-        }
+        if (!is.character(gene_id)) stop("'gene_id' must be a character vector.")
         
         reset_graphics(function() {
             grid::grid.newpage()
             if (is.null(id_mapping)) {
                 p <- plot_orf_usage(
-                    dou = dou, 
+                    data = data, 
                     gene_id = gene_id, 
-                    levels = condition_order, 
-                    dou_padj_threshold = dou_padj_threshold
+                    levels = plot_params$order_by, 
+                    dou_signif_thresh = dou_params$dou_signif_thresh
                 )
             } else if (!is.null(id_mapping)) {
                 p <- plot_orf_usage(
-                    dou = dou, 
+                    data = data, 
                     gene_id = gene_id, 
                     id_mapping = id_mapping,
-                    levels = condition_order, 
-                    dou_padj_threshold = dou_padj_threshold,
+                    levels = plot_params$order_by, 
+                    dou_signif_thresh = dou_params$signif_thresh,
                     colors = colors$usage
                 )
             }
-            # if (!inherits(p, "grob")) stop("plot_orf_usage did not return a grob.")
             grid::grid.draw(p)
+            if (verbose) message("ORF usage plot for ", gene_id, " plotted")
         }, force_new_device = force_new_device)
     }
     return(invisible(id_mapping))

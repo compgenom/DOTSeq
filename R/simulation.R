@@ -7,52 +7,52 @@
 #' selected regulatory scenario.
 #'
 #' @param orfs A data frame containing ORF annotations. Row names must align
-#'        with the filtered count matrices. Must include columns
-#'        \code{gene_id} and \code{orf_type}.
+#' with the filtered count matrices. Must include columns
+#' \code{gene_id} and \code{orf_type}.
 #'
 #' @param scenario A character string specifying the regulatory scenario to
-#'        simulate. Must be one of:
-#'        \itemize{
-#'            \item \code{"uORF_up_mORF_down"}
-#'            \item \code{"dORF_up_mORF_up"}
-#'            \item \code{"uORF_up_mORF_flat"}
-#'            \item \code{"uORF_down_mORF_flat"}
-#'            \item \code{"uORF_down_mORF_down"}
-#'            \item \code{"uORF_down_mORF_up"}
-#'            \item \code{"uORF_flat_mORF_up"}
-#'            \item \code{"uORF_flat_mORF_down"}
-#'            \item \code{"dORF_up_mORF_down"}
-#'            \item \code{"dORF_up_mORF_flat"}
-#'            \item \code{"dORF_down_mORF_flat"}
-#'            \item \code{"dORF_down_mORF_down"}
-#'            \item \code{"dORF_down_mORF_up"}
-#'            \item \code{"dORF_flat_mORF_up"}
-#'            \item \code{"dORF_flat_mORF_down"}
-#'        }
+#' simulate. Must be one of:
+#' \itemize{
+#'     \item \code{"uORF_up_mORF_down"}
+#'     \item \code{"dORF_up_mORF_up"}
+#'     \item \code{"uORF_up_mORF_flat"}
+#'     \item \code{"uORF_down_mORF_flat"}
+#'     \item \code{"uORF_down_mORF_down"}
+#'     \item \code{"uORF_down_mORF_up"}
+#'     \item \code{"uORF_flat_mORF_up"}
+#'     \item \code{"uORF_flat_mORF_down"}
+#'     \item \code{"dORF_up_mORF_down"}
+#'     \item \code{"dORF_up_mORF_flat"}
+#'     \item \code{"dORF_down_mORF_flat"}
+#'     \item \code{"dORF_down_mORF_down"}
+#'     \item \code{"dORF_down_mORF_up"}
+#'     \item \code{"dORF_flat_mORF_up"}
+#'     \item \code{"dORF_flat_mORF_down"}
+#' }
 #'
 #' @param gcoeff Numeric. The log-fold change magnitude to apply to regulated
-#'        ORFs.
+#' ORFs.
 #'
 #' @param shape Numeric. Shape parameter for the gamma distribution used to
-#'        simulate baseline coefficients.
+#' simulate baseline coefficients.
 #'
 #' @param scale Numeric. Scale parameter for the gamma distribution used to
-#'        simulate baseline coefficients.
+#' simulate baseline coefficients.
 #'
 #' @return A list with the following components:
-#'         \describe{
-#'             \item{gcoeffs_ribo}{Named numeric vector of log-fold change
-#'                 coefficients for ribosome profiling data.}
-#'             \item{gcoeffs_rna}{Named numeric vector of baseline log-fold
-#'                 change coefficients for RNA-seq data.}
-#'             \item{labels}{Named binary vector indicating truly regulated
-#'                 ORFs (\code{1}) vs. non-regulated (\code{0}).}
-#'         }
+#' \describe{
+#'     \item{gcoeffs_ribo}{Named numeric vector of log-fold change
+#'     coefficients for ribosome profiling data.}
+#'     \item{gcoeffs_rna}{Named numeric vector of baseline log-fold
+#'     change coefficients for RNA-seq data.}
+#'     \item{labels}{Named binary vector indicating truly regulated
+#'     ORFs (\code{1}) vs. non-regulated (\code{0}).}
+#' }
 #'
 #' @keywords internal
 #' @examples
 #' \dontrun{
-#'     generate_coefficients(orfs_df, scenario = "uORF_up_mORF_down")
+#' generate_coefficients(orfs_df, scenario = "uORF_up_mORF_down")
 #' }
 #' 
 generate_coefficients <- function(
@@ -130,31 +130,36 @@ generate_coefficients <- function(
 
 #' Estimate zero-inflated negative binomial parameters from a real dataset
 #'
+#' @description
 #' This function estimates the parameters of a zero-inflated negative binomial
 #' distribution based on a real count data set using the method of moments.
 #' The function also returns a spline fit of log mean to log size which can be
 #' used when generating new simulated data.
 #'
 #' @param counts A matrix of counts.
+#' 
 #' @param threshold Only estimate parameters from transcripts with row means
-#'        greater than this threshold.
+#' greater than this threshold.
+#' 
 #' @param size_factor Optional numeric scalar to scale the estimated size
-#'        parameters.
+#' parameters.
+#' 
 #' @param min_size Optional numeric value to enforce a minimum size parameter.
+#' 
 #' @param scale_p0 Optional numeric scalar to scale the zero-inflation
-#'        probabilities.
+#' probabilities.
 #'
 #' @return A list containing:
-#'         \describe{
-#'             \item{p0}{A vector of probabilities that the count will be zero,
-#'                 one for each gene/transcript.}
-#'             \item{mu}{The estimated negative binomial mean by method of
-#'                 moments for the non-zero counts.}
-#'             \item{size}{The estimated negative binomial size by method of
-#'                 moments for the non-zero counts.}
-#'             \item{fit}{A fit relating log mean to log size for use in
-#'                 simulating new data.}
-#'         }
+#'  \describe{
+#'      \item{p0}{A vector of probabilities that the count will be zero,
+#'   one for each gene/transcript.}
+#'      \item{mu}{The estimated negative binomial mean by method of
+#'   moments for the non-zero counts.}
+#'      \item{size}{The estimated negative binomial size by method of
+#'   moments for the non-zero counts.}
+#'      \item{fit}{A fit relating log mean to log size for use in
+#'   simulating new data.}
+#'  }
 #'
 #' @author Jeff Leek (original), Chun Shen Lim (modifications)
 #'
@@ -214,21 +219,28 @@ get_params <- function(
 #' Generate a simulated data set based on known model parameters
 #'
 #' @param mu Baseline mean expression for negative binomial model.
+#' 
 #' @param fit Fitted relationship between log mean and log size.
+#' 
 #' @param p0 A vector of the probabilities a count is zero.
+#' 
 #' @param m Number of genes/transcripts to simulate (not necessary if
-#'        \code{mod}, \code{beta} are specified).
+#' \code{mod}, \code{beta} are specified).
+#' 
 #' @param n Number of samples to simulate (not necessary if \code{mod},
-#'        \code{beta} are specified).
-#' @param mod Model matrix you would like to simulate from without an intercept.
-#' @param beta Set of coefficients for the model matrix (must have same number
-#'        of columns as \code{mod}).
+#' \code{beta} are specified).
+#' 
+#' @param mod Model matrix you would like to simulate from without an 
+#' intercept.
+#' 
+#' @param beta Set of coefficients for the model matrix (must have same 
+#' number of columns as \code{mod}).
 #'
 #' @return A list containing:
-#'         \describe{
-#'             \item{counts}{Data matrix with counts for genes in rows and
-#'                 samples in columns.}
-#'         }
+#' \describe{
+#'     \item{counts}{Data matrix with counts for genes in rows and
+#'     samples in columns.}
+#' }
 #'
 #' @author Jeff Leek
 #'
@@ -292,65 +304,81 @@ create_read_numbers <- function(
 #' replicates.
 #'
 #' @param ribo A matrix or data frame of ribosome profiling counts
-#'        (genes x samples).
+#' (genes x samples).
+#' 
 #' @param rna A matrix or data frame of RNA-seq counts (genes x samples).
+#' 
 #' @param regulation_type Character. Specifies the type of DOT effect to
-#'        simulate. Passed to the \code{scenario} argument of
-#'        \code{generate_coefficients}.
+#' simulate. Passed to the \code{scenario} argument of
+#' \code{generate_coefficients}.
+#' 
 #' @param orfs A data frame of ORF annotations. Must include \code{gene_id}
-#'        and \code{orf_type} columns.
+#' and \code{orf_type} columns.
+#' 
 #' @param te_genes Numeric. Percentage of genes to be assigned as
-#'        differentially translated (default: 10).
+#' differentially translated (default: 10).
+#' 
 #' @param bgenes Numeric. Percentage of genes to carry a batch effect
-#'        (default: 10).
+#' (default: 10).
+#' 
 #' @param num_samples Integer. Number of biological replicates per condition
-#'        (default: 2).
+#' (default: 2).
+#' 
 #' @param conditions Integer. Number of experimental conditions (default: 2).
+#' 
 #' @param gcoeff Numeric. Magnitude of log-fold change for DOT effects
-#'        (default: 1.5).
+#' (default: 1.5).
+#' 
 #' @param bcoeff Numeric. Magnitude of batch effect coefficient (default: 0.9).
+#' 
 #' @param num_batches Integer. Number of batches (default: 2).
+#' 
 #' @param size_factor Numeric scalar. A multiplicative factor applied to the
-#'        estimated size parameter (\eqn{r}) for all transcripts. Since
-#'        dispersion \eqn{\phi = 1/r}, a value greater than 1 (e.g., 1.5) will
-#'        decrease biological dispersion (noise), making the simulated data
-#'        less variable. A value less than 1 will increase dispersion
-#'        (default: 1.5).
+#' estimated size parameter (\eqn{r}) for all transcripts. Since
+#' dispersion \eqn{\phi = 1/r}, a value greater than 1 (e.g., 1.5) will
+#' decrease biological dispersion (noise), making the simulated data
+#' less variable. A value less than 1 will increase dispersion
+#' (default: 1.5).
+#' 
 #' @param min_size Numeric scalar. A lower bound for the modified size
-#'        parameter (\eqn{r}). Any transcript whose modified \eqn{r} falls
-#'        below this value will be set to \code{min_size}. This caps maximum
-#'        dispersion and prevents unrealistic variability (default: 5).
+#' parameter (\eqn{r}). Any transcript whose modified \eqn{r} falls
+#' below this value will be set to \code{min_size}. This caps maximum
+#' dispersion and prevents unrealistic variability (default: 5).
+#' 
 #' @param scale_p0 Optional numeric scalar to scale the zero-inflation
-#'        probabilities.
+#' probabilities.
+#' 
 #' @param shape Numeric. Shape parameter for gamma distribution used to
-#'        simulate baseline coefficients (default: 0.6).
+#' simulate baseline coefficients (default: 0.6).
+#' 
 #' @param scale Numeric. Scale parameter for gamma distribution used to
-#'        simulate baseline coefficients (default: 0.5).
-#' @param batch_scenario Character. Specifies the batch effect design. Must be
-#'        one of:
-#'        \itemize{
-#'            \item \code{"balanced"}
-#'            \item \code{"confounded"}
-#'            \item \code{"random"}
-#'            \item \code{"unbalanced"}
-#'            \item \code{"nested"}
-#'            \item \code{"modality_specific"}
-#'        }
-#' @param diagplot_ribo Logical. If \code{TRUE}, generate diagnostic plots for
-#'        ribo data (default: \code{FALSE}).
-#' @param diagplot_rna Logical. If \code{TRUE}, generate diagnostic plots for
-#'        RNA data (default: \code{FALSE}).
+#' simulate baseline coefficients (default: 0.5).
+#' 
+#' @param batch_scenario Character. Specifies the batch effect design. Must 
+#' be one of:
+#' \itemize{
+#'     \item \code{"balanced"}
+#'     \item \code{"confounded"}
+#'     \item \code{"random"}
+#'     \item \code{"unbalanced"}
+#'     \item \code{"nested"}
+#'     \item \code{"modality_specific"}
+#' }
+#' @param diagplot_ribo Logical. If \code{TRUE}, generate diagnostic plots
+#' for ribo data (default: \code{FALSE}).
+#' @param diagplot_rna Logical. If \code{TRUE}, generate diagnostic plots
+#' for RNA data (default: \code{FALSE}).
 #'
 #' @return A list with the following components:
-#'         \describe{
-#'             \item{simData}{Combined simulated count matrix (genes x samples).}
-#'             \item{colData}{Data frame containing sample-level metadata
-#'                 (condition, replicate, strategy, batch).}
-#'             \item{labels}{Named binary vector indicating true positive (1)
-#'                 and negative (0) ORFs for DOT.}
-#'             \item{logFC}{Named vector of true log-fold changes for the
-#'                 simulated DOT effect.}
-#'         }
+#' \describe{
+#'     \item{simData}{Combined simulated count matrix (genes x samples).}
+#'     \item{colData}{Data frame containing sample-level metadata 
+#'     (condition, replicate, strategy, batch).}
+#'     \item{labels}{Named binary vector indicating true positive (1)
+#'     and negative (0) ORFs for DOT.}
+#'     \item{logFC}{Named vector of true log-fold changes for the
+#'   simulated DOT effect.}
+#' }
 #'
 #' @importFrom DESeq2 DESeqDataSetFromMatrix vst design<-
 #' @importFrom stats prcomp rgamma runif df model.matrix
@@ -376,11 +404,11 @@ create_read_numbers <- function(
 #' cond <- meta[meta$treatment == "chx", ]
 #' cond$treatment <- NULL
 #'
-#' dot <- DOTSeqDataSet(
+#' dot <- DOTSeqDataSets(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,
-#'     bed = bed
+#'     flattened_bed = bed
 #' )
 #' raw_counts <- assay(getDOU(dot))
 #' raw_counts <- raw_counts[, grep("Cycling|Interphase",
@@ -404,12 +432,24 @@ create_read_numbers <- function(
 #' cnt <- cbind(featCol, as.data.frame(simData$simData))
 #' cond <- as.data.frame(simData$colData)
 #'
-#' dot <- DOTSeqDataSet(
+#' dot <- DOTSeqDataSets(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,
-#'     bed = bed
+#'     flattened_bed = bed
 #' )
+#' 
+#' @references
+#' Frazee, A. C., Jaffe, A. E., Langmead, B., & Leek, J. T. (2015). 
+#' Polyester: Simulating RNA-seq datasets with differential transcript 
+#' expression. Bioinformatics, 31(17), 2778-2784. 
+#' DOI: 10.1093/bioinformatics/btv272
+#' 
+#' Chothani S, Adami E, Ouyang JF, Viswanathan S, Hubner N, Cook SA, 
+#' Schafer S, Rackham OJL.  (2019). deltaTE: Detection of translationally 
+#' regulated genes by integrative analysis of Ribo-seq and RNA-seq data. 
+#' Current Protocols in Molecular Biology, 129, e108. 
+#' DOI: 10.1002/cpmb.108
 #' 
 simDOT <- function(
     ribo,

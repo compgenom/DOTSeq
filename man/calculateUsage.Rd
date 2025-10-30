@@ -4,10 +4,10 @@
 \alias{calculateUsage}
 \title{Calculate ORF usage across conditions from a SummarizedExperiment}
 \usage{
-calculateUsage(dou, gene_id)
+calculateUsage(data, gene_id)
 }
 \arguments{
-\item{dou}{A \code{\link{DOTSeqDataSet}} object containing DOUResults}
+\item{data}{A \code{\link{DOUData-class}} object containing DOUResults}
 
 \item{gene_id}{A character string specifying the gene ID of interest}
 }
@@ -25,6 +25,9 @@ objects are used. Strategy levels are assigned using a helper
 function \code{\link{assign_strategy_levels}}.
 }
 \examples{
+# Load a required library
+library(SummarizedExperiment)
+
 # Load test data
 dir <- system.file("extdata", package = "DOTSeq")
 cnt <- read.table(
@@ -42,24 +45,22 @@ names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
 cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
-dot <- DOTSeqDataSet(
+dot <- DOTSeqDataSets(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = flat,
-    bed = bed
+    flattened_bed = bed
 )
 
 dou <- getDOU(dot)
 
-dou <- dou[
-    SummarizedExperiment::rowData(dou)$is_kept == TRUE, ]
+dou <- dou[rowData(dou)$is_kept == TRUE, ]
 # Subset only one gene
-dou <- dou[
-    SummarizedExperiment::rowData(dou)$gene_id == "ENSG00000119402.18", ]
+dou <- dou[rowData(dou)$gene_id == "ENSG00000119402.18", ]
     
 getDOU(dot) <- dou
 
-dot <- DOTSeq(dot = dot, modules = "DOU")
+dot <- DOTSeq(datasets = dot, modules = "DOU")
 
 usage_df <- calculateUsage(
     getDOU(dot),

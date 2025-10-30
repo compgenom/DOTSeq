@@ -65,7 +65,7 @@ selected regulatory scenario.
 }
 \examples{
 \dontrun{
-    generate_coefficients(orfs_df, scenario = "uORF_up_mORF_down")
+generate_coefficients(orfs_df, scenario = "uORF_up_mORF_down")
 }
 
 }

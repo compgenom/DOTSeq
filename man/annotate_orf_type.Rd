@@ -35,9 +35,9 @@ BED file.
 }
 \examples{
 \dontrun{
-    # Annotate a GRanges object using a BED file's score column
-    gff_granges <- parseBed("example.bed", granges)
-    head(orfs)
+# Annotate a GRanges object using a BED file's score column
+gff_granges <- parseBed("example.bed", granges)
+head(orfs)
 }
 
 }

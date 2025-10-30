@@ -19,10 +19,11 @@ create_read_numbers(mu, fit, p0, m = NULL, n = NULL, mod = NULL, beta = NULL)
 \item{n}{Number of samples to simulate (not necessary if \code{mod},
 \code{beta} are specified).}
 
-\item{mod}{Model matrix you would like to simulate from without an intercept.}
+\item{mod}{Model matrix you would like to simulate from without an
+intercept.}
 
-\item{beta}{Set of coefficients for the model matrix (must have same number
-of columns as \code{mod}).}
+\item{beta}{Set of coefficients for the model matrix (must have same
+number of columns as \code{mod}).}
 }
 \value{
 A list containing:

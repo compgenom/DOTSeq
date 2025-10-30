@@ -78,8 +78,8 @@ simulate baseline coefficients (default: 0.6).}
 \item{scale}{Numeric. Scale parameter for gamma distribution used to
 simulate baseline coefficients (default: 0.5).}
 
-\item{batch_scenario}{Character. Specifies the batch effect design. Must be
-one of:
+\item{batch_scenario}{Character. Specifies the batch effect design. Must
+be one of:
 \itemize{
 \item \code{"balanced"}
 \item \code{"confounded"}
@@ -89,11 +89,11 @@ one of:
 \item \code{"modality_specific"}
 }}
 
-\item{diagplot_ribo}{Logical. If \code{TRUE}, generate diagnostic plots for
-ribo data (default: \code{FALSE}).}
+\item{diagplot_ribo}{Logical. If \code{TRUE}, generate diagnostic plots
+for ribo data (default: \code{FALSE}).}
 
-\item{diagplot_rna}{Logical. If \code{TRUE}, generate diagnostic plots for
-RNA data (default: \code{FALSE}).}
+\item{diagplot_rna}{Logical. If \code{TRUE}, generate diagnostic plots
+for RNA data (default: \code{FALSE}).}
 }
 \value{
 A list with the following components:
@@ -130,11 +130,11 @@ names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
 cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
-dot <- DOTSeqDataSet(
+dot <- DOTSeqDataSets(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = flat,
-    bed = bed
+    flattened_bed = bed
 )
 raw_counts <- assay(getDOU(dot))
 raw_counts <- raw_counts[, grep("Cycling|Interphase",
@@ -158,11 +158,23 @@ featCol <- cnt[, c("Geneid", "Chr", "Start", "End", "Strand", "Length")]
 cnt <- cbind(featCol, as.data.frame(simData$simData))
 cond <- as.data.frame(simData$colData)
 
-dot <- DOTSeqDataSet(
+dot <- DOTSeqDataSets(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = flat,
-    bed = bed
+    flattened_bed = bed
 )
 
+}
+\references{
+Frazee, A. C., Jaffe, A. E., Langmead, B., & Leek, J. T. (2015).
+Polyester: Simulating RNA-seq datasets with differential transcript
+expression. Bioinformatics, 31(17), 2778-2784.
+DOI: 10.1093/bioinformatics/btv272
+
+Chothani S, Adami E, Ouyang JF, Viswanathan S, Hubner N, Cook SA,
+Schafer S, Rackham OJL.  (2019). deltaTE: Detection of translationally
+regulated genes by integrative analysis of Ribo-seq and RNA-seq data.
+Current Protocols in Molecular Biology, 129, e108.
+DOI: 10.1002/cpmb.108
 }

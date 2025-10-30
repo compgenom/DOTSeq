@@ -79,24 +79,24 @@ calculate_mean_dispersion <- function(
 #' ORF-level count data in DOTSeq.
 #'
 #' @param formula A formula object specifying the fixed effects structure of
-#'     the model.
+#' the model.
 #'
 #' @param dispformula A formula object specifying the dispersion model
-#'     (e.g., \code{~strategy}).
+#' (e.g., \code{~strategy}).
 #'
 #' @param data A data frame containing the model data, including counts and
-#'     covariates.
+#' covariates.
 #'
 #' @param optimizers A character vector of optimizer names to try sequentially.
-#'     Supported values include \code{"nlminb"}, \code{"bobyqa"}, and
-#'     \code{"optim"}. Default is \code{c("nlminb", "bobyqa", "optim")}.
+#' Supported values include \code{"nlminb"}, \code{"bobyqa"}, and
+#' \code{"optim"}. Default is \code{c("nlminb", "bobyqa", "optim")}.
 #'
 #' @param max_iter An integer specifying the maximum number of iterations for
-#'     the optimizer. Default is \code{1000}.
+#' the optimizer. Default is \code{1000}.
 #'
 #' @return A fitted \code{\link[glmmTMB]{glmmTMB}} model object if convergence is successful.
-#'     If all optimizers fail, the last attempted model (with convergence
-#'     failure) is returned.
+#' If all optimizers fail, the last attempted model (with convergence
+#' failure) is returned.
 #'
 #' @details
 #' The function attempts to fit the model using each optimizer in the specified
@@ -114,7 +114,7 @@ calculate_mean_dispersion <- function(
 #' Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M. (2017).
 #' glmmTMB balances speed and flexibility among packages for zero-inflated
 #' generalized linear mixed modeling. The R Journal, 378–400.
-#' \doi{10.32614/RJ-2017-066}
+#' DOI: 10.32614/RJ-2017-066
 #'
 #'
 fit_glmm <- function(
@@ -165,19 +165,19 @@ fit_glmm <- function(
 #'
 #' @param fitted_model A fitted \code{\link[glmmTMB]{glmmTMB}} model object.
 #' @param results_list A named list to which diagnostic results will be 
-#'     added. Must contain a \code{diagnostics} element.
+#' added. Must contain a \code{diagnostics} element.
 #' @param diagnostics_name A character string specifying the name under 
-#'     which diagnostic results will be stored in 
-#'     \code{results_list$diagnostics}.
+#' which diagnostic results will be stored in 
+#' \code{results_list$diagnostics}.
 #' @param plot Logical; if \code{TRUE}, diagnostic plots will be generated.
-#'     Default is \code{FALSE}.
+#' Default is \code{FALSE}.
 #'
 #' @return A modified version of \code{results_list} with diagnostic 
-#'     results added under 
-#'     \code{results_list$diagnostics[[diagnostics_name]]}.
+#' results added under 
+#' \code{results_list$diagnostics[[diagnostics_name]]}.
 #'
 #' @note This function requires the \pkg{DHARMa} package. If it is not 
-#'     installed, the function will stop with an informative error message.
+#' installed, the function will stop with an informative error message.
 #'
 #' @importFrom glmmTMB glmmTMB
 #' @keywords internal
@@ -219,59 +219,59 @@ run_diagnostic <- function(
 #' dispersion modeling approaches and optional model diagnostics.
 #'
 #' @param ribo_mat A numeric matrix of Ribo-seq counts for a single gene
-#'     (rows = ORFs, columns = samples).
+#' (rows = ORFs, columns = samples).
 #'
 #' @param rna_mat A numeric matrix of RNA-seq counts for the same gene
-#'     (same dimensions as \code{ribo_mat}).
+#' (same dimensions as \code{ribo_mat}).
 #'
 #' @param coldata A data frame containing sample annotations. Must include 
-#'     columns such as \code{condition}, \code{strategy}, and 
-#'     \code{replicate}.
+#' columns such as \code{condition}, \code{strategy}, and 
+#' \code{replicate}.
 #'
 #' @param formula A formula object specifying the model design,
-#'     e.g., \code{~ condition * strategy}.
+#' e.g., \code{~ condition * strategy}.
 #'
 #' @param dispersion_modeling Character string specifying the dispersion
-#'     modeling strategy. Options are:
-#'     \describe{
-#'         \item{\code{"auto"}}{
-#'             Fit both strategy-dependent and shared dispersion models, 
-#'             and select the best via likelihood ratio test.
-#'         }
-#'         \item{\code{"shared"}}{
-#'             Assume constant dispersion across all predictor levels.
-#'         }
-#'         \item{\code{"custom"}}{
-#'             Use a user-specified dispersion formula via \code{dispformula}.
-#'         }
+#' modeling strategy. Options are:
+#' \describe{
+#'     \item{\code{"auto"}}{
+#'         Fit both strategy-dependent and shared dispersion models, 
+#'         and select the best via likelihood ratio test.
 #'     }
+#'     \item{\code{"shared"}}{
+#'         Assume constant dispersion across all predictor levels.
+#'     }
+#'     \item{\code{"custom"}}{
+#'         Use a user-specified dispersion formula via \code{dispformula}.
+#'     }
+#' }
 #'
 #' @param dispformula Optional formula object specifying a custom dispersion
-#'     model (used when \code{dispersion_modeling = "custom"}).
+#' model (used when \code{dispersion_modeling = "custom"}).
 #'
 #' @param lrt Logical; if \code{TRUE}, performs a likelihood ratio test to
-#'     compare the full model (with interaction) against a reduced model
-#'     (without interaction) to assess translation-specific effects.
-#'     Default is \code{FALSE}.
+#' compare the full model (with interaction) against a reduced model
+#' (without interaction) to assess translation-specific effects.
+#' Default is \code{FALSE}.
 #'
 #' @param diagnostic Logical; if \code{TRUE}, runs \pkg{DHARMa} diagnostics  
-#'     to assess model fit. This requires \pkg{DHARMa} to be installed. 
-#'     Default is \code{FALSE}.
+#' to assess model fit. This requires \pkg{DHARMa} to be installed. 
+#' Default is \code{FALSE}.
 #'
 #' @param optimizers Logical; if \code{TRUE}, enables brute-force 
-#'     optimization using multiple optimizers in 
-#'     \code{\link[glmmTMB]{glmmTMBControl}}. Default is \code{FALSE}.
+#' optimization using multiple optimizers in 
+#' \code{\link[glmmTMB]{glmmTMBControl}}. Default is \code{FALSE}.
 #'
 #' @param parallel A list passed to \code{\link[glmmTMB]{glmmTMBControl}} 
-#'     to configure parallel optimization, e.g., 
-#'     \code{list(parallel = TRUE, ncpus = 4)}.
-#'     Default is \code{list(n = 4L, autopar = TRUE)}.
+#' to configure parallel optimization, e.g., 
+#' \code{list(parallel = TRUE, ncpus = 4)}.
+#' Default is \code{list(n = 4L, autopar = TRUE)}.
 #'
 #' @param verbose Logical; if \code{TRUE}, prints progress messages.
-#'     Default is \code{FALSE}.
+#' Default is \code{FALSE}.
 #'
 #' @return A named \code{list} of \code{PostHoc} objects, one for each ORF
-#'     in the gene.
+#' in the gene.
 #'
 #' @importFrom stats AIC aggregate anova as.formula order.dendrogram p.adjust
 #' @importFrom stats pnorm predict rbinom relevel rgamma
@@ -796,62 +796,62 @@ fit_beta_binomial <- function(
 #'
 #' @description
 #' This function fits beta-binomial generalized (mixed) linear models 
-#' (GLM or GLMM) for differential ORF usage (DOU) across all genes 
+#' (GLM or GLMM) for Differential ORF Usage (DOU) across all genes 
 #' (via \code{\link[glmmTMB]{glmmTMB}}). It supports multiple dispersion 
 #' modeling approaches and optional diagnostics using \pkg{DHARMa}.
 #'
-#' @seealso \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSet}}, 
+#' @seealso \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSets}}, 
 #' \code{\link{testDOU}}
 #' 
-#' @param dou A \code{\link{DOTSeqDataSet}} object containing raw ORF-level  
-#'     counts and sample metadata. This object is used as the input for  
-#'     modeling Differential ORF Usage (DOU) within the DOTSeq framework.
+#' @param data A \code{\link{DOUData-class}} object containing raw ORF-level  
+#' counts and sample metadata. This object is used as the input for  
+#' modeling DOU within the \pkg{DOTSeq} framework.
 #'
 #' @param formula A formula object specifying the model design,
-#'     e.g., \code{~ condition * strategy}.
+#' e.g., \code{~ condition * strategy}.
 #'
 #' @param specs A formula specifying the structure of the estimated
-#'     marginal means. Default is \code{~condition * strategy}.
+#' marginal means. Default is \code{~condition * strategy}.
 #'
 #' @param dispformula Optional formula object specifying a custom dispersion
-#'     model (used when \code{dispersion_modeling = "custom"}).
+#' model (used when \code{dispersion_modeling = "custom"}).
 #'
 #' @param dispersion_modeling Character string specifying the dispersion
-#'     modeling strategy. Options are:
-#'     \describe{
-#'         \item{\code{"auto"}}{
-#'             Fit both strategy-dependent and shared dispersion models, and
-#'             select the best via likelihood ratio test.
-#'         }
-#'         \item{\code{"strategy"}}{
-#'             Model dispersion as a function of sequencing strategy.
-#'         }
-#'         \item{\code{"shared"}}{
-#'             Assume constant dispersion across all predictor levels.
-#'         }
-#'         \item{\code{"custom"}}{
-#'             Use a user-specified dispersion formula via \code{dispformula}.
-#'         }
+#' modeling strategy. Options are:
+#' \describe{
+#'     \item{\code{"auto"}}{
+#'         Fit both strategy-dependent and shared dispersion models, and
+#'         select the best via likelihood ratio test.
 #'     }
+#'     \item{\code{"strategy"}}{
+#'         Model dispersion as a function of sequencing strategy.
+#'     }
+#'     \item{\code{"shared"}}{
+#'         Assume constant dispersion across all predictor levels.
+#'     }
+#'     \item{\code{"custom"}}{
+#'         Use a user-specified dispersion formula via \code{dispformula}.
+#'     }
+#' }
 #'
 #' @param lrt Logical; if \code{TRUE}, performs a likelihood ratio test to
-#'     compare the full model (with interaction) against a reduced model
-#'     (without interaction) to assess translation-specific effects.
-#'     Default is \code{FALSE}.
+#' compare the full model (with interaction) against a reduced model
+#' (without interaction) to assess translation-specific effects.
+#' Default is \code{FALSE}.
 #'
 #' @param diagnostic Logical; if \code{TRUE}, runs \pkg{DHARMa} 
-#'     diagnostics to assess model fit. Default is \code{FALSE}.
+#' diagnostics to assess model fit. Default is \code{FALSE}.
 #'
 #' @param parallel A list passed to \code{glmmTMBControl} to configure 
-#'     parallel optimization, e.g., \code{list(parallel = TRUE, ncpus = 4)}.
-#'     Default is \code{list(n = 4L, autopar = TRUE)}.
+#' parallel optimization, e.g., \code{list(parallel = TRUE, ncpus = 4)}.
+#' Default is \code{list(n = 4L, autopar = TRUE)}.
 #'
 #' @param optimizers Logical; if \code{TRUE}, enables brute-force 
-#'     optimization using multiple optimizers in 
-#'     \code{\link[glmmTMB]{glmmTMBControl}}. Default is \code{FALSE}.
+#' optimization using multiple optimizers in 
+#' \code{\link[glmmTMB]{glmmTMBControl}}. Default is \code{FALSE}.
 #'
 #' @param verbose Logical; if \code{TRUE}, prints progress messages.
-#'     Default is \code{TRUE}.
+#' Default is \code{TRUE}.
 #'
 #' @return A named \code{list} of \code{PostHoc} objects, one per ORF.
 #'
@@ -875,32 +875,36 @@ fit_beta_binomial <- function(
 #' )
 #' names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
 #'
-#' flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+#' gtf <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
 #' bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
 #'
 #' meta <- read.table(file.path(dir, "metadata.txt.gz"))
 #' names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
 #' cond <- meta[meta$treatment == "chx", ]
 #' cond$treatment <- NULL
-#'
-#' # Create a DOTSeqObjects object
-#' dot <- DOTSeqDataSet(
+#' 
+#' # Create a DOTSeqDataSets object
+#' d <- DOTSeqDataSets(
 #'     count_table = cnt,
 #'     condition_table = cond,
-#'     flattened_gtf = flat,
-#'     bed = bed
+#'     flattened_gtf = gtf,
+#'     flattened_bed = bed
 #' )
-#' dou <- getDOU(dot)
 #' 
-#' # Filter and subset ORFs
+#' dou <- getDOU(d)
+#' 
+#' # Keep ORFs where all replicates in at least one condition pass min_count
+#' # Single-ORF genes are removed
 #' dou <- dou[rowRanges(dou)$is_kept == TRUE, ]
+#' 
+#' # Randomly sample 100 ORFs for fitDOU
 #' set.seed(42)
 #' random_rows <- sample(seq_len(nrow(dou)), size = 100)
 #' dou <- dou[random_rows, ]
 #'
-#' # Fit DOU models
+#' # Model fitting using fitDOU
 #' rowData(dou)[["DOUResults"]] <- fitDOU(
-#'     dou = dou,
+#'     data = dou,
 #'     formula = ~ condition * strategy,
 #'     specs = ~ condition * strategy,
 #'     dispersion_modeling = "auto",
@@ -916,7 +920,7 @@ fit_beta_binomial <- function(
 #' Berg, C. W., Nielsen, A., Skaug, H. J., Mächler, M. and Bolker, B. M. 
 #' (2017). glmmTMB balances speed and flexibility among packages for 
 #' zero-inflated generalized linear mixed modeling. The R Journal, 378–400.
-#' \doi{10.32614/RJ-2017-066}
+#' DOI: 10.32614/RJ-2017-066
 #'
 #' Lenth R, Piaskowski J (2025). emmeans: Estimated Marginal Means, aka
 #' Least-Squares Means. R package version 2.0.0.
@@ -928,7 +932,7 @@ fit_beta_binomial <- function(
 #'
 #'
 fitDOU <- function(
-        dou,
+        data,
         formula = ~ condition * strategy,
         specs = ~ condition * strategy,
         dispformula = NULL,
@@ -947,8 +951,8 @@ fitDOU <- function(
         )
     }
     
-    if (!inherits(dou, "DOTSeqDataSet")) {
-        stop("'dou' must be a DOTSeqDataSet object.")
+    if (!inherits(data, "DOUData")) {
+        stop("'data' must be a DOUData object.")
     }
     
     valid_dispersion_models <- c("auto", "custom", "shared")
@@ -964,12 +968,12 @@ fitDOU <- function(
         }
     }
     
-    count_table <- assay(dou)
+    count_table <- assay(data)
     count_table <- as.matrix(count_table)
     storage.mode(count_table) <- "integer"
     
-    rowdata <- rowData(dou)
-    coldata <- colData(dou)
+    rowdata <- rowData(data)
+    coldata <- colData(data)
     
     # Identify lonely ORFs
     single_orf <- !mcols(rowdata)$gene_id %in% mcols(rowdata)$gene_id[duplicated(mcols(rowdata)$gene_id)]

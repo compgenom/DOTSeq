@@ -7,9 +7,9 @@
 #' remaining unique value(s) as Ribo-seq.
 #'
 #' @param input_df A data frame containing a column that encodes 
-#'     strategy labels.
+#' strategy labels.
 #' @param strategy_col A string specifying the name of the column in 
-#'     `input_df` that contains strategy labels. Default is "strategy".
+#' `input_df` that contains strategy labels. Default is "strategy".
 #'
 #' @return A named list with two elements:
 #' \describe{
@@ -80,22 +80,22 @@ assign_strategy_levels <- function(input_df, strategy_col = "strategy") {
 #' BED file.
 #'
 #' @param bed Character string. Path to a BED file (tab-delimited, no header)
-#'     with six columns:
-#'     \describe{
-#'         \item{chr}{Chromosome name}
-#'         \item{start}{Start coordinate (0-based)}
-#'         \item{end}{End coordinate (exclusive)}
-#'         \item{name}{Feature name}
-#'         \item{score}{Annotation label to assign (e.g., ORF type)}
-#'         \item{strand}{Strand information ("+" or "-")}
-#'     }
+#' with six columns:
+#' \describe{
+#'     \item{chr}{Chromosome name}
+#'     \item{start}{Start coordinate (0-based)}
+#'     \item{end}{End coordinate (exclusive)}
+#'     \item{name}{Feature name}
+#'     \item{score}{Annotation label to assign (e.g., ORF type)}
+#'     \item{strand}{Strand information ("+" or "-")}
+#' }
 #'
 #' @param gff_granges A \code{GRanges} object containing ORF coordinates to be
-#'     annotated.
+#' annotated.
 #'
 #' @return A \code{GRanges} object with an added metadata column 
-#'     \code{orf_type}, containing the BED score for overlapping ORFs. 
-#'     Non-overlapping ORFs will have \code{NA}.
+#' \code{orf_type}, containing the BED score for overlapping ORFs. 
+#' Non-overlapping ORFs will have \code{NA}.
 #'
 #' @importFrom utils read.table
 #' @importFrom GenomicRanges GRanges findOverlaps
@@ -105,9 +105,9 @@ assign_strategy_levels <- function(input_df, strategy_col = "strategy") {
 #' @keywords internal
 #' @examples
 #' \dontrun{
-#'     # Annotate a GRanges object using a BED file's score column
-#'     gff_granges <- parseBed("example.bed", granges)
-#'     head(orfs)
+#' # Annotate a GRanges object using a BED file's score column
+#' gff_granges <- parseBed("example.bed", granges)
+#' head(orfs)
 #' }
 #' 
 annotate_orf_type <- function(bed, gff_granges) {
@@ -151,77 +151,76 @@ annotate_orf_type <- function(bed, gff_granges) {
 }
 
 
-#' Construct DOTSeq Dataset for Differential ORF Translation Analysis
+#' Construct DOTSeqDatasets for Differential ORF Translation Analysis
 #'
 #' @description
-#' This function initialize and construct the DOTSeq dataset object.
-#' This includes loading count and metadata tables, parsing ORF 
-#' annotations, filtering ORFs based on count thresholds, and preparing 
-#' objects for downstream differential translation analysis using 
-#' beta-binomial and negative binomial models.
+#' This function initialize and construct the 
+#' \code{\link{DOTSeqDataSets-class}} object. This includes loading count 
+#' and metadata tables, parsing ORF annotations, filtering ORFs based on 
+#' count thresholds, and preparing objects for downstream differential 
+#' translation analysis using beta-binomial and negative binomial GLM.
 #'
 #' @param count_table Path to a count table file or a data frame. Must 
-#'     contain columns: \code{Geneid}, \code{Chr}, \code{Start}, 
-#'     \code{End}, \code{Strand}, \code{Length}, plus one column per 
-#'     sample.
+#' contain columns: \code{Geneid}, \code{Chr}, \code{Start}, 
+#' \code{End}, \code{Strand}, \code{Length}, plus one column per 
+#' sample.
 #'
 #' @param condition_table Path to a sample metadata file or a data frame.
-#'     Must include columns: \code{run}, \code{strategy}, \code{condition},
-#'     \code{replicate}.
+#' Must include columns: \code{run}, \code{strategy}, \code{condition},
+#' \code{replicate}.
 #'
-#' @param flattened_gtf Optional path to a flattened GFF/GTF file 
-#'     containing exon definitions.
+#' @param flattened_gtf Path to a flattened GFF/GTF file containing ORF 
+#' annotations.
 #'
-#' @param bed Path to a BED file with ORF annotations.
+#' @param flattened_bed Path to a flattened BED file with ORF annotations.
 #'
 #' @param formula A formula object specifying the design.
-#'     Default is \code{~ condition * strategy}.
+#' Default is \code{~ condition * strategy}.
 #'
 #' @param target Character string specifying the non-reference condition 
-#'     level to extract the corresponding interaction term. Contrasted 
-#'     against the baseline condition. Default is \code{NULL}.
+#' level to extract the corresponding interaction term. Contrasted 
+#' against the baseline condition. Default is \code{NULL}.
 #'
 #' @param baseline Character string specifying the desired reference 
-#'     level. Default is \code{NULL}.
+#' level. Default is \code{NULL}.
 #'
 #' @param min_count Minimum count threshold for filtering ORFs.
-#'     Default is \code{1}.
+#' Default is \code{1}.
 #'
 #' @param stringent Logical or \code{NULL}; determines the filtering 
-#'     strategy:
-#'     \describe{
-#'         \item{\code{TRUE}}{
-#'             Keep ORFs where all replicates in at least one condition 
-#'             pass \code{min_count}.
-#'         }
-#'         \item{\code{FALSE}}{
-#'             Keep ORFs where all replicates in at least one 
-#'             condition-strategy group pass \code{min_count}.
-#'         }
-#'         \item{\code{NULL}}{
-#'             Keep ORFs where total counts across replicates pass
-#'             \code{min_count}.
-#'         }
+#' strategy:
+#' \describe{
+#'     \item{\code{TRUE}}{
+#'         Keep ORFs where all replicates in at least one condition 
+#'         pass \code{min_count}.
 #'     }
+#'     \item{\code{FALSE}}{
+#'         Keep ORFs where all replicates in at least one 
+#'         condition-strategy group pass \code{min_count}.
+#'     }
+#'     \item{\code{NULL}}{
+#'         Keep ORFs where total counts across replicates pass
+#'         \code{min_count}.
+#'     }
+#' }
 #'
 #' @param verbose Logical; if \code{TRUE}, prints progress messages.
-#'     Default is \code{TRUE}.
+#' Default is \code{TRUE}.
 #'
-#' @return A named \code{list} containing:
-#'     \describe{
-#'         \item{sumExp}{
-#'             A \code{SummarizedExperiment} object containing pre-filtered 
-#'             raw counts and sample metadata, used for modeling 
-#'             Differential ORF Usage (DOU) within the DOTSeq framework.
-#'         }
-#'         \item{dds}{
-#'             A \code{DESeqDataSet} object used for modeling Differential
-#'             Translation Efficiency (DTE) within the DOTSeq framework via
-#'             DESeq2.
-#'         }
+#' @return A \code{DOTSeqDataSets} object containing:
+#' \describe{
+#'     \item{DOU}{
+#'         A \code{\link{DOUData-class}} object containing pre-filtered 
+#'         raw counts and sample metadata, used for modeling 
+#'         Differential ORF Usage (DOU).
 #'     }
-#'     
-#' @rdname DOTSeqDataSet
+#'     \item{DTE}{
+#'         A \code{\link{DTEData-class}} object used for modeling 
+#'         Differential Translation Efficiency (DTE).
+#'     }
+#' }
+#' 
+#' @rdname DOTSeqDataSets
 #' 
 #' @importFrom S4Vectors DataFrame SimpleList metadata metadata<-
 #' @importFrom methods new
@@ -246,7 +245,7 @@ annotate_orf_type <- function(bed, gff_granges) {
 #' )
 #' names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
 #'
-#' flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+#' gtf <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
 #' bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
 #'
 #' meta <- read.table(file.path(dir, "metadata.txt.gz"))
@@ -254,21 +253,29 @@ annotate_orf_type <- function(bed, gff_granges) {
 #' cond <- meta[meta$treatment == "chx", ]
 #' cond$treatment <- NULL
 #'
-#' # Create a DOTSeqObjects object
-#' dot <- DOTSeqDataSet(
+#' # Create a raw input list
+#' raw <- list(
 #'     count_table = cnt,
 #'     condition_table = cond,
-#'     flattened_gtf = flat,
-#'     bed = bed
+#'     flattened_gtf = gtf,
+#'     flattened_bed = bed
 #' )
+#' 
+#' # Create a DOTSeqDataSets object
+#' d <- DOTSeqDataSets(
+#'     count_table = cnt,
+#'     condition_table = cond,
+#'     flattened_gtf = gtf,
+#'     flattened_bed = bed
+#' )
+#' 
+#' show(d)
 #'
-#' show(dot)
-#'
-DOTSeqDataSet <- function(
+DOTSeqDataSets <- function(
     count_table,
     condition_table,
     flattened_gtf,
-    bed,
+    flattened_bed,
     formula = ~ condition * strategy,
     target = NULL,
     baseline = NULL,
@@ -489,7 +496,7 @@ DOTSeqDataSet <- function(
         message("GTF and data parsing successful")
     }
 
-    gr <- annotate_orf_type(bed, gff_granges)
+    gr <- annotate_orf_type(flattened_bed, gff_granges)
     gr$orf_number <- gr$exon_number
     mcols(gr) <- mcols(gr)[, c("gene_id", "transcripts", "orf_number", "orf_type")]
 
@@ -500,7 +507,7 @@ DOTSeqDataSet <- function(
     )
     
     sumExp <- new(
-        "DOTSeqDataSet",
+        "DOUData",
         sumExp,
         formula = reduced_formula,
         specs = emm_specs
@@ -588,6 +595,6 @@ DOTSeqDataSet <- function(
         start_dou <- Sys.time()
     }
     
-    return(new("DOTSeqObjects", DOU = sumExp, DTE = dds))
+    return(new("DOTSeqDataSets", DOU = sumExp, DTE = dds))
 }
 

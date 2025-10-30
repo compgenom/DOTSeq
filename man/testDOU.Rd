@@ -5,15 +5,15 @@
 \title{Compute Differential ORF Usage (DOU) Contrasts Using EMMs}
 \usage{
 testDOU(
-  dou,
+  data,
   contrasts_method = "revpairwise",
   nullweight = 500,
   verbose = TRUE
 )
 }
 \arguments{
-\item{dou}{A \code{\link{DOTSeqDataSet}} object containing \code{emmGrid}
-objects, typically stored in \code{rowData(dou)[['DOUResults']]}.}
+\item{data}{A \code{\link{DOUData-class}} object containing \code{emmGrid}
+objects, typically stored in \code{rowData(data)[['DOUResults']]}.}
 
 \item{contrasts_method}{Character string specifying the method
 for computing contrasts. Default is \code{"revpairwise"}.}
@@ -26,23 +26,26 @@ conservative lfsr estimates. Default is \code{500}.}
 Default is \code{TRUE}.}
 }
 \value{
-A \code{DOTSeqDataSet} object with two new
+A \code{\link{DOUData-class}} object with two new
 \code{S4Vectors::DataFrame} slots. These tables contain
 long-format results for all computed contrasts:
 \describe{
-\item{\code{\link{interactionResults}}}{
+\item{\code{interaction}}{
 A long-format \code{S4Vectors::DataFrame} containing DOU
-effect sizes (Ribo-seq minus RNA-seq) for all interaction
-contrasts. Columns include \code{contrast}, and shrunken
-and unshrunken metrics (e.g., \code{betahat},
-\code{sebetahat}, \code{WaldPadj}, \code{PosteriorMean},
-\code{lfsr}).
+effect sizes (log-odds of Ribo-seq minus RNA-seq) for all
+interaction-specific contrasts. Columns include:
+\code{contrast}, \code{betahat} (raw log-odds effect size),
+\code{sebetahat} (standard error), \code{waldpval}
+(Wald test p-value), \code{waldpadj}
+(adjusted p-value), \code{posterior} (posterior mean from
+shrinkage), and \code{lfsr} (Local False Sign Rate).
 }
-\item{\code{\link{strategyResults}}}{
+\item{\code{strategy}}{
 A long-format \code{S4Vectors::DataFrame} containing
-strategy-specific effect sizes (e.g., Ribo-seq only) for
-all computed contrasts. Columns include \code{strategy},
-\code{contrast}, and shrunken and unshrunken metrics.
+strategy-specific effect sizes (e.g., Ribo-seq only) for all
+computed contrasts. Columns include:
+\code{strategy}, \code{contrast}, and the same shrunken and
+unshrunken metrics as above.
 }
 }
 }
@@ -74,7 +77,7 @@ cnt <- read.table(
 )
 names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\\\1", names(cnt))
 
-flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+gtf <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
 bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
 
 meta <- read.table(file.path(dir, "metadata.txt.gz"))
@@ -83,31 +86,27 @@ names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
 cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL # remove the treatment column
 
-# Create a DOTSeqObjects objects.These objects can be used as input
-# for DOTSeq and fitDOU
-dot <- DOTSeqDataSet(
+# Create a DOTSeqDataSets object
+d <- DOTSeqDataSets(
     count_table = cnt,
     condition_table = cond,
-    flattened_gtf = flat,
-    bed = bed
+    flattened_gtf = gtf,
+    flattened_bed = bed
 )
 
 # Keep ORFs where all replicates in at least one condition pass min_count
 # Single-ORF genes are removed
-dou <- getDOU(dot)
+dou <- getDOU(d)
 dou <- dou[rowRanges(dou)$is_kept == TRUE, ]
 
 # Randomly sample 100 ORFs for fitDOU
-n <- 100
 set.seed(42)
-random_rows <- sample(seq_len(nrow(dou)), size = n)
-
-# Subset the SummarizedExperiment object
+random_rows <- sample(seq_len(nrow(dou)), size = 100)
 dou <- dou[random_rows, ]
 
 # Model fitting using fitDOU
 rowData(dou)[["DOUResults"]] <- fitDOU(
-    dou = dou,
+    data = dou,
     formula = ~ condition * strategy,
     specs = ~ condition * strategy,
     dispersion_modeling = "auto",
@@ -128,9 +127,9 @@ Least-Squares Means. R package version 2.0.0,
 \url{https://rvlenth.github.io/emmeans/}
 
 Stephens, M. (2016) False discovery rates: a new deal.
-Biostatistics, 18:2. \doi{10.1093/biostatistics/kxw041}
+Biostatistics, 18:2. DOI: 10.1093/biostatistics/kxw041
 }
 \seealso{
-\code{\link{DOTSeq}}, \code{\link{DOTSeqDataSet}},
+\code{\link{DOTSeq}}, \code{\link{DOTSeqDataSets}},
 \code{\link{fitDOU}}, \code{\link{plotDOT}}
 }

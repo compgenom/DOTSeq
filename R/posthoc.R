@@ -9,41 +9,44 @@
 #' stabilize effect size estimates.
 #'
 #' @seealso
-#' \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSet}},
+#' \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSets}},
 #' \code{\link{fitDOU}}, \code{\link{plotDOT}}
 #'
-#' @param dou A \code{\link{DOTSeqDataSet}} object containing `emmGrid`
-#'     objects, typically stored in \code{rowData(dou)[['DOUResults']]}.
+#' @param data A \code{\link{DOUData-class}} object containing `emmGrid`
+#' objects, typically stored in \code{rowData(data)[['DOUResults']]}.
 #'
 #' @param contrasts_method Character string specifying the method
-#'     for computing contrasts. Default is \code{"revpairwise"}.
+#' for computing contrasts. Default is \code{"revpairwise"}.
 #'
 #' @param nullweight Numeric. Prior weight on the null hypothesis
-#'     for empirical Bayes shrinkage. Higher values yield more
-#'     conservative lfsr estimates. Default is \code{500}.
+#' for empirical Bayes shrinkage. Higher values yield more
+#' conservative lfsr estimates. Default is \code{500}.
 #'
 #' @param verbose Logical. If \code{TRUE}, prints progress messages.
-#'     Default is \code{TRUE}.
+#' Default is \code{TRUE}.
 #'
-#' @return A \code{DOTSeqDataSet} object with two new
-#'     \code{S4Vectors::DataFrame} slots. These tables contain 
-#'         long-format results for all computed contrasts:
-#'     \describe{
-#'         \item{\code{\link{interactionResults}}}{
-#'             A long-format \code{S4Vectors::DataFrame} containing DOU 
-#'             effect sizes (Ribo-seq minus RNA-seq) for all interaction 
-#'             contrasts. Columns include \code{contrast}, and shrunken 
-#'             and unshrunken metrics (e.g., \code{betahat}, 
-#'             \code{sebetahat}, \code{WaldPadj}, \code{PosteriorMean}, 
-#'             \code{lfsr}).
-#'         }
-#'         \item{\code{\link{strategyResults}}}{
-#'             A long-format \code{S4Vectors::DataFrame} containing
-#'             strategy-specific effect sizes (e.g., Ribo-seq only) for 
-#'             all computed contrasts. Columns include \code{strategy},
-#'             \code{contrast}, and shrunken and unshrunken metrics.
-#'         }
+#' @return A \code{\link{DOUData-class}} object with two new
+#' \code{S4Vectors::DataFrame} slots. These tables contain 
+#' long-format results for all computed contrasts:
+#' \describe{
+#'     \item{\code{interaction}}{
+#'         A long-format \code{S4Vectors::DataFrame} containing DOU 
+#'         effect sizes (log-odds of Ribo-seq minus RNA-seq) for all 
+#'         interaction-specific contrasts. Columns include:
+#'         \code{contrast}, \code{betahat} (raw log-odds effect size), 
+#'         \code{sebetahat} (standard error), \code{waldpval} 
+#'         (Wald test p-value), \code{waldpadj} 
+#'         (adjusted p-value), \code{posterior} (posterior mean from 
+#'         shrinkage), and \code{lfsr} (Local False Sign Rate).
 #'     }
+#'     \item{\code{strategy}}{
+#'         A long-format \code{S4Vectors::DataFrame} containing 
+#'         strategy-specific effect sizes (e.g., Ribo-seq only) for all 
+#'         computed contrasts. Columns include:
+#'         \code{strategy}, \code{contrast}, and the same shrunken and 
+#'         unshrunken metrics as above.
+#'     }
+#' }
 #'
 #' @details
 #' Results for post hoc contrasts are stored in long format using
@@ -75,7 +78,7 @@
 #' )
 #' names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
 #'
-#' flat <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
+#' gtf <- file.path(dir, "gencode.v47.orf_flattened_subset.gtf.gz")
 #' bed <- file.path(dir, "gencode.v47.orf_flattened_subset.bed.gz")
 #'
 #' meta <- read.table(file.path(dir, "metadata.txt.gz"))
@@ -83,32 +86,28 @@
 #' # extract only samples processed using cyclohexamide
 #' cond <- meta[meta$treatment == "chx", ]
 #' cond$treatment <- NULL # remove the treatment column
-#'
-#' # Create a DOTSeqObjects objects.These objects can be used as input
-#' # for DOTSeq and fitDOU
-#' dot <- DOTSeqDataSet(
+#' 
+#' # Create a DOTSeqDataSets object
+#' d <- DOTSeqDataSets(
 #'     count_table = cnt,
 #'     condition_table = cond,
-#'     flattened_gtf = flat,
-#'     bed = bed
+#'     flattened_gtf = gtf,
+#'     flattened_bed = bed
 #' )
-#'
+#' 
 #' # Keep ORFs where all replicates in at least one condition pass min_count
 #' # Single-ORF genes are removed
-#' dou <- getDOU(dot)
+#' dou <- getDOU(d)
 #' dou <- dou[rowRanges(dou)$is_kept == TRUE, ]
 #'
 #' # Randomly sample 100 ORFs for fitDOU
-#' n <- 100
 #' set.seed(42)
-#' random_rows <- sample(seq_len(nrow(dou)), size = n)
-#'
-#' # Subset the SummarizedExperiment object
+#' random_rows <- sample(seq_len(nrow(dou)), size = 100)
 #' dou <- dou[random_rows, ]
 #'
 #' # Model fitting using fitDOU
 #' rowData(dou)[["DOUResults"]] <- fitDOU(
-#'     dou = dou,
+#'     data = dou,
 #'     formula = ~ condition * strategy,
 #'     specs = ~ condition * strategy,
 #'     dispersion_modeling = "auto",
@@ -128,22 +127,22 @@
 #' \url{https://rvlenth.github.io/emmeans/}
 #'
 #' Stephens, M. (2016) False discovery rates: a new deal.
-#' Biostatistics, 18:2. \doi{10.1093/biostatistics/kxw041}
+#' Biostatistics, 18:2. DOI: 10.1093/biostatistics/kxw041
 #'
 #'
 testDOU <- function(
-        dou,
+        data,
         contrasts_method = "revpairwise",
         nullweight = 500,
         verbose = TRUE
 ) {
     
-    if (missing(dou)) {
-        stop("Argument 'dou' is required.")
+    if (missing(data)) {
+        stop("Argument 'data' is required.")
     }
     
-    if (!inherits(dou, "DOTSeqDataSet")) {
-        stop("'dou' must be a DOTSeqDataSet object.")
+    if (!inherits(data, "DOUData")) {
+        stop("'data' must be a DOUData object.")
     }
     
     valid_methods <- c("revpairwise", "pairwise")
@@ -168,7 +167,7 @@ testDOU <- function(
         message("starting post hoc analysis")
     }
 
-    result_list <- rowData(dou)[["DOUResults"]]
+    result_list <- rowData(data)[["DOUResults"]]
 
     valid_indices <- which(vapply(result_list, function(obj) {
         !is.null(posthoc(obj)) && inherits(posthoc(obj), "emmGrid")
@@ -251,9 +250,9 @@ testDOU <- function(
             res_df <- data.frame(
                 betahat = betas_for_ashr,
                 sebetahat = ses_for_ashr,
-                WaldP = pvalues,
-                WaldPadj = p.adjust(pvalues, method = "BH"),
-                PosteriorMean = get_pm(ash_result),
+                waldpval = pvalues,
+                waldpadj = p.adjust(pvalues, method = "BH"),
+                posterior = get_pm(ash_result),
                 qvalue = get_qvalue(ash_result),
                 lfdr = get_lfdr(ash_result),
                 lfsr = get_lfsr(ash_result)
@@ -262,7 +261,17 @@ testDOU <- function(
             all_results[["interaction_specific"]][[c_name]] <- res_df
         } else {
             warning("No valid betas for manual contrast:", c_name)
-            all_results[["interaction_specific"]][[c_name]] <- NULL
+            res_df <- data.frame(
+                betahat = NA, 
+                sebetahat = NA, 
+                waldpval = NA,
+                waldpadj = NA,
+                posterior = NA, 
+                qvalue = NA,
+                lfsr = NA, 
+                lfsr = NA
+            )
+            all_results[["interaction_specific"]][[c_name]] <- res_df
         }
     }
     
@@ -324,20 +333,27 @@ testDOU <- function(
             res_df <- data.frame(
                 betahat = betas,
                 sebetahat = ses,
-                WaldP = pvalues,
-                WaldPadj = p.adjust(pvalues, method = "BH"),
-                PosteriorMean = get_pm(ash_result),
+                waldpval = pvalues,
+                waldpadj = p.adjust(pvalues, method = "BH"),
+                posterior = get_pm(ash_result),
                 qvalue = get_qvalue(ash_result),
                 lfdr = get_lfdr(ash_result),
                 lfsr = get_lfsr(ash_result)
             )
         } else {
+            warning(
+                "No valid betas for manual contrast:", 
+                paste0(strategy_combos, collapse = ", ")
+            )
             res_df <- data.frame(
-                beta = NA, 
-                se = NA, 
-                PosteriorMean = NA, 
+                betahat = NA, 
+                sebetahat = NA, 
+                waldpval = NA,
+                waldpadj = NA,
+                posterior = NA, 
+                qvalue = NA,
                 lfsr = NA, 
-                qvalue = NA
+                lfsr = NA
             )
         }
 
@@ -375,14 +391,14 @@ testDOU <- function(
     strategy_df$contrast <- Rle(strategy_df$contrast)
     strategy_df$strategy <- Rle(strategy_df$strategy)
     
-    interactionResults(dou) <- interaction_df
-    strategyResults(dou) <- strategy_df
+    getContrasts(data, type = "interaction") <- interaction_df
+    getContrasts(data, type = "strategy") <- strategy_df
     
     if (verbose) {
         message("effect sizes for strategy_specific contrasts calculated and shrunk successfully")
     }
 
-    return(dou)
+    return(data)
 }
 
 
@@ -400,24 +416,24 @@ testDOU <- function(
 #' in complex designs involving interaction terms.
 #'
 #' @param dds A \code{DESeqDataSet} object containing count data and
-#'     sample annotations.
+#' sample annotations.
 #'
 #' @param formula Optional. A model formula used to generate the design
-#'     matrix (e.g., \code{~ condition * strategy}). If not provided, 
-#'     the function will try to extract it from 
-#'     \code{fmla(dds)}.
+#' matrix (e.g., \code{~ condition * strategy}). If not provided, 
+#' the function will try to extract it from 
+#' \code{design(dds)}.
 #'
 #' @param baseline Optional. A character string specifying the baseline
-#'     condition for comparisons. If \code{NULL}, the first level of 
-#'     \code{condition} in \code{colData(dds)} is used.
+#' condition for comparisons. If \code{NULL}, the first level of 
+#' \code{condition} in \code{colData(dds)} is used.
 #'
 #' @param delim A character string used to identify interaction terms
-#'     in coefficient names. Default is \code{"."}.
+#' in coefficient names. Default is \code{"."}.
 #'
 #' @return A named list of numeric contrast vectors. Each vector
-#'     represents a pairwise or baseline comparison. These can be used 
-#'     with \code{results(dds, contrast = ...)} for custom differential 
-#'     testing.
+#' represents a pairwise or baseline comparison. These can be used 
+#' with \code{results(dds, contrast = ...)} for custom differential 
+#' testing.
 #'
 #' @importFrom SummarizedExperiment colData
 #' @importFrom stats model.matrix
@@ -428,24 +444,24 @@ testDOU <- function(
 #' @keywords internal
 #' @examples
 #' \dontrun{
-#'     # Generate contrast vectors from a DESeqDataSet
-#'     contrast_list <- contrast_vectors(
-#'         dds,
-#'         formula = ~ condition * strategy
-#'     )
+#' # Generate contrast vectors from a DESeqDataSet
+#' contrast_list <- contrast_vectors(
+#'     dds,
+#'     formula = ~ condition * strategy
+#' )
 #'
-#'     # Use a contrast vector with DESeq2
-#'     res <- lfcShrink(
-#'         dot$dds,
-#'         contrast = contrast_list[[1]],
-#'         type = "ashr"
-#'     )
+#' # Use a contrast vector with DESeq2
+#' res <- lfcShrink(
+#'     dot$dds,
+#'     contrast = contrast_list[[1]],
+#'     type = "ashr"
+#' )
 #' }
 #'
 #' @references
 #' Love, M.I., Huber, W., Anders, S. (2014) Moderated estimation of fold 
 #' change and dispersion for RNA-seq data with DESeq2. Genome Biology, 
-#' 15:550. \doi{10.1186/s13059-014-0550-8}
+#' 15:550. DOI: 10.1186/s13059-014-0550-8
 #'
 contrast_vectors <- function(
     dds, 
@@ -473,7 +489,7 @@ contrast_vectors <- function(
     if (!is.null(formula)) {
         design <- model.matrix(formula, data = coldata)
     } else if (inherits(design(dds), "formula")) {
-        design <- model.matrix(fmla(dds), data = coldata)
+        design <- model.matrix(design(dds), data = coldata)
     } else {
         stop("Please provide design formula.")
     }

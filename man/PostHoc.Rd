@@ -23,7 +23,7 @@ A \code{PostHoc} S4 object.
 \description{
 This function constructs a new \code{PostHoc} object, which stores the
 results of a statistical model fitted to ORF-level data. It is typically
-used internally by the DOTSeq pipeline or manually for testing and
+used internally by the \pkg{DOTSeq} workflow or manually for testing and
 diagnostics.
 }
 \examples{
