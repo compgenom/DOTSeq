@@ -434,7 +434,7 @@ plot_composite <- function(
             dte = adjustcolor("#0072B2", alpha.f = 0.6),
             dou = adjustcolor("#E69F00", alpha.f = 0.6),
             both = adjustcolor("#CC79A7", alpha.f = 0.6),
-            none = adjustcolor("grey80", alpha.f = 0.6),
+            none = adjustcolor("grey80", alpha.f = 0.4),
             uorf = adjustcolor("#D73027", alpha.f = 0.6),
             morf = adjustcolor("#4575B4", alpha.f = 0.6),
             dorf = adjustcolor("#A6A6A6", alpha.f = 0.6)
@@ -617,11 +617,6 @@ plot_composite <- function(
         is_morfs <- results$orf_type == "mORF"
         is_dorfs <- results$orf_type == "dORF"
         points(
-            results[[dte_estimates_col]][is_dorfs], 
-            results[[dou_estimates_col]][is_dorfs], 
-            col = col_dorfs
-        )
-        points(
             results[[dte_estimates_col]][is_morfs], 
             results[[dou_estimates_col]][is_morfs], 
             col = col_morfs
@@ -630,6 +625,11 @@ plot_composite <- function(
             results[[dte_estimates_col]][is_uorfs], 
             results[[dou_estimates_col]][is_uorfs], 
             col = col_uorfs
+        )
+        points(
+            results[[dte_estimates_col]][is_dorfs], 
+            results[[dou_estimates_col]][is_dorfs], 
+            col = col_dorfs
         )
         legend(
             legend_position, 
