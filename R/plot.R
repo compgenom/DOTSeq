@@ -1950,14 +1950,15 @@ plotDOT <- function(
         
         reset_graphics(function() {
             grid::grid.newpage()
-            if (is.null(id_mapping)) {
+            if (isFALSE(id_mapping)) {
                 p <- plot_orf_usage(
                     data = data, 
                     gene_id = gene_id, 
                     levels = plot_params$order_by, 
-                    dou_signif_thresh = dou_params$signif_thresh
+                    dou_signif_thresh = dou_params$signif_thresh,
+                    colors = colors$usage
                 )
-            } else if (!is.null(id_mapping)) {
+            } else if (!inherits(id_mapping, "data.frame")) {
                 p <- plot_orf_usage(
                     data = data, 
                     gene_id = gene_id, 
