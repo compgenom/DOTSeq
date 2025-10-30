@@ -669,7 +669,7 @@ get_significant_genes <- function(
     padj_col = "lfsr",
     padj_threshold = 0.05
 ) {
-    results$gene_id <- sub("\\..*", "", results$orf_id)
+    results$gene_id <- sub("[.:].*", "", results$orf_id)
     
     gene_ids <- results[
         results[[padj_col]] < padj_threshold,

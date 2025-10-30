@@ -303,6 +303,10 @@ DOTSeq <- function(
 
             # Kept ORFs
             nrow_kept <- nrow(rowData(dou))
+            
+            if (nrow_kept == 0) {
+                stop("No data after filtering. Please check the count table.")
+            }
 
             if (verbose) {
                 message("starting Differential ORF Usage (DOU) analysis")

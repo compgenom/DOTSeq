@@ -100,6 +100,10 @@ plot_orf_usage <- function(
     }
     
     rowranges <- rowRanges(data)
+    if (is.null(rowranges)) {
+        stop("No rowRanges slot found in ", data)
+    }
+    
     orfs <- data.frame(
         orf_id = rownames(mcols(rowranges)),
         orf_number = mcols(rowranges)$orf_number,
@@ -451,11 +455,16 @@ plot_composite <- function(
         try(par(mfrow = c(1, 1)), silent = TRUE)
     }, add = TRUE)
     
+    if (nrow(results) == 0) stop("Please provide results as input")
+    
+    results <- as.data.frame(results)
+    
     if (isTRUE(flip_sign)) {
         results[[dou_estimates_col]] <- results[[dou_estimates_col]] * -1
     }
     
     if (!is.null(rowdata)) {
+        rowdata <- as.data.frame(rowdata)
         results <- merge(results, rowdata, by.x = "orf_id", by.y = "row.names")
     }
     
@@ -608,9 +617,9 @@ plot_composite <- function(
         is_morfs <- results$orf_type == "mORF"
         is_dorfs <- results$orf_type == "dORF"
         points(
-            results[[dte_estimates_col]][is_uorfs], 
-            results[[dou_estimates_col]][is_uorfs], 
-            col = col_uorfs
+            results[[dte_estimates_col]][is_dorfs], 
+            results[[dou_estimates_col]][is_dorfs], 
+            col = col_dorfs
         )
         points(
             results[[dte_estimates_col]][is_morfs], 
@@ -618,9 +627,9 @@ plot_composite <- function(
             col = col_morfs
         )
         points(
-            results[[dte_estimates_col]][is_dorfs], 
-            results[[dou_estimates_col]][is_dorfs], 
-            col = col_dorfs
+            results[[dte_estimates_col]][is_uorfs], 
+            results[[dou_estimates_col]][is_uorfs], 
+            col = col_uorfs
         )
         legend(
             legend_position, 
@@ -776,6 +785,8 @@ plot_volcano <- function(
 ) {
     color_by <- match.arg(color_by)
     
+    results <- as.data.frame(results)
+    
     if (!is.null(rowdata)) {
         results <- merge(results, rowdata, by.x = "orf_id", by.y = "row.names")
     }
@@ -797,7 +808,7 @@ plot_volcano <- function(
         results[[dou_estimates_col]] <- results[[dou_estimates_col]] * -1
     }
     
-    results$loglfsr <- -log10(results[[dou_signif_col]])
+    results$loglfsr <- -log10(pmax(results[[dou_signif_col]], .Machine$double.eps))
     loglfsr_ceil <- ceiling(
         max(
             results$loglfsr[is.finite(results$loglfsr)], 
@@ -1463,7 +1474,7 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' \code{rowData()} and post hoc results in the \code{interaction} slot.
 #'
 #' @param id_mapping Optional data frame mapping Ensembl IDs to gene 
-#' symbols. Can be reused across plots.
+#' symbols. Can be reused across plots. Default is \code{FALSE}
 #'
 #' @param include_go Logical; if \code{TRUE}, includes GO annotations 
 #' in \code{id_mapping}. Default is \code{FALSE}.
@@ -1565,6 +1576,7 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' The volcano plot highlights extreme and top-ranked ORFs, while 
 #' the heatmap summarizes DOU across top genes.
 #'
+#' @importFrom SummarizedExperiment rowData
 #' @importFrom graphics par layout
 #' @importFrom grid grid.newpage grid.draw
 #' @importFrom utils modifyList
@@ -1605,7 +1617,7 @@ plotDOT <- function(
         plot_type = "volcano",
         results = NULL,
         data = NULL,
-        id_mapping = NULL,
+        id_mapping = FALSE,
         include_go = FALSE,
         gene_id = NULL,
         dou_params = list(
@@ -1774,13 +1786,13 @@ plotDOT <- function(
         stop("A results dataframe is required for plotting: ", plot_type)
     }
     
-    if (!is.null(data)) {
-        rowdata <- rowData(data)
+    if (!is.null(data) && (inherits(data, "DOUData"))) {
+        rowdata <- SummarizedExperiment::rowData(data)
     } else {
         rowdata <- NULL
     }
     
-    if (any(c("heatmap", "volcano") %in% plot_type) && is.null(id_mapping)) {
+    if (any(c("heatmap", "volcano") %in% plot_type) && isTRUE(id_mapping)) {
         if (verbose) message("retrieving gene annotation from BioMart")
         id_mapping_attempt <- tryCatch({
             mapIDs(
@@ -1795,8 +1807,23 @@ plotDOT <- function(
             NULL
         })
         if (!is.null(id_mapping_attempt)) {
-            id_mapping <- id_mapping_attempt
+            retrieved_symbols <- id_mapping_attempt[[2]][id_mapping_attempt[[2]] != ""]
+            frac_retrieved <- length(retrieved_symbols) / nrow(id_mapping_attempt)
+            prop_retrieved <- round(frac_retrieved * 100, 3)
+            if (frac_retrieved < 0.5) {
+                warning(
+                    "Retrieved only ", 
+                    prop_retrieved, 
+                    "% gene symbols; falling back to gene IDs"
+                )
+                id_mapping <- NULL
+                
+            } else {
+                id_mapping <- id_mapping_attempt
+            }
         }
+    } else if (any(c("heatmap", "volcano") %in% plot_type) && isFALSE(id_mapping)) {
+        id_mapping <- NULL 
     }
     
     if (plot_type == "venn") {
@@ -1815,7 +1842,7 @@ plotDOT <- function(
     
     if (plot_type == "composite") {
         if (plot_params$color_by == "orf_type" && is.null(rowdata)) {
-            warning("rowdata is missing; falling back to color_by = 'significance'.")
+            warning("DOUData is missing; falling back to color_by = 'significance'.")
             plot_params$color_by <- "significance"
             marginal_plot_type <- "histogram"
         }
@@ -1838,7 +1865,7 @@ plotDOT <- function(
                 "Spearman correlation between DOU and DTE estimates: ",
                 round(correlation_results$estimate[["rho"]], 3),
                 ", p-value: ",
-                format.pval(correlation_results$p.value, digits = 3, eps = 1e-16)
+                format.pval(correlation_results$p.value, digits = 3, eps = .Machine$double.eps)
             )
             if (verbose) message("composite plot colored by significance plotted")
         }, force_new_device = force_new_device)
@@ -1846,7 +1873,7 @@ plotDOT <- function(
     
     if (plot_type == "volcano") {
         if (plot_params$color_by == "orf_type" && is.null(rowdata)) {
-            warning("rowdata is missing; falling back to color_by = 'significance'.")
+            warning("DOUData is missing; falling back to color_by = 'significance'.")
             plot_params$color_by <- "significance"
         }
         reset_graphics(function() {
@@ -1915,7 +1942,7 @@ plotDOT <- function(
                     data = data, 
                     gene_id = gene_id, 
                     levels = plot_params$order_by, 
-                    dou_signif_thresh = dou_params$dou_signif_thresh
+                    dou_signif_thresh = dou_params$signif_thresh
                 )
             } else if (!is.null(id_mapping)) {
                 p <- plot_orf_usage(
