@@ -793,7 +793,7 @@ plot_volcano <- function(
     
     if (!is.null(id_mapping)) {
         genes_unique <- id_mapping[!duplicated(id_mapping$ensembl_gene_id), ]
-        results$ensembl_gene_id <- sub("\\..*", "", results$orf_id)
+        results$ensembl_gene_id <- sub("[.:].*", "", results$orf_id)
         results <- merge(
             genes_unique, 
             results, 
@@ -1089,7 +1089,7 @@ cistronic_data <- function(
 ) {
 
     results <- na.omit(results)
-    results$gene_id <- sub("\\..*", "", results$orf_id)
+    results$gene_id <- sub("[.:].*", "", results$orf_id)
     
     sig_genes <- results[results[[signif_col]] < signif_thresh, ]$gene_id
     sig_res <- results[results$gene_id %in% sig_genes, ]
@@ -1197,7 +1197,7 @@ cistronic_data <- function(
     )
     highlight_df <- highlight_df[complete.cases(highlight_df), ]
     
-    ensembl_ids <- sub("\\..*", "", rownames(ordered_matrix))
+    ensembl_ids <- sub("[.:].*", "", rownames(ordered_matrix))
     
     if (!is.null(id_mapping)) {
         genes_unique <- id_mapping[!duplicated(id_mapping$ensembl_gene_id), ]
@@ -1473,8 +1473,18 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' plots except for \code{"venn"}. Should contain \code{DOUResults} in 
 #' \code{rowData()} and post hoc results in the \code{interaction} slot.
 #'
-#' @param id_mapping Optional data frame mapping Ensembl IDs to gene 
-#' symbols. Can be reused across plots. Default is \code{FALSE}
+#' @param id_mapping Optional input controlling gene symbol annotation.
+#' Can be one of:
+#' \itemize{
+#'     \item \code{FALSE} (default): disables annotation.
+#'     \item \code{TRUE}: triggers automatic annotation via BioMart 
+#'     using \code{mapIDs()}.
+#'     \item a \code{data.frame}: a precomputed mapping of Ensembl IDs 
+#'     to gene symbols, which can be reused across plots.
+#' }
+#' Used in volcano and heatmap plots to annotate genes with symbols. 
+#' If \code{TRUE}, annotation is attempted and fallback to Ensembl IDs 
+#' occurs if symbol coverage is low. Default is \code{FALSE}
 #'
 #' @param include_go Logical; if \code{TRUE}, includes GO annotations 
 #' in \code{id_mapping}. Default is \code{FALSE}.
@@ -1792,7 +1802,7 @@ plotDOT <- function(
         rowdata <- NULL
     }
     
-    if (any(c("heatmap", "volcano") %in% plot_type) && isTRUE(id_mapping)) {
+    if (any(c("heatmap", "volcano") %in% plot_type) && (identical(id_mapping, TRUE))) {
         if (verbose) message("retrieving gene annotation from BioMart")
         id_mapping_attempt <- tryCatch({
             mapIDs(
@@ -1807,7 +1817,8 @@ plotDOT <- function(
             NULL
         })
         if (!is.null(id_mapping_attempt)) {
-            retrieved_symbols <- id_mapping_attempt[[2]][id_mapping_attempt[[2]] != ""]
+            retrieved_symbols <- id_mapping_attempt[[2]][nzchar(id_mapping_attempt[[2]])]
+            if (verbose) message("retrieved ", length(retrieved_symbols), " gene symbols")
             frac_retrieved <- length(retrieved_symbols) / nrow(id_mapping_attempt)
             prop_retrieved <- round(frac_retrieved * 100, 3)
             if (frac_retrieved < 0.5) {
@@ -1824,6 +1835,8 @@ plotDOT <- function(
         }
     } else if (any(c("heatmap", "volcano") %in% plot_type) && isFALSE(id_mapping)) {
         id_mapping <- NULL 
+    } else if (!isFALSE(id_mapping) && !inherits(id_mapping, "data.frame")) {
+        stop("'id_mapping' must be FALSE, TRUE, or a data.frame")
     }
     
     if (plot_type == "venn") {

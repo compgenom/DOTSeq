@@ -42,8 +42,18 @@ specified in \code{dou_params} and \code{dte_params}.}
 plots except for \code{"venn"}. Should contain \code{DOUResults} in
 \code{rowData()} and post hoc results in the \code{interaction} slot.}
 
-\item{id_mapping}{Optional data frame mapping Ensembl IDs to gene
-symbols. Can be reused across plots. Default is \code{FALSE}}
+\item{id_mapping}{Optional input controlling gene symbol annotation.
+Can be one of:
+\itemize{
+\item \code{FALSE} (default): disables annotation.
+\item \code{TRUE}: triggers automatic annotation via BioMart
+using \code{mapIDs()}.
+\item a \code{data.frame}: a precomputed mapping of Ensembl IDs
+to gene symbols, which can be reused across plots.
+}
+Used in volcano and heatmap plots to annotate genes with symbols.
+If \code{TRUE}, annotation is attempted and fallback to Ensembl IDs
+occurs if symbol coverage is low. Default is \code{FALSE}}
 
 \item{include_go}{Logical; if \code{TRUE}, includes GO annotations
 in \code{id_mapping}. Default is \code{FALSE}.}
