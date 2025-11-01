@@ -1803,6 +1803,14 @@ plotDOT <- function(
     }
     
     if (any(c("heatmap", "volcano") %in% plot_type) && (identical(id_mapping, TRUE))) {
+        
+        if (!requireNamespace("biomaRt", quietly=TRUE)) {
+            stop(
+                "ID mapping require the 'biomaRt' package. ", 
+                "Please install it by running: BiocManager::install('biomaRt')"
+            )
+        }
+        
         if (verbose) message("retrieving gene annotation from BioMart")
         id_mapping_attempt <- tryCatch({
             mapIDs(
@@ -1828,13 +1836,14 @@ plotDOT <- function(
                     "% gene symbols; falling back to gene IDs"
                 )
                 id_mapping <- NULL
-                
             } else {
                 id_mapping <- id_mapping_attempt
             }
         }
+        
     } else if (any(c("heatmap", "volcano") %in% plot_type) && isFALSE(id_mapping)) {
         id_mapping <- NULL 
+        
     } else if (!isFALSE(id_mapping) && !inherits(id_mapping, "data.frame")) {
         stop("'id_mapping' must be FALSE, TRUE, or a data.frame")
     }

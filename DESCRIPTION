@@ -34,6 +34,7 @@ VignetteBuilder: knitr
 LinkingTo: Rcpp
 Suggests: 
     BiocStyle, 
+    biomaRt,
     DHARMa, 
     eulerr,
     ggplot2,
@@ -54,7 +55,7 @@ Imports:
     graphics,
     grDevices,
     pbapply,
-    biomaRt,
+    AnnotationDbi,
     Biostrings,
     BSgenome,
     txdbmaker,

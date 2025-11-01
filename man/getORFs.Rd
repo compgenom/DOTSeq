@@ -8,57 +8,73 @@ getORFs(
   sequences,
   annotation,
   organism = "Homo sapiens",
-  circ_seqs = "chrM",
-  start_codon = "ATG",
-  stop_codon = "TAA|TAG|TGA",
+  require_ids = c("hgnc_id", "protein_id", "ccdsid"),
+  source_filter = NULL,
+  circ_seqs = NULL,
+  start_codons = "ATG",
+  stop_codons = "TAA|TAG|TGA",
   min_len = 0,
   longest_orf = TRUE,
   verbose = TRUE
 )
 }
 \arguments{
-\item{sequences}{Input transcript sequences. Can be a character string
-(path to a FASTA file), a \code{DNAStringSet} object, or a
-\code{BSgenome} object.}
+\item{sequences}{Transcript sequences. Can be a character string (path
+to a FASTA file),
+a \code{DNAStringSet} object, or a \code{BSgenome} object.}
 
-\item{annotation}{Transcript annotation. Can be a character string
-(path to a GTF or GFF file) or a \code{TxDb} object.}
+\item{annotation}{Transcript annotation. Can be a character string (path
+to a GTF or GFF file)
+or a \code{TxDb} object.}
 
-\item{organism}{Character string specifying the organism name (used only
-when building a TxDb from a GTF/GFF file). Default is
+\item{organism}{Character string specifying the organism name (used
+only when building a TxDb from a GTF/GFF file). Default is
 \code{"Homo sapiens"}.}
 
 \item{circ_seqs}{Character vector of circular sequences to exclude
-(e.g., \code{"chrM"}). Default is \code{"chrM"}.}
+(e.g., \code{"chrM"}).
+Default is \code{"chrM"}.}
 
-\item{start_codon}{Character string specifying the start codon(s)
-(e.g., \code{"ATG"}). Default is \code{"ATG"}.}
+\item{start_codons}{Character vector of start codons to search for
+(e.g., \code{"ATG"}).
+Default is \code{"ATG"}.}
 
-\item{stop_codon}{Character string specifying stop codon(s), separated
-by \code{"|"} (e.g., \code{"TAA|TAG|TGA"}). Default is
-\code{"TAA|TAG|TGA"}.}
+\item{stop_codons}{Character string of stop codons separated by
+\code{"|"} (e.g., \code{"TAA|TAG|TGA"}).
+Default is \code{"TAA|TAG|TGA"}.}
 
 \item{min_len}{Integer specifying the minimum ORF length in bases.
 Default is \code{0}.}
 
 \item{longest_orf}{Logical. If \code{TRUE}, only the longest ORF per
-region is returned. Default is \code{TRUE}.}
+transcript is returned. Default is \code{TRUE}.}
+
+\item{verbose}{Logical. If \code{TRUE}, prints progress messages and
+timing information. Default is \code{TRUE}.}
 }
 \value{
-A \code{GRanges} object containing genomic coordinates of ORFs.
+A \code{GRanges} object containing genomic coordinates of
+ORFs, with metadata columns \code{gene_id} and \code{orf_type}.
+Main ORFs are labeled as \code{"mORF"}, and small ORFs are
+classified as \code{"uORF"}, \code{"dORF"}, or \code{"oORF"}.
 }
 \description{
-This function identifies open reading frames (ORFs) from transcript
-sequences and maps them to genomic coordinates using either a GTF/GFF
-annotation file or a TxDb object. It supports input sequences as a
-FASTA file, a DNAStringSet object, or a BSgenome object.
+Identifies open reading frames (ORFs) from transcript sequences and maps
+them to genomic coordinates using a GTF/GFF annotation file or a TxDb
+object. Supports input sequences as a FASTA file, a \code{DNAStringSet},
+or a \code{BSgenome} object. Classifies small ORFs (sORFs) as upstream
+(uORF), downstream (dORF), or overlapping (oORF) relative to the main
+ORFs (mORFs).
 }
 \details{
-The function uses \code{findORFsFasta()} to identify ORFs from transcript
-sequences, filters for ORFs on the positive strand, and optionally merges
-overlapping ORFs using \code{reduce()}. It then maps transcript-relative
-coordinates to genomic coordinates using exon annotations extracted from
-a TxDb object.
+\itemize{
+\item ORFs are identified in transcript space using \code{findORFsFasta()}.
+\item Coordinates are mapped to the genome using \code{mapFromTranscripts()}
+and exon annotations.
+\item Main ORFs are defined by overlap with annotated CDS regions.
+\item Small ORFs are classified relative to mORFs based on strand-aware
+genomic position.
+}
 }
 \examples{
 # Use a BSgenome and TxDb
@@ -84,11 +100,11 @@ if (requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
     tx_seqs <- extractTranscriptSeqs(genome, tx1)
 
     # Run getORFs on the transcript sequence
-    orfs <- getORFs(
+    gr <- getORFs(
         sequences = tx_seqs,
         annotation = txdb
     )
-    print(orfs)
+    print(gr)
 }
 
 }

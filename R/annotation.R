@@ -1,45 +1,99 @@
+#' @importFrom rtracklayer import
+#' @importFrom S4Vectors mcols mcols<-
+#' 
+#' @keywords internal
+#' 
+filter_gtf <- function(
+        gtf_file,
+        require_ids = c("hgnc_id", "protein_id", "ccdsid"),
+        source_filter = NULL,
+        verbose = TRUE
+) {
+    
+    # Import only transcript features
+    gtf <- import(gtf_file, feature.type = "transcript")
+    input_length <- length(gtf)
+    
+    for (col in require_ids) {
+        if (col %in% names(mcols(gtf))) {
+            gtf <- gtf[!is.na(mcols(gtf)[[col]]), ]
+        } else {
+            warning(paste("Column", col, "not found in gtf"))
+        }
+    }
+    
+    if (!is.null(source_filter)) {
+        if ("source" %in% names(gtf)) {
+            gtf <- gtf[gtf$source == source_filter, ]
+        } else {
+            warning("Column 'source' not found in gtf")
+        }
+    }
+    
+    if (verbose) {
+        message("selected ", length(gtf), " from ", input_length, " transcript IDs in the GTF file")
+    }
+    
+    return(gtf)
+}
+
+
 #' Extract Genomic ORFs from Transcript Sequences
 #'
-#' This function identifies open reading frames (ORFs) from transcript 
-#' sequences and maps them to genomic coordinates using either a GTF/GFF 
-#' annotation file or a TxDb object. It supports input sequences as a 
-#' FASTA file, a DNAStringSet object, or a BSgenome object.
+#' Identifies open reading frames (ORFs) from transcript sequences and maps 
+#' them to genomic coordinates using a GTF/GFF annotation file or a TxDb 
+#' object. Supports input sequences as a FASTA file, a \code{DNAStringSet}, 
+#' or a \code{BSgenome} object. Classifies small ORFs (sORFs) as upstream 
+#' (uORF), downstream (dORF), or overlapping (oORF) relative to the main 
+#' ORFs (mORFs).
 #'
-#' @param sequences Input transcript sequences. Can be a character string 
-#' (path to a FASTA file), a \code{DNAStringSet} object, or a 
-#' \code{BSgenome} object.
-#' @param annotation Transcript annotation. Can be a character string 
-#' (path to a GTF or GFF file) or a \code{TxDb} object.
-#' @param organism Character string specifying the organism name (used only 
-#' when building a TxDb from a GTF/GFF file). Default is 
+#' @param sequences Transcript sequences. Can be a character string (path 
+#' to a FASTA file),
+#' a \code{DNAStringSet} object, or a \code{BSgenome} object.
+#' @param annotation Transcript annotation. Can be a character string (path 
+#' to a GTF or GFF file)
+#' or a \code{TxDb} object.
+#' @param organism Character string specifying the organism name (used  
+#' only when building a TxDb from a GTF/GFF file). Default is 
 #' \code{"Homo sapiens"}.
 #' @param circ_seqs Character vector of circular sequences to exclude 
-#' (e.g., \code{"chrM"}). Default is \code{"chrM"}.
-#' @param start_codon Character string specifying the start codon(s) 
-#' (e.g., \code{"ATG"}). Default is \code{"ATG"}.
-#' @param stop_codon Character string specifying stop codon(s), separated 
-#' by \code{"|"} (e.g., \code{"TAA|TAG|TGA"}). Default is 
-#' \code{"TAA|TAG|TGA"}.
+#' (e.g., \code{"chrM"}).
+#' Default is \code{"chrM"}.
+#' @param start_codons Character vector of start codons to search for 
+#' (e.g., \code{"ATG"}).
+#' Default is \code{"ATG"}.
+#' @param stop_codons Character string of stop codons separated by 
+#' \code{"|"} (e.g., \code{"TAA|TAG|TGA"}).
+#' Default is \code{"TAA|TAG|TGA"}.
 #' @param min_len Integer specifying the minimum ORF length in bases. 
 #' Default is \code{0}.
 #' @param longest_orf Logical. If \code{TRUE}, only the longest ORF per 
-#' region is returned. Default is \code{TRUE}.
+#' transcript is returned. Default is \code{TRUE}.
+#' @param verbose Logical. If \code{TRUE}, prints progress messages and 
+#' timing information. Default is \code{TRUE}.
 #'
-#' @return A \code{GRanges} object containing genomic coordinates of ORFs.
+#' @return A \code{GRanges} object containing genomic coordinates of 
+#' ORFs, with metadata columns \code{gene_id} and \code{orf_type}. 
+#' Main ORFs are labeled as \code{"mORF"}, and small ORFs are 
+#' classified as \code{"uORF"}, \code{"dORF"}, or \code{"oORF"}.
 #'
 #' @details
-#' The function uses \code{findORFsFasta()} to identify ORFs from transcript 
-#' sequences, filters for ORFs on the positive strand, and optionally merges 
-#' overlapping ORFs using \code{reduce()}. It then maps transcript-relative 
-#' coordinates to genomic coordinates using exon annotations extracted from 
-#' a TxDb object.
+#' - ORFs are identified in transcript space using \code{findORFsFasta()}.
+#' - Coordinates are mapped to the genome using \code{mapFromTranscripts()} 
+#' and exon annotations.
+#' - Main ORFs are defined by overlap with annotated CDS regions.
+#' - Small ORFs are classified relative to mORFs based on strand-aware 
+#' genomic position.
 #'
 #' @importFrom Biostrings readDNAStringSet
 #' @importFrom BiocGenerics unlist
 #' @importFrom BSgenome getSeq
-#' @importFrom GenomicRanges reduce strand
-#' @importFrom GenomicFeatures cdsBy exonsBy mapToTranscripts
+#' @importFrom GenomicRanges reduce strand GRanges
+#' @importFrom IRanges IRanges
+#' @importFrom GenomicFeatures cdsBy exonsBy mapFromTranscripts transcripts genes
 #' @importFrom txdbmaker makeTxDbFromGFF
+#' @importFrom AnnotationDbi select
+#' @importFrom S4Vectors mcols mcols<-
 #'
 #' @export
 #'
@@ -67,28 +121,76 @@
 #'     tx_seqs <- extractTranscriptSeqs(genome, tx1)
 #'
 #'     # Run getORFs on the transcript sequence
-#'     orfs <- getORFs(
+#'     gr <- getORFs(
 #'         sequences = tx_seqs,
 #'         annotation = txdb
 #'     )
-#'     print(orfs)
+#'     print(gr)
 #' }
 #' 
 getORFs <- function(
         sequences,
         annotation,
         organism = "Homo sapiens", 
-        circ_seqs = "chrM",
-        start_codon = "ATG",
-        stop_codon = "TAA|TAG|TGA",
+        require_ids = c("hgnc_id", "protein_id", "ccdsid"),
+        source_filter = NULL,
+        circ_seqs = NULL,
+        start_codons = "ATG",
+        stop_codons = "TAA|TAG|TGA",
         min_len = 0,
         longest_orf = TRUE,
         verbose = TRUE
 ) {
-    
-    if (verbose) {
-        start_seq <- Sys.time()
+    # Load annotation
+    if (is.character(annotation)) {
+        annotation <- path.expand(annotation)
+        if (!file.exists(annotation)) stop("File does not exist: ", annotation)
+        
+        if (verbose) {
+            start_annotate <- Sys.time()
+            message("invoking makeTxDbFromGFF:")
+        }
+        
+        # Apply filter to GTF
+        gtf <- filter_gtf(gtf = annotation, require_ids = require_ids, source_filter = source_filter, verbose = verbose)
+        
+        format <- if (grepl("\\.gtf", annotation, ignore.case = TRUE)) "gtf" else "gff"
+        
+        annotation <- makeTxDbFromGFF(
+            file = annotation, 
+            format = format, 
+            organism = organism, 
+            circ_seqs = circ_seqs
+        )
+        
+        if (verbose) {
+            end_annotate <- Sys.time()
+            elapsed_annotate <- runtime(end_annotate, start_annotate)
+            
+            format_upper <- toupper(format)
+            
+            if (!is.null(elapsed_annotate$mins)) {
+                message(sprintf("%s parsing runtime: %d mins %.3f secs", format_upper, elapsed_annotate$mins, elapsed_annotate$secs))
+            } else {
+                message(sprintf("%s parsing runtime: %.3f secs", format_upper, elapsed_annotate$secs))
+            }
+            
+            start_seq <- Sys.time()
+        }
+        
+        # Extract exons grouped by transcript
+        exons_by_tx <- exonsBy(annotation, by = "tx", use.names = TRUE)
+        
+    } else if (inherits(annotation, "TxDb")) {
+        exons_by_tx <- exonsBy(annotation, by = "tx", use.names = TRUE)
+        
+        # } else if (inherits(annotation, "GRangesList")) {
+        #     exons_by_tx <- annotation
+        
+    } else {
+        stop("Unsupported 'annotation' input type: must be file path or TxDb object.")
     }
+    
     
     # Load sequences
     if (is.character(sequences)) {
@@ -109,45 +211,47 @@ getORFs <- function(
         stop("Unsupported 'sequences' input type: must be file path, DNAStringSet, or BSgenome.")
     }
     
+    if (length(seqs) == 0) {
+        stop("No sequences found. Please check your input sequences.")
+    }
+    
     if (verbose) {
         end_seq <- Sys.time()
-        
         elapsed_seq <- runtime(end_seq, start_seq)
-        
-        message("parsed ", length(seqs), " sequences successfully")
+        message("read ", length(seqs), " fasta sequences successfully")
         
         if (!is.null(elapsed_seq$mins)) {
-            message(sprintf("parsing runtime: %d mins %.3f secs", elapsed_seq$mins, elapsed_seq$secs))
+            message(sprintf("sequence reading runtime: %d mins %.3f secs", elapsed_seq$mins, elapsed_seq$secs))
         } else {
-            message(sprintf("parsing runtime: %.3f secs", elapsed_seq$secs))
+            message(sprintf("sequence reading runtime: %.3f secs", elapsed_seq$secs))
         }
         
         start_orfs <- Sys.time()
         
         message(
             "finding ORFs with start codons: ", 
-            paste0(start_codon, collapse = ", "), 
-            " on transcript sequences"
+            paste(start_codons, collapse = ", "), 
+            " on transcript sequences..."
         )
+    }
+    
+    if (!is.null(gtf)) {
+        seqs <- seqs[names(seqs) %in% gtf$transcript_id]
     }
     
     # Find ORFs
     gr <- findORFsFasta(
         sequences = seqs, 
-        start_codon = start_codon, 
-        stop_codon = stop_codon, 
+        start_codons = start_codons, 
+        stop_codons = stop_codons, 
         min_len = min_len, 
         longest_orf = longest_orf,
         plus_strand_only = TRUE
     )
-    # gr <- gr[strand(gr) == "+"]
     
     if (verbose) {
         end_orfs <- Sys.time()
-        
         elapsed_orfs <- runtime(end_orfs, start_orfs)
-        
-        message("found ", length(gr), " ORFs")
         
         if (!is.null(elapsed_orfs$mins)) {
             message(sprintf("ORF finding runtime: %d mins %.3f secs", elapsed_orfs$mins, elapsed_orfs$secs))
@@ -155,67 +259,191 @@ getORFs <- function(
             message(sprintf("ORF finding runtime: %.3f secs", elapsed_orfs$secs))
         }
         
-        # start_map <- Sys.time()
-        # 
-        # message("starting transcript-to-genomic coordinate conversion")
+        start_map <- Sys.time()
+        
+        message("starting transcript-to-genomic coordinate conversion")
     }
     
     # Flatten ORFs
     gr_orfs <- reduce(gr, with.revmap = TRUE)
     
-    # Load annotation
-    if (is.character(annotation)) {
-        annotation <- path.expand(annotation)
-        if (!file.exists(annotation)) stop("File does not exist: ", annotation)
-        
-        format <- if (grepl("\\.gtf", annotation, ignore.case = TRUE)) "gtf" else "gff"
-        
-        if (verbose) {
-            message("invoking makeTxDbFromGFF:")
-        }
-        annotation <- makeTxDbFromGFF(
-            file = annotation, 
-            format = format, 
-            organism = organism, 
-            circ_seqs = circ_seqs
-        )
-        # Extract exons grouped by transcript
-        exons_by_tx <- exonsBy(annotation, by = "tx", use.names = TRUE)
-        
-    } else if (inherits(annotation, "TxDb")) {
-        exons_by_tx <- exonsBy(annotation, by = "tx", use.names = TRUE)
-        
-    # } else if (inherits(annotation, "GRangesList")) {
-    #     exons_by_tx <- annotation
-        
-    } else {
-        stop("Unsupported 'annotation' input type: must be file path or TxDb object.")
-    }
+    gr_tx <- transcripts(annotation, use.names = TRUE)
+    # Split transcripts by strand
+    tx_plus  <- gr_tx[strand(gr_tx) == "+"]
+    tx_minus <- gr_tx[strand(gr_tx) == "-"]
+    # Split ORFs by transcript strand (based on seqnames)
+    orfs_plus  <- gr_orfs[as.character(seqnames(gr_orfs)) %in% names(tx_plus)]
+    orfs_minus <- gr_orfs[as.character(seqnames(gr_orfs)) %in% names(tx_minus)]
+    strand(orfs_minus) <- "-"# A workaround to do minus strand coordinate mapping
     
-    # Map ORFs to genome
-    # flattened_orfs <- mapFromTranscripts(gr_orfs, exons_by_tx, ignore.strand = TRUE)
+    exons_by_tx_plus <- exons_by_tx[as.character(names(exons_by_tx)) %in% names(tx_plus)]
+    exons_by_tx_minus <- exons_by_tx[as.character(names(exons_by_tx)) %in% names(tx_minus)]
     
-    gr_exons <- unlist(exons_by_tx, use.names = TRUE)
+    # Map separately
+    orfs_plus  <- mapFromTranscripts(orfs_plus, exons_by_tx_plus)
+    orfs_minus <- mapFromTranscripts(orfs_minus, exons_by_tx_minus)
+    flattened_orfs <- reduce(c(orfs_plus, orfs_minus)) # All flattened ORFs
     
+    # Flatten mORFs
     # Extract cds grouped by transcript
     cds_by_tx <- cdsBy(annotation, by = "tx", use.names = TRUE)
     gr_cds <- unlist(cds_by_tx, use.names = TRUE)
     
-    # if (verbose) {
-    #     end_map <- Sys.time()
-    #     
-    #     elapsed_map <- runtime(end_map, start_map)
-    #     
-    #     message("flattened ", length(gr), " ORFs to ", length(flattened_orfs))
-    #     
-    #     if (!is.null(elapsed_map$mins)) {
-    #         message(sprintf("coordinate conversion runtime: %d mins %.3f secs", elapsed_map$mins, elapsed_map$secs))
-    #     } else {
-    #         message(sprintf("coordinate conversion runtime: %.3f secs", elapsed_map$secs))
-    #     }
-    # }
+    # Find overlaps
+    hits <- findOverlaps(flattened_orfs, gr_cds, ignore.strand = FALSE)
     
-    return(list(gr_cds = gr_cds, gr_exons = gr_exons, gr_orfs = gr_orfs))
+    # overlapping_orfs <- flattened_orfs[unique(queryHits(hits))]
+    overlapping_cds  <- gr_cds[unique(subjectHits(hits))]
+    
+    # ID mapping
+    tx2gene <- select(
+        annotation, 
+        keys = keys(annotation, "TXID"), 
+        columns = c("TXNAME", "GENEID"), 
+        keytype = "TXID"
+    )
+    
+    # Create a named vector for fast lookup
+    txname_to_gene <- setNames(tx2gene$GENEID, tx2gene$TXNAME)
+    
+    # Match transcript names in overlapping_cds to gene IDs
+    cds_txnames <- names(overlapping_cds)
+    
+    # Attach gene IDs to overlapping_cds
+    mcols(overlapping_cds)$gene_id <- txname_to_gene[cds_txnames]
+    
+    # Split morfs by gene_id
+    overlapping_cds_by_gene <- split(overlapping_cds, mcols(overlapping_cds)$gene_id)
+    
+    # Reduce each group to a single range
+    flattened_overlapping_cds <- range(overlapping_cds_by_gene)
+    
+    # Add gene_id back as metadata
+    mcols(flattened_overlapping_cds)$gene_id <- names(flattened_overlapping_cds)
+    flattened_overlapping_cds <- unlist(flattened_overlapping_cds)
+    gr_morfs <- unique(flattened_overlapping_cds)
+    mcols(gr_morfs)$gene_id <- names(gr_morfs)
+    names(gr_morfs) <- NULL
+    
+    # Classify sORFs
+    gr_genes <- genes(annotation)
+    
+    hits <- findOverlaps(flattened_orfs, gr_genes, ignore.strand = FALSE)
+    
+    # Extract gene IDs from gr_genes
+    gene_ids <- mcols(gr_genes)$gene_id
+    
+    # Attach gene IDs to sORFs
+    flattened_orfs <- flattened_orfs[queryHits(hits)]
+    mcols(flattened_orfs)$gene_id <- gene_ids[subjectHits(hits)]
+    
+    # Drop duplicates
+    flattened_orfs <- unique(flattened_orfs)
+    
+    # Convert to data.frame
+    flattened_orfs <- as.data.frame(flattened_orfs)
+    morf_df <- as.data.frame(gr_morfs)
+    
+    orf_df <- merge(
+        flattened_orfs,
+        morf_df,
+        by = c("gene_id", "seqnames", "strand"),
+        suffixes = c("_flattened_orf", "_morf")
+    )
+    
+    orf_df$orf_type <- with(orf_df, ifelse(
+        strand == "+",
+        ifelse(
+            start_flattened_orf == start_morf, "mORF",
+            ifelse(
+                end_flattened_orf < start_morf, "uORF",
+                ifelse(
+                    start_flattened_orf > end_morf, "dORF",
+                    "oORF"
+                )
+            )
+        ),
+        ifelse(
+            end_flattened_orf == end_morf, "mORF",
+            ifelse(
+                start_flattened_orf > end_morf, "uORF",
+                ifelse(
+                    end_flattened_orf < start_morf, "dORF",
+                    "oORF"
+                )
+            )
+        )
+    ))
+    
+    # TODO: Omit overlapping ORFs (oORFs) for now 
+    # - It is a challenge to assign reads to the correct ORFs
+    # - These oORFs are as large as mORFs
+    # # Overwrite orf_type for oORFs only
+    # orf_df$orf_type <- with(orf_df, ifelse(
+    #     orf_type == "oORF" & strand == "+" & start_flattened_orf < start_morf, "uoORF",
+    #     ifelse(
+    #         orf_type == "oORF" & strand == "+" & start_flattened_orf >= start_morf, "doORF",
+    #         ifelse(
+    #             orf_type == "oORF" & strand == "-" & end_flattened_orf > end_morf, "uoORF",
+    #             ifelse(
+    #                 orf_type == "oORF" & strand == "-" & end_flattened_orf <= end_morf, "doORF",
+    #                 orf_type  # keep original classification for non-oORFs
+    #             )
+    #         )
+    #     )
+    # ))
+    
+    # Create GRanges
+    flattened_gr <- GRanges(
+        seqnames = orf_df$seqnames,
+        ranges = IRanges(start = orf_df$start_flattened_orf, end = orf_df$end_flattened_orf),
+        strand = orf_df$strand
+    )
+    
+    # Add gene_id and orf_type to metadata
+    mcols(flattened_gr)$gene_id <- orf_df$gene_id
+    mcols(flattened_gr)$orf_type <- orf_df$orf_type
+    
+    flattened_gr <- flattened_gr[flattened_gr$orf_type != "oORF", ]
+    flattened_gr <- flattened_gr[flattened_gr$orf_type != "mORF", ]
+    
+    # Merge with mORF GRanges
+    mcols(gr_morfs)$orf_type <- "mORF"
+    flattened_gr <- c(gr_morfs, flattened_gr)
+    flattened_gr <- sort(flattened_gr)
+    
+    # Add ORF IDs
+    # Split morfs by gene_id
+    flattened_gr <- split(flattened_gr, mcols(flattened_gr)$gene_id)
+    
+    orf_ids <- mapply(function(gr, name) {
+        paste0(name, ":O", sprintf("%03d", seq_along(gr)))
+    }, flattened_gr, names(flattened_gr), SIMPLIFY = FALSE)
+    
+    # Add the new column to each GRanges object
+    flattened_gr <- mapply(function(gr, ids) {
+        mcols(gr)$orf_id <- ids
+        gr
+    }, flattened_gr, orf_ids, SIMPLIFY = FALSE)
+    
+    # Convert back to GRangesList and then GRanges
+    flattened_gr <- GRangesList(flattened_gr)
+    flattened_gr <- unlist(flattened_gr)
+    
+    
+    if (verbose) {
+        end_map <- Sys.time()
+        elapsed_map <- runtime(end_map, start_map)
+        
+        if (!is.null(elapsed_map$mins)) {
+            message(sprintf("coordinate mapping runtime: %d mins %.3f secs", elapsed_map$mins, elapsed_map$secs))
+        } else {
+            message(sprintf("coordinate mapping runtime: %.3f secs", elapsed_map$secs))
+        }
+        
+        message("flattened ", length(gr), " ORFs to ", length(flattened_gr))
+    }
+    return(flattened_gr)
 }
 
 
@@ -570,9 +798,9 @@ seqnamesPerGroup <- function(grl, keep.names = TRUE) {
 #' 
 #' @param sequences Character path to a FASTA file, or a `DNAStringSet` 
 #' or `BSgenome` object.
-#' @param start_codon Character string of start codons 
+#' @param start_codons Character string of start codons 
 #' (e.g., "ATG|GTG")
-#' @param stop_codon Character string of stop codons 
+#' @param stop_codons Character string of stop codons 
 #' (e.g., "TAA|TAG")
 #' @param min_len Integer. Minimum ORF length in bases. Default is \code{0}.
 #' @param is_circular Logical. Whether the genome is circular 
@@ -590,8 +818,8 @@ seqnamesPerGroup <- function(grl, keep.names = TRUE) {
 #' 
 findORFsFasta <- function(
         sequences,
-        start_codon = "ATG",
-        stop_codon = "TAA",
+        start_codons = "ATG",
+        stop_codons = "TAA",
         min_len = 0,
         longest_orf = TRUE,
         is_circular = FALSE,
@@ -614,8 +842,8 @@ findORFsFasta <- function(
     
     gr <- findORFsFastaCpp(
         as.character(seqs, use.names = TRUE), 
-        start_codon, 
-        stop_codon,
+        start_codons, 
+        stop_codons,
         min_len, 
         is_circular,
         plus_strand_only
@@ -684,6 +912,14 @@ get_significant_genes <- function(
 #' @keywords internal
 #' 
 bm_use_ensembl <- function(biomart, dataset, host = NULL) {
+    
+    if (!requireNamespace("biomaRt", quietly=TRUE)) {
+        stop(
+            "ID mapping require the 'biomaRt' package. ", 
+            "Please install it by running: BiocManager::install('biomaRt')"
+        )
+    }
+    
     if (is.null(host)) {
         biomaRt::useEnsembl(
             biomart = biomart, 

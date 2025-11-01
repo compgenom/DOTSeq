@@ -6,8 +6,8 @@
 \usage{
 findORFsFasta(
   sequences,
-  start_codon = "ATG",
-  stop_codon = "TAA",
+  start_codons = "ATG",
+  stop_codons = "TAA",
   min_len = 0,
   longest_orf = TRUE,
   is_circular = FALSE,
@@ -18,10 +18,10 @@ findORFsFasta(
 \item{sequences}{Character path to a FASTA file, or a \code{DNAStringSet}
 or \code{BSgenome} object.}
 
-\item{start_codon}{Character string of start codons
+\item{start_codons}{Character string of start codons
 (e.g., "ATG|GTG")}
 
-\item{stop_codon}{Character string of stop codons
+\item{stop_codons}{Character string of stop codons
 (e.g., "TAA|TAG")}
 
 \item{min_len}{Integer. Minimum ORF length in bases. Default is \code{0}.}
