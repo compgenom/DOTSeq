@@ -1,6 +1,23 @@
+#' Filter GTF file for transcript features with required metadata
+#'
+#' This function imports a GTF file and filters transcript features 
+#' based on the presence of required metadata columns and an optional 
+#' source filter.
+#'
+#' @param gtf_file Character. Path to the GTF file.
+#' @param require_ids Character vector. Metadata column names that must 
+#' be present and non-NA. Default: \code{c("hgnc_id", "protein_id", 
+#' "ccdsid")}.
+#' @param source_filter Character or NULL. If provided, filters 
+#' transcripts by the 'source' column. Default: \code{NULL}.
+#' @param verbose Logical. Whether to print summary messages. 
+#' Default: \code{TRUE}.
+#'
+#' @return A filtered \code{GRanges} object containing transcript 
+#' features.
+#'
 #' @importFrom rtracklayer import
 #' @importFrom S4Vectors mcols mcols<-
-#' 
 #' @keywords internal
 #' 
 filter_gtf <- function(
@@ -56,6 +73,11 @@ filter_gtf <- function(
 #' @param organism Character string specifying the organism name (used  
 #' only when building a TxDb from a GTF/GFF file). Default is 
 #' \code{"Homo sapiens"}.
+#' @param require_ids Character vector. Metadata column names that must 
+#' be present and non-NA. Default: \code{c("hgnc_id", "protein_id", 
+#' "ccdsid")}.
+#' @param source_filter Character or NULL. If provided, filters 
+#' transcripts by the 'source' column. Default: \code{NULL}.
 #' @param circ_seqs Character vector of circular sequences to exclude 
 #' (e.g., \code{"chrM"}).
 #' Default is \code{"chrM"}.
@@ -92,7 +114,7 @@ filter_gtf <- function(
 #' @importFrom IRanges IRanges
 #' @importFrom GenomicFeatures cdsBy exonsBy mapFromTranscripts transcripts genes
 #' @importFrom txdbmaker makeTxDbFromGFF
-#' @importFrom AnnotationDbi select
+#' @importFrom AnnotationDbi select keys
 #' @importFrom S4Vectors mcols mcols<-
 #'
 #' @export
@@ -152,7 +174,7 @@ getORFs <- function(
         }
         
         # Apply filter to GTF
-        gtf <- filter_gtf(gtf = annotation, require_ids = require_ids, source_filter = source_filter, verbose = verbose)
+        gtf <- filter_gtf(gtf_file = annotation, require_ids = require_ids, source_filter = source_filter, verbose = verbose)
         
         format <- if (grepl("\\.gtf", annotation, ignore.case = TRUE)) "gtf" else "gff"
         
@@ -448,6 +470,8 @@ getORFs <- function(
 }
 
 
+utils::globalVariables(c(".", ".I", ".N", ".SD", ":="))
+
 #' Get longest ORF per stop site
 #'
 #' Rule: if seqname, strand and stop site is equal, take longest one.
@@ -457,11 +481,11 @@ getORFs <- function(
 #'
 #' @author Haakon Tjeldnes et al.
 #' 
-#' @param grl a \code{\link{GRangesList}}/IRangesList, GRanges/IRanges of ORFs
-#' @return a \code{\link{GRangesList}}/IRangesList, GRanges/IRanges
+#' @param grl a \code{\link[GenomicRanges]{GRangesList}}/IRangesList, GRanges/IRanges of ORFs
+#' @return a \code{\link[GenomicRanges]{GRangesList}}/IRangesList, GRanges/IRanges
 #' (same as input)
 #' 
-#' @importFrom data.table data.table .I
+#' @importFrom data.table data.table
 #' @importFrom GenomicRanges seqnames width width<-
 #' 
 #' @family ORFHelpers
@@ -520,7 +544,7 @@ longestORFs <- function(grl) {
 #' 
 #' @author Haakon Tjeldnes et al.
 #' 
-#' @param grl a \code{\link{GRangesList}} or GRanges object
+#' @param grl a \code{\link[GenomicRanges]{GRangesList}} or GRanges object
 #' @return a logical vector
 #' @examples
 #' \dontrun{
@@ -553,7 +577,7 @@ strandBool <- function(grl) {
 #' 
 #' @author Haakon Tjeldnes et al.
 #' 
-#' @param grl a \code{\link{GRangesList}}
+#' @param grl a \code{\link[GenomicRanges]{GRangesList}}
 #' @param keep.names a boolean, keep names or not, default: (TRUE)
 #' @return a vector named/unnamed of characters
 #' @importFrom IRanges heads
@@ -586,7 +610,7 @@ strandPerGroup <- function(grl, keep.names = TRUE) {
 #' 
 #' @author Haakon Tjeldnes et al.
 #' 
-#' @param grl a \code{\link{GRangesList}} object
+#' @param grl a \code{\link[GenomicRanges]{GRangesList}} object
 #' @param asGR a boolean, return as GRanges object
 #' @param keep.names a logical (FALSE), keep names of input.
 #' @param is.sorted a speedup, if you know the ranges are sorted
@@ -628,11 +652,58 @@ stopSites <- function(grl, asGR = FALSE, keep.names = FALSE,
 }
 
 
+#' Sort a GRangesList
+#'
+#' A faster, more versatile reimplementation of
+#' \code{\link{sort.GenomicRanges}} for GRangesList,
+#' needed since the original works poorly for more than 10k groups.
+#' This function sorts each group, where "+" strands are
+#' increasing by starts and "-" strands are decreasing by ends.
+#'
+#' Note: will not work if groups have equal names.
+#' 
+#' @author Haakon Tjeldnes et al.
+#' 
+#' @param grl a \code{\link[GenomicRanges]{GRangesList}}
+#' @param ignore.strand a boolean, (default FALSE): should minus strands be
+#' sorted from highest to lowest ends. If TRUE: from lowest to highest ends.
+#' @param quick.rev default: FALSE, if TRUE, given that you know all ranges are
+#' sorted from min to max for both strands, it will only reverse coordinates for
+#' minus strand groups, and only if they are in increasing order. Much quicker
+#' @return an equally named GRangesList, where each group is
+#'  sorted within group.
+#' @export
+#' @examples
+#' gr_plus <- GRanges(seqnames = c("chr1", "chr1"),
+#'                    ranges = IRanges(c(14, 7), width = 3),
+#'                    strand = c("+", "+"))
+#' gr_minus <- GRanges(seqnames = c("chr2", "chr2"),
+#'                     ranges = IRanges(c(1, 4), c(3, 9)),
+#'                     strand = c("-", "-"))
+#' grl <- GRangesList(tx1 = gr_plus, tx2 = gr_minus)
+#' sortPerGroup(grl)
+#'
+sortPerGroup <- function(grl, ignore.strand = FALSE, quick.rev = FALSE){
+    if (quick.rev) {
+        return(reverseMinusStrandPerGroup(grl))
+    }
+    if (!ignore.strand) {
+        indicesPos <- strandBool(grl)
+        
+        grl[indicesPos] <- gSort(grl[indicesPos])
+        grl[!indicesPos] <- gSort(grl[!indicesPos], decreasing = TRUE,
+                                  byStarts = FALSE)
+        return(grl)
+    }
+    return(gSort(grl))
+}
+
+
 #' Get last end per granges group
 #' 
 #' @author Haakon Tjeldnes et al.
 #' 
-#' @param grl a \code{\link{GRangesList}}
+#' @param grl a \code{\link[GenomicRanges]{GRangesList}}
 #' @param keep.names a boolean, keep names or not, default: (TRUE)
 #' @return a Rle(keep.names = T), or integer vector(F)
 #' @examples
@@ -660,7 +731,7 @@ lastExonEndPerGroup <- function(grl,keep.names = TRUE) {
 #' 
 #' @author Haakon Tjeldnes et al.
 #' 
-#' @param grl a \code{\link{GRangesList}}
+#' @param grl a \code{\link[GenomicRanges]{GRangesList}}
 #' @param keep.names a boolean, keep names or not, default: (TRUE)
 #' @return a Rle(keep.names = T), or integer vector(F)
 #' @examples
@@ -691,7 +762,7 @@ lastExonStartPerGroup <- function(grl, keep.names = TRUE) {
 #' 
 #' @author Haakon Tjeldnes et al.
 #' 
-#' @param grl a \code{\link{GRangesList}}
+#' @param grl a \code{\link[GenomicRanges]{GRangesList}}
 #' @return a GRangesList of the last exon per group
 #' @importFrom IRanges tails
 #' @examples
@@ -715,7 +786,7 @@ lastExonPerGroup <- function(grl) {
 #' 
 #' @author Haakon Tjeldnes et al.
 #' 
-#' @param grl a \code{\link{GRangesList}}
+#' @param grl a \code{\link[GenomicRanges]{GRangesList}}
 #' @param keep.names a boolean, keep names or not, default: (TRUE)
 #' 
 #' @importFrom GenomicRanges width width<-
@@ -746,7 +817,7 @@ widthPerGroup <- function(grl, keep.names = TRUE) {
 #' 
 #' @author Haakon Tjeldnes et al.
 #' 
-#' @param grl a \code{\link{GRangesList}}
+#' @param grl a \code{\link[GenomicRanges]{GRangesList}}
 #' @param keep.names a boolean, keep names or not, default: (TRUE)
 #' @importFrom IRanges heads
 #' @importFrom GenomicRanges seqnames
@@ -781,7 +852,7 @@ seqnamesPerGroup <- function(grl, keep.names = TRUE) {
 #'
 #' This method is optimized for prokaryotic genomes or transcript 
 #' sequences. Direct use for eukaryotic whole genomes is not suitable 
-#' due to the presence of splicing; for spliced ORFs.
+#' due to the presence of splicing.
 #'
 #' Each FASTA header is treated independently, and the name (up to the 
 #' first space) is used as the `seqnames` in the returned `GRanges` 
@@ -795,7 +866,7 @@ seqnamesPerGroup <- function(grl, keep.names = TRUE) {
 #' @author Haakon Tjeldnes et al. (original), 
 #' Chun Shen Lim (modification).
 #' 
-#' @seealso \code{link[ORFik]{findMapORFs}}
+#' @seealso \code{\link[ORFik]{findMapORFs}}
 #' 
 #' @param sequences Character path to a FASTA file, or a `DNAStringSet` 
 #' or `BSgenome` object.
@@ -804,10 +875,12 @@ seqnamesPerGroup <- function(grl, keep.names = TRUE) {
 #' @param stop_codons Character string of stop codons 
 #' (e.g., "TAA|TAG")
 #' @param min_len Integer. Minimum ORF length in bases. Default is \code{0}.
+#' @param longest_orf Logical. If TRUE, return only the longest ORF per 
+#' sequence.
 #' @param is_circular Logical. Whether the genome is circular 
 #' (e.g., bacterial genomes).
-#' @param strand Character. One of `"+"` or `"both"`. `"+"` scans 
-#' only the forward strand; any other value scans both strands.
+#' @param plus_strand_only Logical. If TRUE, scan only the forward strand; 
+#' if FALSE, scan both strands.
 #'
 #' @return A `GRanges` object containing the ORFs found.
 #'
@@ -1020,8 +1093,6 @@ bm_get <- function(attributes, filters, values, mart) {
 #' #    dataset = "pfalciparum_eg_gene",
 #' #    mart_source = "protists"
 #' # )
-#' 
-#' @import biomaRt
 #'
 #' @references
 #' Durinck S, Spellman P, Birney E, Huber W (2009). Mapping identifiers 

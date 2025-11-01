@@ -31,6 +31,13 @@ or a \code{TxDb} object.}
 only when building a TxDb from a GTF/GFF file). Default is
 \code{"Homo sapiens"}.}
 
+\item{require_ids}{Character vector. Metadata column names that must
+be present and non-NA. Default: \code{c("hgnc_id", "protein_id", 
+"ccdsid")}.}
+
+\item{source_filter}{Character or NULL. If provided, filters
+transcripts by the 'source' column. Default: \code{NULL}.}
+
 \item{circ_seqs}{Character vector of circular sequences to exclude
 (e.g., \code{"chrM"}).
 Default is \code{"chrM"}.}

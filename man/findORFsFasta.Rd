@@ -26,11 +26,14 @@ or \code{BSgenome} object.}
 
 \item{min_len}{Integer. Minimum ORF length in bases. Default is \code{0}.}
 
+\item{longest_orf}{Logical. If TRUE, return only the longest ORF per
+sequence.}
+
 \item{is_circular}{Logical. Whether the genome is circular
 (e.g., bacterial genomes).}
 
-\item{strand}{Character. One of \code{"+"} or \code{"both"}. \code{"+"} scans
-only the forward strand; any other value scans both strands.}
+\item{plus_strand_only}{Logical. If TRUE, scan only the forward strand;
+if FALSE, scan both strands.}
 }
 \value{
 A \code{GRanges} object containing the ORFs found.
@@ -43,7 +46,7 @@ circular genomes, and can detect ORFs on the sense (+) or both strands.
 \details{
 This method is optimized for prokaryotic genomes or transcript
 sequences. Direct use for eukaryotic whole genomes is not suitable
-due to the presence of splicing; for spliced ORFs.
+due to the presence of splicing.
 
 Each FASTA header is treated independently, and the name (up to the
 first space) is used as the \code{seqnames} in the returned \code{GRanges}
@@ -55,7 +58,7 @@ Note: Ensure your FASTA file is valid and headers are formatted as
 affects coordinate parsing.
 }
 \seealso{
-\code{link[ORFik]{findMapORFs}}
+\code{\link[ORFik]{findMapORFs}}
 }
 \author{
 Haakon Tjeldnes et al. (original),
