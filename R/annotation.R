@@ -447,24 +447,24 @@ getORFs <- function(
     flattened_gr <- sort(flattened_gr)
     
     # Add ORF IDs
-    # Split morfs by gene_id
-    flattened_gr <- split(flattened_gr, mcols(flattened_gr)$gene_id)
+    # Get the gene_id vector
+    gene_ids <- mcols(flattened_gr)$gene_id
     
-    orf_nums <- mapply(function(gr, name) {
-        paste0(name, ":O", sprintf("%03d", seq_along(gr)))
-    }, flattened_gr, names(flattened_gr), SIMPLIFY = FALSE)
+    # Create a factor for grouping (more efficient for ave)
+    gene_id_factor <- as.factor(gene_ids)
     
-    # Add the new column to each GRanges object
-    flattened_gr <- mapply(function(gr, nums) {
-        mcols(gr)$orf_number <- nums
-        gr
-    }, flattened_gr, orf_nums, SIMPLIFY = FALSE)
+    # Calculate the sequential number for each row within its gene_id group
+    orf_seq_num <- as.integer(ave(seq_along(flattened_gr), gene_id_factor, FUN = seq_along))
     
-    # Convert back to GRangesList and then GRanges
-    flattened_gr <- GRangesList(flattened_gr)
-    flattened_gr <- unlist(flattened_gr)
-    names(flattened_gr) <- flattened_gr$orf_number
-    flattened_gr$orf_number <- vapply(strsplit(flattened_gr$orf_number, ":O"), `[`, 2, FUN.VALUE = character(1))
+    # Format the number string and create the full ORF ID
+    orf_num_str <- sprintf("%03d", orf_seq_num)
+    full_orf_id <- paste0(gene_ids, ":O", orf_num_str)
+    
+    # Assign the full ID to the names
+    names(flattened_gr) <- full_orf_id
+    
+    # Assign just the number part to the metadata column
+    mcols(flattened_gr)$orf_number <- orf_num_str
     
     if (verbose) {
         end_map <- Sys.time()
