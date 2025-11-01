@@ -1,5 +1,7 @@
 //Uses Knuth–Morris–Pratt algorithm to search global string for substring
 //Cpp format: Webkit: 80 character max line
+// Adapted from code by Haakon Tjeldnes et al., originally part of ORFik
+// License: MIT
 
 #include <fstream>
 #include <vector>

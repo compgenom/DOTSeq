@@ -22,7 +22,7 @@ sorted within group.
 }
 \description{
 A faster, more versatile reimplementation of
-\code{\link{sort.GenomicRanges}} for GRangesList,
+\code{\link[GenomicRanges]{sort.GenomicRanges}} for GRangesList,
 needed since the original works poorly for more than 10k groups.
 This function sorts each group, where "+" strands are
 increasing by starts and "-" strands are decreasing by ends.
@@ -30,17 +30,7 @@ increasing by starts and "-" strands are decreasing by ends.
 \details{
 Note: will not work if groups have equal names.
 }
-\examples{
-gr_plus <- GRanges(seqnames = c("chr1", "chr1"),
-                   ranges = IRanges(c(14, 7), width = 3),
-                   strand = c("+", "+"))
-gr_minus <- GRanges(seqnames = c("chr2", "chr2"),
-                    ranges = IRanges(c(1, 4), c(3, 9)),
-                    strand = c("-", "-"))
-grl <- GRangesList(tx1 = gr_plus, tx2 = gr_minus)
-sortPerGroup(grl)
-
-}
 \author{
 Haakon Tjeldnes et al.
 }
+\keyword{internal}

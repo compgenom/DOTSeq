@@ -33,3 +33,4 @@ lastExonStartPerGroup(grl)
 \author{
 Haakon Tjeldnes et al.
 }
+\keyword{internal}

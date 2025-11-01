@@ -84,34 +84,29 @@ genomic position.
 }
 }
 \examples{
-# Use a BSgenome and TxDb
-if (requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
-    requireNamespace("BSgenome.Hsapiens.UCSC.hg38", quietly = TRUE) &&
-    requireNamespace("GenomicFeatures", quietly = TRUE)) {
+\dontshow{if (requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) && requireNamespace("BSgenome.Hsapiens.UCSC.hg38", quietly = TRUE) && requireNamespace("GenomicFeatures", quietly = TRUE)) withAutoprint(\{ # examplesIf}
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+library(GenomicFeatures)
 
-    library(BSgenome.Hsapiens.UCSC.hg38)
-    library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-    library(GenomicFeatures)
+# Load genome and TxDb
+genome <- BSgenome.Hsapiens.UCSC.hg38
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 
-    # Load genome and TxDb
-    genome <- BSgenome.Hsapiens.UCSC.hg38
-    txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+# Get exons grouped by transcript
+exons_by_tx <- exonsBy(txdb, by = "tx", use.names = TRUE)
 
-    # Get exons grouped by transcript
-    exons_by_tx <- exonsBy(txdb, by = "tx", use.names = TRUE)
+# Select a single transcript for demonstration
+tx1 <- head(exons_by_tx, 100)
 
-    # Select a single transcript for demonstration
-    tx1 <- head(exons_by_tx, 1)
+# Extract transcript sequence
+tx_seqs <- extractTranscriptSeqs(genome, tx1)
 
-    # Extract transcript sequence
-    tx_seqs <- extractTranscriptSeqs(genome, tx1)
-
-    # Run getORFs on the transcript sequence
-    gr <- getORFs(
-        sequences = tx_seqs,
-        annotation = txdb
-    )
-    print(gr)
-}
-
+# Run getORFs on the transcript sequence
+gr <- getORFs(
+    sequences = tx_seqs,
+    annotation = txdb
+)
+print(gr)
+\dontshow{\}) # examplesIf}
 }

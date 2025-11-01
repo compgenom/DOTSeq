@@ -29,3 +29,4 @@ strandBool(gr)
 \author{
 Haakon Tjeldnes et al.
 }
+\keyword{internal}

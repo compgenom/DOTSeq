@@ -35,7 +35,7 @@ filter_gtf <- function(
         if (col %in% names(mcols(gtf))) {
             gtf <- gtf[!is.na(mcols(gtf)[[col]]), ]
         } else {
-            warning(paste("Column", col, "not found in gtf"))
+            warning("Column", col, "not found in gtf")
         }
     }
     
@@ -119,36 +119,30 @@ filter_gtf <- function(
 #'
 #' @export
 #'
-#' @examples
-#' # Use a BSgenome and TxDb
-#' if (requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) &&
-#'     requireNamespace("BSgenome.Hsapiens.UCSC.hg38", quietly = TRUE) &&
-#'     requireNamespace("GenomicFeatures", quietly = TRUE)) {
+#' @examplesIf requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) && requireNamespace("BSgenome.Hsapiens.UCSC.hg38", quietly = TRUE) && requireNamespace("GenomicFeatures", quietly = TRUE)
+#' library(BSgenome.Hsapiens.UCSC.hg38)
+#' library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+#' library(GenomicFeatures)
 #'
-#'     library(BSgenome.Hsapiens.UCSC.hg38)
-#'     library(TxDb.Hsapiens.UCSC.hg38.knownGene)
-#'     library(GenomicFeatures)
+#' # Load genome and TxDb
+#' genome <- BSgenome.Hsapiens.UCSC.hg38
+#' txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
 #'
-#'     # Load genome and TxDb
-#'     genome <- BSgenome.Hsapiens.UCSC.hg38
-#'     txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+#' # Get exons grouped by transcript
+#' exons_by_tx <- exonsBy(txdb, by = "tx", use.names = TRUE)
 #'
-#'     # Get exons grouped by transcript
-#'     exons_by_tx <- exonsBy(txdb, by = "tx", use.names = TRUE)
+#' # Select a single transcript for demonstration
+#' tx1 <- head(exons_by_tx, 100)
 #'
-#'     # Select a single transcript for demonstration
-#'     tx1 <- head(exons_by_tx, 1)
+#' # Extract transcript sequence
+#' tx_seqs <- extractTranscriptSeqs(genome, tx1)
 #'
-#'     # Extract transcript sequence
-#'     tx_seqs <- extractTranscriptSeqs(genome, tx1)
-#'
-#'     # Run getORFs on the transcript sequence
-#'     gr <- getORFs(
-#'         sequences = tx_seqs,
-#'         annotation = txdb
-#'     )
-#'     print(gr)
-#' }
+#' # Run getORFs on the transcript sequence
+#' gr <- getORFs(
+#'     sequences = tx_seqs,
+#'     annotation = txdb
+#' )
+#' print(gr)
 #' 
 getORFs <- function(
         sequences,
@@ -163,10 +157,18 @@ getORFs <- function(
         longest_orf = TRUE,
         verbose = TRUE
 ) {
+    
+    gtf <- NULL
+    
     # Load annotation
     if (is.character(annotation)) {
         annotation <- path.expand(annotation)
         if (!file.exists(annotation)) stop("File does not exist: ", annotation)
+        
+        # Check if it's a single string and a valid file path
+        if (length(annotation) != 1 || !nzchar(annotation) || !file.exists(annotation)) {
+            stop("Invalid file path: ", annotation)
+        }
         
         if (verbose) {
             start_annotate <- Sys.time()
@@ -204,11 +206,10 @@ getORFs <- function(
         exons_by_tx <- exonsBy(annotation, by = "tx", use.names = TRUE)
         
     } else if (inherits(annotation, "TxDb")) {
+        start_seq <- Sys.time()
         exons_by_tx <- exonsBy(annotation, by = "tx", use.names = TRUE)
-        
-        # } else if (inherits(annotation, "GRangesList")) {
-        #     exons_by_tx <- annotation
-        
+    } else if (inherits(annotation, "GRangesList")) {
+        exons_by_tx <- annotation
     } else {
         stop("Unsupported 'annotation' input type: must be file path or TxDb object.")
     }
@@ -344,6 +345,13 @@ getORFs <- function(
     mcols(flattened_overlapping_cds)$gene_id <- names(flattened_overlapping_cds)
     flattened_overlapping_cds <- unlist(flattened_overlapping_cds)
     gr_morfs <- unique(flattened_overlapping_cds)
+    
+    if (length(gr_morfs) > 0) {
+        mcols(gr_morfs)$gene_id <- names(gr_morfs)
+    } else {
+        stop("No mORFs found after filtering and overlap. Check input data or filtering criteria.")
+    }
+    
     mcols(gr_morfs)$gene_id <- names(gr_morfs)
     names(gr_morfs) <- NULL
     
@@ -357,7 +365,11 @@ getORFs <- function(
     
     # Attach gene IDs to sORFs
     flattened_orfs <- flattened_orfs[queryHits(hits)]
-    mcols(flattened_orfs)$gene_id <- gene_ids[subjectHits(hits)]
+    if (length(flattened_orfs) > 0) {
+        mcols(flattened_orfs)$gene_id <- gene_ids[subjectHits(hits)]
+    } else {
+        stop("No sORFs found overlapping with genes.")
+    }
     
     # Drop duplicates
     flattened_orfs <- unique(flattened_orfs)
@@ -489,6 +501,8 @@ utils::globalVariables(c(".", ".I", ".N", ".SD", ":="))
 #' @importFrom GenomicRanges seqnames width width<-
 #' 
 #' @family ORFHelpers
+#' 
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #' ORF1 = GRanges("1", IRanges(10,21), "+")
@@ -523,8 +537,7 @@ longestORFs <- function(grl) {
         }
     }
     dt <- data.table(seqnames, strands, stops, widths)
-    longestORFs <- dt[, .I[which.max(widths)],
-                      by = .(seqnames, strands, stops)]$V1
+    longestORFs <- dt[, .I[which.max(widths)], by = .(seqnames, strands, stops)]$V1
     if (is(grl, "IRangesList")) {
         ir <- unlist(grl, use.names = FALSE)
         ir <- ir[longestORFs]
@@ -546,6 +559,9 @@ longestORFs <- function(grl) {
 #' 
 #' @param grl a \code{\link[GenomicRanges]{GRangesList}} or GRanges object
 #' @return a logical vector
+#' 
+#' @keywords internal
+#' 
 #' @examples
 #' \dontrun{
 #' gr <- GRanges(Rle(c("chr2", "chr2", "chr1", "chr3"), c(1, 3, 2, 4)),
@@ -563,8 +579,10 @@ strandBool <- function(grl) {
     
     sums <- sum(posIndices) + sum(!posIndices)
     if (is.na(sums)) {
-        stop("could not get strands from grl object",
-             " most likely NULL object was passed.")
+        stop(
+            "could not get strands from grl object",
+            " most likely NULL object was passed."
+        )
     }
     if (sums != length(grl)) {
         stop("grl contains * strands, set them to either + or -")
@@ -580,22 +598,14 @@ strandBool <- function(grl) {
 #' @param grl a \code{\link[GenomicRanges]{GRangesList}}
 #' @param keep.names a boolean, keep names or not, default: (TRUE)
 #' @return a vector named/unnamed of characters
-#' @importFrom IRanges heads
-#' @examples
-#' \dontrun{
-#' gr_plus <- GRanges(seqnames = c("chr1", "chr1"),
-#'                    ranges = IRanges(c(7, 14), width = 3),
-#'                    strand = c("+", "+"))
-#' gr_minus <- GRanges(seqnames = c("chr2", "chr2"),
-#'                     ranges = IRanges(c(4, 1), c(9, 3)),
-#'                     strand = c("-", "-"))
-#' grl <- GRangesList(tx1 = gr_plus, tx2 = gr_minus)
-#' strandPerGroup(grl)
-#' }
+#' @importFrom IRanges heads PartitioningByEnd
+#' @importFrom GenomicRanges start strand
+#' 
+#' @keywords internal
 #' 
 strandPerGroup <- function(grl, keep.names = TRUE) {
     # validGRL(class(grl))
-    starts <- start(IRanges::PartitioningByEnd(grl))
+    starts <- start(PartitioningByEnd(grl))
     res <- strand(grl@unlistData)[starts]
     if (!keep.names) {
         return(as.character(res))
@@ -616,6 +626,9 @@ strandPerGroup <- function(grl, keep.names = TRUE) {
 #' @param is.sorted a speedup, if you know the ranges are sorted
 #' @return if asGR is False, a vector, if True a GRanges object
 #' @family ORFHelpers
+#' 
+#' @keywords internal
+#' 
 #' @examples
 #' \dontrun{
 #' gr_plus <- GRanges(seqnames = c("chr1", "chr1"),
@@ -628,8 +641,13 @@ strandPerGroup <- function(grl, keep.names = TRUE) {
 #' stopSites(grl, is.sorted = FALSE)
 #' }
 #' 
-stopSites <- function(grl, asGR = FALSE, keep.names = FALSE,
-                      is.sorted = FALSE) {
+stopSites <- function(
+        grl, 
+        asGR = FALSE, 
+        keep.names = FALSE,
+        is.sorted = FALSE
+) {
+    
     if (!is.sorted) {
         grl <- sortPerGroup(grl)
     }
@@ -640,10 +658,12 @@ stopSites <- function(grl, asGR = FALSE, keep.names = FALSE,
     stopSites[!posIds] <- lastExonStartPerGroup(grl[!posIds], FALSE)
     
     if (asGR) {
-        stopSites <- GRanges(seqnames = seqnamesPerGroup(grl, FALSE),
-                             ranges = IRanges(stopSites, width = 1),
-                             strand = strandPerGroup(grl, FALSE),
-                             seqinfo = seqinfo(grl))
+        stopSites <- GRanges(
+            seqnames = seqnamesPerGroup(grl, FALSE),
+            ranges = IRanges(stopSites, width = 1),
+            strand = strandPerGroup(grl, FALSE),
+            seqinfo = seqinfo(grl)
+        )
     }
     if (keep.names) {
         names(stopSites) <- names(grl)
@@ -655,7 +675,7 @@ stopSites <- function(grl, asGR = FALSE, keep.names = FALSE,
 #' Sort a GRangesList
 #'
 #' A faster, more versatile reimplementation of
-#' \code{\link{sort.GenomicRanges}} for GRangesList,
+#' \code{\link[GenomicRanges]{sort.GenomicRanges}} for GRangesList,
 #' needed since the original works poorly for more than 10k groups.
 #' This function sorts each group, where "+" strands are
 #' increasing by starts and "-" strands are decreasing by ends.
@@ -672,16 +692,8 @@ stopSites <- function(grl, asGR = FALSE, keep.names = FALSE,
 #' minus strand groups, and only if they are in increasing order. Much quicker
 #' @return an equally named GRangesList, where each group is
 #'  sorted within group.
-#' @export
-#' @examples
-#' gr_plus <- GRanges(seqnames = c("chr1", "chr1"),
-#'                    ranges = IRanges(c(14, 7), width = 3),
-#'                    strand = c("+", "+"))
-#' gr_minus <- GRanges(seqnames = c("chr2", "chr2"),
-#'                     ranges = IRanges(c(1, 4), c(3, 9)),
-#'                     strand = c("-", "-"))
-#' grl <- GRangesList(tx1 = gr_plus, tx2 = gr_minus)
-#' sortPerGroup(grl)
+#'  
+#' @keywords internal
 #'
 sortPerGroup <- function(grl, ignore.strand = FALSE, quick.rev = FALSE){
     if (quick.rev) {
@@ -691,11 +703,111 @@ sortPerGroup <- function(grl, ignore.strand = FALSE, quick.rev = FALSE){
         indicesPos <- strandBool(grl)
         
         grl[indicesPos] <- gSort(grl[indicesPos])
-        grl[!indicesPos] <- gSort(grl[!indicesPos], decreasing = TRUE,
-                                  byStarts = FALSE)
+        grl[!indicesPos] <- gSort(
+            grl[!indicesPos], 
+            decreasing = TRUE,
+            byStarts = FALSE)
         return(grl)
     }
     return(gSort(grl))
+}
+
+
+#' Reverse minus strand
+#'
+#' Reverse minus strand per group in a GRangesList
+#' Only reverse if minus strand is in increasing order
+#' 
+#' @author Haakon Tjeldnes et al.
+#' 
+#' @param grl a \code{\link[GenomicRanges]{GRangesList}}
+#' @param onlyIfIncreasing logical, default (TRUE), only reverse if decreasing
+#' @return a \code{\link[GenomicRanges]{GRangesList}}
+#' @keywords internal
+reverseMinusStrandPerGroup <- function(grl, onlyIfIncreasing = TRUE) {
+    minus <- !strandBool(grl)
+    if (onlyIfIncreasing) {
+        minGrl <- grl[minus & numExonsPerGroup(grl, FALSE) > 1]
+        if (length(minGrl) == 0) return(grl)
+        decreasing <- start(minGrl[[1]])[1] > start(minGrl[[1]])[2]
+        if (decreasing) return(grl)
+    }
+    oldGrl <- rev(grl)
+    oldGrl[rev(minus)]@unlistData@ranges <- rev(grl[minus]@unlistData@ranges)
+    return(rev(oldGrl))
+}
+
+
+#' Get list of the number of exons per group
+#'
+#' Can also be used generaly to get number of GRanges object
+#'  per GRangesList group
+#'  
+#' @author Haakon Tjeldnes et al.
+#' 
+#' @param grl a \code{\link[GenomicRanges]{GRangesList}}
+#' @param keep.names a logical, keep names or not, default: (TRUE)
+#' @return an integer vector of counts
+numExonsPerGroup <- function(grl, keep.names = TRUE) {
+    # validGRL(class(grl))
+    return(lengths(grl, keep.names))
+}
+
+
+utils::globalVariables(c("group", "grnames"))
+
+#' Sort a GRangesList, helper.
+#'
+#' A helper for sortPerGroup.
+#' A faster, more versatile reimplementation of GenomicRanges::sort()
+#' Normally not used directly.
+#' Groups first each group, then either decreasing or increasing
+#' (on starts if byStarts == T, on ends if byStarts == F)
+#' 
+#' @author Haakon Tjeldnes et al.
+#' 
+#' @param grl a \code{\link[GenomicRanges]{GRangesList}}
+#' @param decreasing should the first in each group have max(start(group))
+#'   ->T or min-> default(F) ?
+#' @param byStarts a logical T, should it order by starts or ends F.
+#' @importFrom data.table as.data.table :=
+#' @importFrom BiocGenerics unlist
+#' @return an equally named GRangesList, where each group is sorted within
+#' group.
+#' @keywords internal
+gSort <- function(grl, decreasing = FALSE, byStarts = TRUE) {
+    if (length(grl) == 0) return(GRangesList())
+    
+    DT <- as.data.table(grl)
+    DT$group_name <- NULL
+    group <- NULL # for not getting warning
+    if (decreasing) {
+        if (byStarts) {
+            DT <- DT[order(group, -start)]
+        } else {
+            DT <- DT[order(group, -end)]
+        }
+    } else {
+        if (byStarts) {
+            DT <- DT[order(group, start)]
+        } else {
+            DT <- DT[order(group, end)]
+        }
+    }
+    # TODO: test naming, this is still not perfect
+    testName <- names(unlist(grl[1], use.names = FALSE)[1])
+    if (!is.null(testName)) {
+        DT[, grnames := names(unlist(grl, use.names = FALSE))]
+    }
+    
+    asgrl <- makeGRangesListFromDataFrame(
+        DT, split.field = "group",
+        names.field = if(is.null(testName)) NULL else "grnames",
+        keep.extra.columns = TRUE)
+    
+    names(asgrl) <- names(grl)
+    
+    return(asgrl)
 }
 
 
@@ -706,6 +818,9 @@ sortPerGroup <- function(grl, ignore.strand = FALSE, quick.rev = FALSE){
 #' @param grl a \code{\link[GenomicRanges]{GRangesList}}
 #' @param keep.names a boolean, keep names or not, default: (TRUE)
 #' @return a Rle(keep.names = T), or integer vector(F)
+#' 
+#' @keywords internal
+#' 
 #' @examples
 #' \dontrun{
 #' gr_plus <- GRanges(seqnames = c("chr1", "chr1"),
@@ -734,6 +849,9 @@ lastExonEndPerGroup <- function(grl,keep.names = TRUE) {
 #' @param grl a \code{\link[GenomicRanges]{GRangesList}}
 #' @param keep.names a boolean, keep names or not, default: (TRUE)
 #' @return a Rle(keep.names = T), or integer vector(F)
+#' 
+#' @keywords internal
+#' 
 #' @examples
 #' \dontrun{
 #' gr_plus <- GRanges(seqnames = c("chr1", "chr1"),
@@ -765,6 +883,9 @@ lastExonStartPerGroup <- function(grl, keep.names = TRUE) {
 #' @param grl a \code{\link[GenomicRanges]{GRangesList}}
 #' @return a GRangesList of the last exon per group
 #' @importFrom IRanges tails
+#' 
+#' @keywords internal
+#' 
 #' @examples
 #' \dontrun{
 #' gr_plus <- GRanges(seqnames = c("chr1", "chr1"),
@@ -792,6 +913,9 @@ lastExonPerGroup <- function(grl) {
 #' @importFrom GenomicRanges width width<-
 #' 
 #' @return an integer vector (named/unnamed) of widths
+#' 
+#' @keywords internal
+#' 
 #' @examples
 #' \dontrun{
 #' gr_plus <- GRanges(seqnames = c("chr1", "chr1"),
@@ -823,6 +947,9 @@ widthPerGroup <- function(grl, keep.names = TRUE) {
 #' @importFrom GenomicRanges seqnames
 #' 
 #' @return a character vector or Rle of seqnames(if seqnames == T)
+#' 
+#' @keywords internal
+#' 
 #' @examples
 #' \dontrun{
 #' gr_plus <- GRanges(seqnames = c("chr1", "chr1"),

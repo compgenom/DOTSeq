@@ -1,5 +1,7 @@
 // Find many orfs faster by putting all the data into Cpp directly
 // Cpp format: Webkit: 80 character max line
+// Adapted from code by Haakon Tjeldnes et al., originally part of ORFik
+// License: MIT
 
 #include <fstream>
 #include <vector>
