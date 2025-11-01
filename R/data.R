@@ -498,7 +498,7 @@ DOTSeqDataSets <- function(
 
     gr <- annotate_orf_type(flattened_bed, gff_granges)
     gr$orf_number <- gr$exon_number
-    mcols(gr) <- mcols(gr)[, c("gene_id", "transcripts", "orf_number", "orf_type")]
+    mcols(gr) <- mcols(gr)[, c("gene_id", "orf_number", "orf_type")] # "transcripts", 
 
     sumExp <- SummarizedExperiment(
         assays = list(counts = dcounts),

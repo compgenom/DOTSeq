@@ -416,20 +416,21 @@ getORFs <- function(
     # Split morfs by gene_id
     flattened_gr <- split(flattened_gr, mcols(flattened_gr)$gene_id)
     
-    orf_ids <- mapply(function(gr, name) {
+    orf_nums <- mapply(function(gr, name) {
         paste0(name, ":O", sprintf("%03d", seq_along(gr)))
     }, flattened_gr, names(flattened_gr), SIMPLIFY = FALSE)
     
     # Add the new column to each GRanges object
-    flattened_gr <- mapply(function(gr, ids) {
-        mcols(gr)$orf_id <- ids
+    flattened_gr <- mapply(function(gr, nums) {
+        mcols(gr)$orf_number <- nums
         gr
-    }, flattened_gr, orf_ids, SIMPLIFY = FALSE)
+    }, flattened_gr, orf_nums, SIMPLIFY = FALSE)
     
     # Convert back to GRangesList and then GRanges
     flattened_gr <- GRangesList(flattened_gr)
     flattened_gr <- unlist(flattened_gr)
-    
+    names(flattened_gr) <- flattened_gr$orf_number
+    flattened_gr$orf_number <- vapply(strsplit(flattened_gr$orf_number, ":O"), `[`, 2, FUN.VALUE = character(1))
     
     if (verbose) {
         end_map <- Sys.time()
