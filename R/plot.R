@@ -1280,7 +1280,7 @@ cistronic_data <- function(
 #' zero. The function uses base R plotting functions and is intended for
 #' interactive or scripted visualization.
 #'
-#' @importFrom graphics axis image mtext rect par layout plot
+#' @importFrom graphics axis image mtext rect par layout plot strwidth
 #'
 #' @keywords internal
 #'
