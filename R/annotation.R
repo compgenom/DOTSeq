@@ -172,7 +172,7 @@ getORFs <- function(
         
         if (verbose) {
             start_annotate <- Sys.time()
-            message("invoking makeTxDbFromGFF:")
+            message("invoking makeTxDbFromGFF for ", organism, ":")
         }
         
         # Apply filter to GTF

@@ -19,31 +19,6 @@
 #'
 #' @param datasets Either:
 #' \describe{
-#'     \item{Named list}{
-#'     A list containing raw input components with the following named elements:
-#'     \code{count_table}, \code{condition_table}, \code{flattened_gtf}, and \code{bed}.
-#'     These inputs are used to construct a \code{DOTSeqDataSets} object internally.
-#'         \describe{
-#'             \item{\code{count_table}}{
-#'                 A data frame or path to a count table file. Must contain columns:
-#'                 \code{Geneid}, \code{Chr}, \code{Start}, \code{End}, \code{Strand},
-#'                 \code{Length}, plus one column per sample.
-#'             }
-#'             \item{\code{condition_table}}{
-#'                 A data frame or path to a sample metadata file. Must include columns:
-#'                 \code{run}, \code{strategy}, \code{condition}, \code{replicate}.
-#'             }
-#'             \item{\code{flattened_gtf}}{
-#'                 Path to a flattened GFF/GTF file containing ORF-level annotations.
-#'                 Typically generated using tools like \code{RIBOSS}.
-#'             }
-#'             \item{\code{flattened_bed}}{
-#'                 Path to a flattened BED file with ORF annotations. This file should contain
-#'                 coordinates and identifiers for ORFs derived from the flattened GTF.
-#'                 It is used for mapping ORFs to genes and for downstream filtering.
-#'             }
-#'         }
-#'     }
 #'     \item{\code{DOTSeqDataSets} object}{
 #'     A pre-constructed \code{\link{DOTSeqDataSets-class}} object created using 
 #'     \code{\link{DOTSeqDataSets}}. It must include:
@@ -260,29 +235,9 @@ DOTSeq <- function(
         if (!inherits(getDTE(dot), "DTEData") && !inherits(getDTE(dot), "DESeqDataSet")) {
             stop("The 'DTE' slot must be a DTEData or DESeqDataSet object.")
         }
-    } else if (is.list(datasets)) {
-        required <- c("count_table", "condition_table", "flattened_gtf", "flattened_bed")
-        missing <- setdiff(required, names(datasets))
-        if (length(missing) > 0) {
-            stop("Missing required raw inputs: ", paste(missing, collapse = ", "))
-        }
-        dot <- DOTSeqDataSets(
-            count_table = datasets$count_table,
-            condition_table = datasets$condition_table,
-            flattened_gtf = datasets$flattened_gtf,
-            flattened_bed = datasets$flattened_bed,
-            formula = formula,
-            target = target,
-            baseline = baseline,
-            min_count = min_count,
-            stringent = stringent,
-            verbose = verbose
-        )
+
     } else {
-        stop(
-            "'datasets' must be either a DOTSeqDataSets object or ", 
-            "a named list of raw inputs."
-        )
+        stop("'datasets' must be either a DOTSeqDataSets object.")
     }
     
     dou <- getDOU(dot)

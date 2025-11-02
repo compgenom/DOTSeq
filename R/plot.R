@@ -138,18 +138,24 @@ plot_orf_usage <- function(
         }
     }
     
-    
     # Calculate ORF usage from fitted models
     usage_df <- calculateUsage(
         data = data,
         gene_id = gene_id_clean
     )
+    if (is.null(usage_df)) {
+        stop(
+            "gene_id doesn't match with DOUData. ", 
+            "id_mapping must be provided when using gene symbol."
+        )
+    }
 
     usage_df$usage <- as.numeric(usage_df$usage)
+    
     if (!is.null(levels)) {
         usage_df$condition <- factor(usage_df$condition, levels = levels)
     }
-    
+
     usage_df <- merge(orfs, usage_df, by = "orf_id")
     if (unique(usage_df$strand) == "+") {
         usage_df <- usage_df[order(-rank(usage_df$orf_type), usage_df$orf_number), ]
@@ -1967,7 +1973,7 @@ plotDOT <- function(
                     dou_signif_thresh = dou_params$signif_thresh,
                     colors = colors$usage
                 )
-            } else if (!inherits(id_mapping, "data.frame")) {
+            } else if (inherits(id_mapping, "data.frame")) {
                 p <- plot_orf_usage(
                     data = data, 
                     gene_id = gene_id, 

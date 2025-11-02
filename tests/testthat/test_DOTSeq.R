@@ -18,13 +18,13 @@ test_that("DOTSeq wrapper returns expected structure", {
     cond$treatment <- NULL
 
     # Run DOTSeq wrapper
-    raw <- list(
+    datasets <- DOTSeqDataSetsFromFeatureCounts(
         count_table = cnt,
         condition_table = cond,
         flattened_gtf = gtf,
         flattened_bed = bed
     )
-    dot <- DOTSeq(datasets = raw, modules = "DTE")
+    dot <- DOTSeq(datasets = datasets, modules = "DTE")
     
     # Check structure
     expect_type(dot, "S4")

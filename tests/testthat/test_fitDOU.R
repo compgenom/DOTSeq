@@ -20,7 +20,7 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
     cond <- meta[meta$treatment == "chx", ]
     cond$treatment <- NULL
     
-    dot <- DOTSeqDataSets(
+    dot <- DOTSeqDataSetsFromFeatureCounts(
         count_table = cnt,
         condition_table = cond,
         flattened_gtf = gtf,

@@ -16,7 +16,7 @@ test_that("DOTSeqDataSets returns valid DOTSeqDataSets object", {
     cond <- meta[meta$treatment == "chx", ]
     cond$treatment <- NULL
 
-    dot <- DOTSeqDataSets(
+    dot <- DOTSeqDataSetsFromFeatureCounts(
         count_table = cnt,
         condition_table = cond,
         flattened_gtf = flat,

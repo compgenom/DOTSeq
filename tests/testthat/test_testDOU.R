@@ -17,7 +17,7 @@ test_that("testDOU adds post hoc results to fitted ORFs", {
     cond <- meta[meta$treatment == "chx", ]
     cond$treatment <- NULL
     
-    dot <- DOTSeqDataSets(
+    dot <- DOTSeqDataSetsFromFeatureCounts(
         count_table = cnt,
         condition_table = cond,
         flattened_gtf = gtf,

@@ -28,31 +28,6 @@ DOTSeq(
 \arguments{
 \item{datasets}{Either:
 \describe{
-\item{Named list}{
-A list containing raw input components with the following named elements:
-\code{count_table}, \code{condition_table}, \code{flattened_gtf}, and \code{bed}.
-These inputs are used to construct a \code{DOTSeqDataSets} object internally.
-\describe{
-\item{\code{count_table}}{
-A data frame or path to a count table file. Must contain columns:
-\code{Geneid}, \code{Chr}, \code{Start}, \code{End}, \code{Strand},
-\code{Length}, plus one column per sample.
-}
-\item{\code{condition_table}}{
-A data frame or path to a sample metadata file. Must include columns:
-\code{run}, \code{strategy}, \code{condition}, \code{replicate}.
-}
-\item{\code{flattened_gtf}}{
-Path to a flattened GFF/GTF file containing ORF-level annotations.
-Typically generated using tools like \code{RIBOSS}.
-}
-\item{\code{flattened_bed}}{
-Path to a flattened BED file with ORF annotations. This file should contain
-coordinates and identifiers for ORFs derived from the flattened GTF.
-It is used for mapping ORFs to genes and for downstream filtering.
-}
-}
-}
 \item{\code{DOTSeqDataSets} object}{
 A pre-constructed \code{\link{DOTSeqDataSets-class}} object created using
 \code{\link{DOTSeqDataSets}}. It must include:

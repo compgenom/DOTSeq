@@ -155,7 +155,8 @@ and DTE via negative-binomial GLM (`DESeq2`).
 - Post hoc inference using `emmeans` [@emmeans] for contrasts and `ashr` 
 [@stephens2017false] for adaptive shrinkage of effect sizes (`testDOU()`). 
 
-While each step can be run individually, we use the `DOTSeq()` main 
+While each step can be run individually, we construct `DOTSeqDataSets` with 
+`DOTSeqDataSetsFromFeatureCounts()`, followed by the `DOTSeq()` main 
 function here for simplicity. To capture the translation-specific 
 interaction effect ($\beta_{\text{int}}$), `DOTSeq()` uses
 `formula = ~ condition * strategy` with `dispersion_modeling = "auto"` 
@@ -164,7 +165,7 @@ include batch and random effects.
 
 ```{r dotseq, warning=FALSE}
 # Prepare input as a named list
-raw <- list(
+datasets <- DOTSeqDataSetsFromFeatureCounts(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = gtf,
@@ -172,7 +173,7 @@ raw <- list(
 )
 
 # Run the DOTSeq workflow
-d <- DOTSeq(datasets = raw)
+d <- DOTSeq(datasets = datasets)
 ```
 
 In this case Interphase was automatically assigned as the baseline. The 
@@ -190,7 +191,7 @@ show(d)
 As indicated, we will use `getContrasts()` to extract the results.
 
 ```{r posthoc}
-results <- getContrasts(d)
+results <- getContrasts(d, type = "interaction")
 results
 ```
 
@@ -357,7 +358,7 @@ interpretation of DOU across conditions. If the ID mapping dataframe
 provided, the gene symbol is displayed as the plot title.
 
 ```{r plot-usage-gene-symbol, eval = requireNamespace("ggplot2", quietly = TRUE) && requireNamespace("ggsignif", quietly = TRUE)}
-order <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
+orderby <- c("Mitotic_Cycling", "Mitotic_Arrest", "Interphase")
 
 id <- "TAF2"
 
@@ -366,7 +367,7 @@ plotDOT(
     data = getDOU(d), 
     gene_id = id, 
     id_mapping = mapping, 
-    plot_params = list(order_by = order),
+    plot_params = list(order_by = orderby),
     force_new_device = FALSE
 )
 ```
@@ -384,7 +385,7 @@ plotDOT(
     data = getDOU(d),
     gene_id = id, 
     id_mapping = mapping, 
-    plot_params = list(order_by = order),
+    plot_params = list(order_by = orderby),
     force_new_device = FALSE
 )
 ```
