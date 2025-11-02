@@ -425,7 +425,28 @@ annotate_orf_type <- function(bed, gff_granges) {
 }
 
 
+#' Parse and validate sample metadata for DOTSeq analysis
+#'
+#' @description
+#' This internal helper function reads and validates the sample metadata
+#' provided either as a file path or a data frame. It ensures that the
+#' required columns—\code{run}, \code{strategy}, \code{condition}, and
+#' \code{replicate}—are present (case-insensitive match), and normalizes
+#' column names for consistency. If a file path is provided, the function
+#' reads the file and checks the header before loading the full table.
+#' If a data frame is provided, it performs similar validation directly.
+#'
+#' @param condition_table A character string specifying the path to a
+#' tab-delimited metadata file, or a data frame containing sample metadata.
+#' The metadata must include the following columns (case-insensitive):
+#' \code{run}, \code{strategy}, \code{condition}, and \code{replicate}.
+#'
+#' @return A data frame with normalized column names and row names set to
+#' the \code{run} column. Used internally to construct the
+#' \code{DOTSeqDataSets} object.
+#'
 #' @keywords internal
+#' 
 parse_condition_table <- function(condition_table) {
     
     # Define expected column names
@@ -484,7 +505,43 @@ parse_condition_table <- function(condition_table) {
 }
 
 
+#' Match and align sample metadata with count table
+#'
+#' @description
+#' This internal function matches sample identifiers between the count table
+#' and the condition table, ensuring consistency in sample naming and 
+#' ordering. It verifies that sufficient replicates exist, renames columns 
+#' to include metadata, and prepares the count and condition tables for 
+#' downstream differential translation analysis. It also assigns binary 
+#' strategy labels (e.g., RNA = 0, Ribo = 1), sets factor levels, and 
+#' optionally relevels the condition factor to a specified baseline.
+#'
+#' @param cnt A data frame containing count data. Columns must include sample
+#' names matching the \code{run} column in \code{cond}. If \code{num_feat_cols}
+#' is 6, the first six columns must be: \code{Geneid}, \code{Chr}, \code{Start},
+#' \code{End}, \code{Strand}, \code{Length}.
+#'
+#' @param cond A data frame containing sample metadata. Must include columns:
+#' \code{run}, \code{strategy}, \code{condition}, and \code{replicate}.
+#'
+#' @param num_feat_cols Integer specifying the number of feature columns in
+#' \code{cnt} before sample columns. Typically 6 for featureCounts output,
+#' or 0 for raw count matrices.
+#'
+#' @param baseline Optional character string specifying the reference level
+#' for the \code{condition} factor.
+#'
+#' @return A list with two elements:
+#' \describe{
+#'     \item{\code{cnt}}{A reordered count table with renamed sample columns.}
+#'     \item{\code{cond}}{A metadata data frame with binary strategy labels 
+#'     and factor columns, ready for modeling.}
+#' }
+#'
+#' @keywords internal
+#' 
 #' @importFrom stats relevel
+#' 
 match_runs <- function(cnt, cond, num_feat_cols = 0, baseline = NULL) {
     # Find common identifiers
     common <- intersect(rownames(cond), names(cnt))
@@ -611,11 +668,74 @@ match_runs <- function(cnt, cond, num_feat_cols = 0, baseline = NULL) {
 }
 
 
+#' Create DOU and DESeq2 datasets for differential translation analysis
+#'
+#' @description
+#' This internal function constructs a \code{DOUData} object and a 
+#' \code{DESeqDataSet} object from raw count data, sample metadata, and ORF 
+#' annotations. It applies filtering based on count thresholds and singlet 
+#' status, prepares metadata for modeling, and stores formulas and contrast 
+#' specifications for downstream analysis.
+#'
+#' @param count_table A matrix or data frame of raw counts. Columns must 
+#' match sample names in \code{condition_table}.
+#'
+#' @param condition_table A data frame containing sample metadata. Must 
+#' include columns: \code{run}, \code{strategy}, \code{condition}, and 
+#' \code{replicate}.
+#'
+#' @param annotation A \code{GRanges} object containing ORF annotations, 
+#' typically parsed from a flattened GTF or BED file.
+#'
+#' @param reduced_formula A formula object specifying the reduced model 
+#' used for estimating marginal means (e.g., \code{~ condition + strategy}).
+#'
+#' @param emm_specs A list of specifications for estimated marginal means 
+#' contrasts, typically generated using \code{emmeans::contrast()}.
+#'
+#' @param deseq_formula A formula object specifying the design for DESeq2 
+#' modeling (e.g., \code{~ condition * strategy}).
+#'
+#' @param min_count Integer specifying the minimum count threshold for 
+#' filtering ORFs. Default is \code{1}.
+#'
+#' @param stringent Logical or \code{NULL}; determines the filtering strategy:
+#' \describe{
+#'     \item{\code{TRUE}}{
+#'         Keep ORFs where all replicates in at least one condition pass 
+#'         \code{min_count}.
+#'     }
+#'     \item{\code{FALSE}}{
+#'         Keep ORFs where all replicates in at least one condition-strategy 
+#'         group pass \code{min_count}.
+#'     }
+#'     \item{\code{NULL}}{
+#'         Keep ORFs where total counts across all samples pass 
+#'         \code{min_count}.
+#'     }
+#' }
+#'
+#' @param verbose Logical; if \code{TRUE}, prints progress and runtime 
+#' messages. Default is \code{TRUE}.
+#'
+#' @return A list containing:
+#' \describe{
+#'     \item{\code{sumExp}}{
+#'         A \code{DOUData} object containing raw counts, metadata, and 
+#'         filtering status.
+#'     }
+#'     \item{\code{dds}}{
+#'         A \code{DESeqDataSet} object prepared for differential 
+#'         translation efficiency analysis.
+#'     }
+#' }
+#'
+#' @keywords internal
+#' 
 #' @importFrom SummarizedExperiment SummarizedExperiment assay
-#' @importFrom SummarizedExperiment colData colData<- rowData rowData<- 
+#' @importFrom SummarizedExperiment colData colData<- rowData rowData<-
 #' @importFrom DESeq2 DESeqDataSetFromMatrix
 #' @importFrom S4Vectors metadata metadata<-
-#' @keywords internal
 #' 
 create_datasets <- function(
         count_table, 

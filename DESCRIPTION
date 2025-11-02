@@ -69,6 +69,7 @@ Imports:
     GenomicRanges,
     IRanges,
     rtracklayer,
+    Rsamtools,
     S4Vectors,
     SummarizedExperiment
 biocViews: 

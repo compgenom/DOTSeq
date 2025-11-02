@@ -88,7 +88,7 @@
 #' cond$treatment <- NULL # remove the treatment column
 #' 
 #' # Create a DOTSeqDataSets object
-#' d <- DOTSeqDataSets(
+#' d <- DOTSeqDataSetsFromFeatureCounts(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = gtf,
