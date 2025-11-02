@@ -16,17 +16,17 @@ getDTE(object) <- value
 \S4method{getDTE}{DOTSeqDataSets}(object) <- value
 }
 \arguments{
-\item{object}{A \code{DOTSeqDataSets} object.}
+\item{object}{A \code{\link{DOTSeqDataSets-class}} object.}
 
 \item{value}{A replacement object (e.g., a \code{\link{DTEData-class}}).}
 }
 \value{
 For the accessor, a \code{\link{DTEData-class}} object. For the replacement,
-an updated \code{DOTSeqDataSets} object.
+an updated \code{\link{DOTSeqDataSets-class}} object.
 }
 \description{
 These methods allow access to and replacement of the \code{\link{DTEData-class}}
-object stored within a \code{DOTSeqDataSets} container.
+object stored within a \code{\link{DOTSeqDataSets-class}} container.
 }
 \examples{
 # Read in count matrix, condition table, and annotation files
@@ -48,15 +48,15 @@ cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
 # Create a DOTSeqDataSets object
-dot <- DOTSeqDataSets(
+d <- DOTSeqDataSetsFromFeatureCounts(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = flat,
     flattened_bed = bed
 )
 
-getDOU(dot)
+getDOU(d)
 
-getDTE(dot)
+getDTE(d)
 
 }

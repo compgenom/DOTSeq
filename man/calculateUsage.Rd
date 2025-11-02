@@ -45,25 +45,25 @@ names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
 cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
-dot <- DOTSeqDataSets(
+d <- DOTSeqDataSetsFromFeatureCounts(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = flat,
     flattened_bed = bed
 )
 
-dou <- getDOU(dot)
+dou <- getDOU(d)
 
 dou <- dou[rowData(dou)$is_kept == TRUE, ]
 # Subset only one gene
 dou <- dou[rowData(dou)$gene_id == "ENSG00000119402.18", ]
     
-getDOU(dot) <- dou
+getDOU(d) <- dou
 
-dot <- DOTSeq(datasets = dot, modules = "DOU")
+d <- DOTSeq(datasets = d, modules = "DOU")
 
 usage_df <- calculateUsage(
-    getDOU(dot),
+    getDOU(d),
     gene_id = "ENSG00000119402.18"
 )
 print(usage_df)

@@ -9,7 +9,7 @@
 #' stabilize effect size estimates.
 #'
 #' @seealso
-#' \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSets}},
+#' \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSets-class}},
 #' \code{\link{fitDOU}}, \code{\link{plotDOT}}
 #'
 #' @param data A \code{\link{DOUData-class}} object containing `emmGrid`

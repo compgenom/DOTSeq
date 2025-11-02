@@ -15,7 +15,7 @@ The metadata must include the following columns (case-insensitive):
 \value{
 A data frame with normalized column names and row names set to
 the \code{run} column. Used internally to construct the
-\code{DOTSeqDataSets} object.
+\code{\link{DOTSeqDataSets-class}} object.
 }
 \description{
 This internal helper function reads and validates the sample metadata

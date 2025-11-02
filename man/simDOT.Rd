@@ -130,18 +130,18 @@ names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
 cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
-dot <- DOTSeqDataSets(
+d <- DOTSeqDataSetsFromFeatureCounts(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = flat,
     flattened_bed = bed
 )
-raw_counts <- assay(getDOU(dot))
+raw_counts <- assay(getDOU(d))
 raw_counts <- raw_counts[, grep("Cycling|Interphase",
     colnames(raw_counts))]
 ribo <- raw_counts[, grep("ribo", colnames(raw_counts))]
 rna <- raw_counts[, grep("rna", colnames(raw_counts))]
-orfs <- rowData(getDOU(dot))
+orfs <- rowData(getDOU(d))
 r <- "uORF_up_mORF_down"
 g <- 1.5
 simData <- simDOT(
@@ -158,7 +158,7 @@ featCol <- cnt[, c("Geneid", "Chr", "Start", "End", "Strand", "Length")]
 cnt <- cbind(featCol, as.data.frame(simData$simData))
 cond <- as.data.frame(simData$colData)
 
-dot <- DOTSeqDataSets(
+d <- DOTSeqDataSetsFromFeatureCounts(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = flat,

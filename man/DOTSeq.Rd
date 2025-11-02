@@ -28,9 +28,9 @@ DOTSeq(
 \arguments{
 \item{datasets}{Either:
 \describe{
-\item{\code{DOTSeqDataSets} object}{
+\item{\code{\link{DOTSeqDataSets-class}} object}{
 A pre-constructed \code{\link{DOTSeqDataSets-class}} object created using
-\code{\link{DOTSeqDataSets}}. It must include:
+\code{\link{DOTSeqDataSets-class}}. It must include:
 \describe{
 \item{\code{DOU}}{
 A \code{\link{DOUData-class}} object containing filtered
@@ -41,7 +41,7 @@ A \code{\link[DESeq2]{DESeqDataSet-class}} object used for
 modeling DTE via DESeq2.
 }
 }
-If a \code{DOTSeqDataSets} object is provided, the function skips raw input
+If a \code{\link{DOTSeqDataSets-class}} object is provided, the function skips raw input
 parsing and uses these objects directly.
 }
 }}
@@ -109,7 +109,7 @@ contrasts in DOU. Default is \code{"revpairwise"}.}
 Default is \code{TRUE}.}
 }
 \value{
-A \code{DOTSeqDataSets} object containing:
+A \code{\link{DOTSeqDataSets-class}} object containing:
 \describe{
 \item{\code{DOU}}{
 A \code{\link{DOUData-class}} object with DOU results.
@@ -133,7 +133,7 @@ supports two modes of input:
 \itemize{
 \item A named list of raw input components: \code{count_table},
 \code{condition_table}, \code{flattened_gtf}, and \code{bed}.
-\item A pre-constructed \code{DOTSeqDataSets} object containing processed data.
+\item A pre-constructed \code{\link{DOTSeqDataSets-class}} object containing processed data.
 }
 
 The function automatically detects the input type and proceeds with the
@@ -161,14 +161,14 @@ cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
 # Use raw input list
-raw <- list(
+d <- DOTSeqDataSetsFromFeatureCounts(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = gtf,
     flattened_bed = bed
 )
 
-d <- DOTSeq(datasets = raw, modules = "DTE")
+d <- DOTSeq(datasets = d, modules = "DTE")
 
 show(d)
 
@@ -184,7 +184,7 @@ getDOU(d) <- dou[random_rows, ]
 d <- DOTSeq(datasets = d)
 
 # Create a DOTSeqDataSets object and use it as input
-d <- DOTSeqDataSets(
+d <- DOTSeqDataSetsFromFeatureCounts(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = gtf,
@@ -225,7 +225,7 @@ Useful links:
 }
 
 
-\code{\link{DOTSeqDataSets}}, \code{\link{fitDOU}},
+\code{\link{DOTSeqDataSets-class}}, \code{\link{fitDOU}},
 \code{\link{testDOU}}, \code{\link{plotDOT}}
 }
 \author{

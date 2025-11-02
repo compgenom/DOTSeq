@@ -4,7 +4,7 @@
 \alias{match_runs}
 \title{Match and align sample metadata with count table}
 \usage{
-match_runs(cnt, cond, num_feat_cols = 0, baseline = NULL)
+match_runs(cnt, cond, num_feat_cols = 0, baseline = NULL, verbose = TRUE)
 }
 \arguments{
 \item{cnt}{A data frame containing count data. Columns must include sample

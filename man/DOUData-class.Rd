@@ -51,16 +51,16 @@ cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
 # Create a DOTSeqDataSets object
-dot <- DOTSeqDataSets(
+d <- DOTSeqDataSetsFromFeatureCounts(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = flat,
     flattened_bed = bed
 )
 
-getDOU(dot)
+getDOU(d)
 
-getDTE(dot)
+getDTE(d)
 
 }
 \seealso{

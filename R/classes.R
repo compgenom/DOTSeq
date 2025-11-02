@@ -45,16 +45,16 @@
 #' cond$treatment <- NULL
 #'
 #' # Create a DOTSeqDataSets object
-#' dot <- DOTSeqDataSets(
+#' d <- DOTSeqDataSetsFromFeatureCounts(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,
 #'     flattened_bed = bed
 #' )
 #' 
-#' getDOU(dot)
+#' getDOU(d)
 #' 
-#' getDTE(dot)
+#' getDTE(d)
 #' 
 setClass(
     "DOUData",
@@ -195,16 +195,16 @@ setValidity("DOUData", function(object) {
 #' cond$treatment <- NULL
 #'
 #' # Create a DOTSeqDataSets object
-#' dot <- DOTSeqDataSets(
+#' d <- DOTSeqDataSetsFromFeatureCounts(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,
 #'     flattened_bed = bed
 #' )
 #' 
-#' getDOU(dot)
+#' getDOU(d)
 #' 
-#' getDTE(dot)
+#' getDTE(d)
 #' 
 setClass(
     "DTEData",
@@ -228,7 +228,7 @@ setClassUnion("DESeqOrDTE", c("DESeqDataSet", "DTEData"))
 #'
 #' @slot DOU A \code{\link{DOUData-class}} object.
 #' @slot DTE A \code{\link{DTEData-class}} object.
-#' @return A \code{DOTSeqDataSets} S4 object containing DOU and DTE results.
+#' @return A \code{\link{DOTSeqDataSets-class}} S4 object containing DOU and DTE results.
 #' @name DOTSeqDataSets-class
 #' @rdname DOTSeqDataSets-class
 #' @exportClass DOTSeqDataSets
@@ -252,16 +252,16 @@ setClassUnion("DESeqOrDTE", c("DESeqDataSet", "DTEData"))
 #' cond$treatment <- NULL
 #'
 #' # Create a DOTSeqDataSets object
-#' dot <- DOTSeqDataSets(
+#' d <- DOTSeqDataSetsFromFeatureCounts(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,
 #'     flattened_bed = bed
 #' )
 #' 
-#' getDOU(dot)
+#' getDOU(d)
 #' 
-#' getDTE(dot)
+#' getDTE(d)
 #' 
 setClass(
     "DOTSeqDataSets",
@@ -275,7 +275,7 @@ setClass(
 #'
 #' Displays a summary of the DOTSeqDataSets object.
 #'
-#' @param object A \code{DOTSeqDataSets} object.
+#' @param object A \code{\link{DOTSeqDataSets-class}} object.
 #' @name DOTSeqDataSets-class
 #' @rdname DOTSeqDataSets-class
 #' @aliases show,DOTSeqDataSets-method
@@ -292,12 +292,12 @@ setMethod("show", "DOTSeqDataSets", function(object) {
 #' Accessor and replacement methods for DOU slot
 #'
 #' These methods allow access to and replacement of the \code{\link{DOUData-class}} 
-#' object stored within a \code{DOTSeqDataSets} container.
+#' object stored within a \code{\link{DOTSeqDataSets-class}} container.
 #'
-#' @param object A \code{DOTSeqDataSets} object.
+#' @param object A \code{\link{DOTSeqDataSets-class}} object.
 #' @param value A replacement object (e.g., a \code{\link{DOUData-class}}).
 #' @return For the accessor, a \code{\link{DOUData-class}} object. For the replacement, 
-#' an updated \code{DOTSeqDataSets} object.
+#' an updated \code{\link{DOTSeqDataSets-class}} object.
 #' @rdname getDOU-method
 #' @export
 #' @examples
@@ -320,7 +320,7 @@ setMethod("show", "DOTSeqDataSets", function(object) {
 #' cond$treatment <- NULL
 #'
 #' # Create a DOTSeqDataSets object
-#' d <- DOTSeqDataSets(
+#' d <- DOTSeqDataSetsFromFeatureCounts(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = gtf,
@@ -355,12 +355,12 @@ setReplaceMethod("getDOU", "DOTSeqDataSets", function(object, value) {
 #' Accessor and replacement methods for DTE slot
 #'
 #' These methods allow access to and replacement of the \code{\link{DTEData-class}} 
-#' object stored within a \code{DOTSeqDataSets} container.
+#' object stored within a \code{\link{DOTSeqDataSets-class}} container.
 #'
-#' @param object A \code{DOTSeqDataSets} object.
+#' @param object A \code{\link{DOTSeqDataSets-class}} object.
 #' @param value A replacement object (e.g., a \code{\link{DTEData-class}}).
 #' @return For the accessor, a \code{\link{DTEData-class}} object. For the replacement, 
-#' an updated \code{DOTSeqDataSets} object.
+#' an updated \code{\link{DOTSeqDataSets-class}} object.
 #' @rdname getDTE-method
 #' @export
 #' @examples
@@ -383,16 +383,16 @@ setReplaceMethod("getDOU", "DOTSeqDataSets", function(object, value) {
 #' cond$treatment <- NULL
 #'
 #' # Create a DOTSeqDataSets object
-#' dot <- DOTSeqDataSets(
+#' d <- DOTSeqDataSetsFromFeatureCounts(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,
 #'     flattened_bed = bed
 #' )
 #' 
-#' getDOU(dot)
+#' getDOU(d)
 #' 
-#' getDTE(dot)
+#' getDTE(d)
 #' 
 setGeneric("getDTE", function(object) standardGeneric("getDTE"))
 
@@ -466,7 +466,7 @@ setMethod("specs", "DTEData", function(object) object@specs)
 #'
 #' These methods retrieve or replace either interaction-specific or 
 #' strategy-specific contrast results from a \code{\link{DOUData-class}}, 
-#' \code{\link{DTEData-class}}, or \code{DOTSeqDataSets} object.
+#' \code{\link{DTEData-class}}, or \code{\link{DOTSeqDataSets-class}} object.
 #'
 #' @param object A \code{\link{DOUData-class}} or \code{\link{DTEData-class}} object.
 #' @param type A character string, either \code{"interaction"} or 
@@ -475,7 +475,7 @@ setMethod("specs", "DTEData", function(object) object@specs)
 #' contrast results.
 #' @return For the accessor, a \code{DFrame} or \code{data.frame} 
 #' containing contrast results. For the replacement, an updated 
-#' \code{\link{DOUData-class}}, \code{\link{DTEData-class}} or \code{DOTSeqDataSets} object.
+#' \code{\link{DOUData-class}}, \code{\link{DTEData-class}} or \code{\link{DOTSeqDataSets-class}} object.
 #' @rdname getContrasts-method
 #' @export
 #' @examples
@@ -498,16 +498,16 @@ setMethod("specs", "DTEData", function(object) object@specs)
 #' cond$treatment <- NULL
 #'
 #' # Create a DOTSeqDataSets object
-#' dot <- DOTSeqDataSets(
+#' d <- DOTSeqDataSetsFromFeatureCounts(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = flat,
 #'     flattened_bed = bed
 #' )
 #' 
-#' getDOU(dot)
+#' getDOU(d)
 #' 
-#' getDTE(dot)
+#' getDTE(d)
 #' 
 setGeneric("getContrasts", function(object, type = c("interaction", "strategy")) standardGeneric("getContrasts"))
 

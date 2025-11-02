@@ -36,12 +36,12 @@ contrast results.}
 \value{
 For the accessor, a \code{DFrame} or \code{data.frame}
 containing contrast results. For the replacement, an updated
-\code{\link{DOUData-class}}, \code{\link{DTEData-class}} or \code{DOTSeqDataSets} object.
+\code{\link{DOUData-class}}, \code{\link{DTEData-class}} or \code{\link{DOTSeqDataSets-class}} object.
 }
 \description{
 These methods retrieve or replace either interaction-specific or
 strategy-specific contrast results from a \code{\link{DOUData-class}},
-\code{\link{DTEData-class}}, or \code{DOTSeqDataSets} object.
+\code{\link{DTEData-class}}, or \code{\link{DOTSeqDataSets-class}} object.
 }
 \examples{
 # Read in count matrix, condition table, and annotation files
@@ -63,15 +63,15 @@ cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
 # Create a DOTSeqDataSets object
-dot <- DOTSeqDataSets(
+d <- DOTSeqDataSetsFromFeatureCounts(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = flat,
     flattened_bed = bed
 )
 
-getDOU(dot)
+getDOU(d)
 
-getDTE(dot)
+getDTE(d)
 
 }

@@ -40,6 +40,9 @@ sample.}
 Must include columns: \code{run}, \code{strategy}, \code{condition},
 \code{replicate}.}
 
+\item{annotation}{A GRanges object with ORF level annotation,
+typically obtained from \code{\link{getORFs}}.}
+
 \item{formula}{A formula object specifying the design.
 Default is \code{~ condition * strategy}.}
 
@@ -79,7 +82,7 @@ annotations.}
 \item{flattened_bed}{Path to a flattened BED file with ORF annotations.}
 }
 \value{
-A \code{DOTSeqDataSets} object containing:
+A \code{\link{DOTSeqDataSets-class}} object containing:
 \describe{
 \item{DOU}{
 A \code{\link{DOUData-class}} object containing pre-filtered
@@ -94,7 +97,7 @@ Differential Translation Efficiency (DTE).
 
 A matrix of read counts for each ORF (rows) and sample (columns).
 
-A \code{DOTSeqDataSets} object containing:
+A \code{\link{DOTSeqDataSets-class}} object containing:
 \describe{
 \item{DOU}{
 A \code{\link{DOUData-class}} object containing pre-filtered
@@ -136,14 +139,6 @@ meta <- read.table(file.path(dir, "metadata.txt.gz"))
 names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
 cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
-
-# Create a raw input list
-raw <- list(
-    count_table = cnt,
-    condition_table = cond,
-    flattened_gtf = gtf,
-    flattened_bed = bed
-)
 
 # Create a DOTSeqDataSets object
 d <- DOTSeqDataSetsFromFeatureCounts(

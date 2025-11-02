@@ -9,10 +9,10 @@
 \S4method{show}{DOTSeqDataSets}(object)
 }
 \arguments{
-\item{object}{A \code{DOTSeqDataSets} object.}
+\item{object}{A \code{\link{DOTSeqDataSets-class}} object.}
 }
 \value{
-A \code{DOTSeqDataSets} S4 object containing DOU and DTE results.
+A \code{\link{DOTSeqDataSets-class}} S4 object containing DOU and DTE results.
 }
 \description{
 A wrapper class to store both DOU and DTE results from \pkg{DOTSeq}
@@ -48,15 +48,15 @@ cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
 # Create a DOTSeqDataSets object
-dot <- DOTSeqDataSets(
+d <- DOTSeqDataSetsFromFeatureCounts(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = flat,
     flattened_bed = bed
 )
 
-getDOU(dot)
+getDOU(d)
 
-getDTE(dot)
+getDTE(d)
 
 }

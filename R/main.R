@@ -7,21 +7,21 @@
 #' 
 #' - A named list of raw input components: \code{count_table}, 
 #' \code{condition_table}, \code{flattened_gtf}, and \code{bed}.
-#' - A pre-constructed \code{DOTSeqDataSets} object containing processed data.
+#' - A pre-constructed \code{\link{DOTSeqDataSets-class}} object containing processed data.
 #' 
 #' The function automatically detects the input type and proceeds with the 
 #' appropriate workflow. It performs ORF-level filtering, model fitting, 
 #' post hoc contrasts, and adaptive shrinkage of effect sizes. Plotting and 
 #' downstream analysis are handled separately via the \code{\link{plotDOT}} function.
 #' 
-#' @seealso \code{\link{DOTSeqDataSets}}, \code{\link{fitDOU}}, 
+#' @seealso \code{\link{DOTSeqDataSets-class}}, \code{\link{fitDOU}}, 
 #' \code{\link{testDOU}}, \code{\link{plotDOT}}
 #'
 #' @param datasets Either:
 #' \describe{
-#'     \item{\code{DOTSeqDataSets} object}{
+#'     \item{\code{\link{DOTSeqDataSets-class}} object}{
 #'     A pre-constructed \code{\link{DOTSeqDataSets-class}} object created using 
-#'     \code{\link{DOTSeqDataSets}}. It must include:
+#'     \code{\link{DOTSeqDataSets-class}}. It must include:
 #'         \describe{
 #'             \item{\code{DOU}}{
 #'                 A \code{\link{DOUData-class}} object containing filtered
@@ -32,7 +32,7 @@
 #'                 modeling DTE via DESeq2.
 #'             }
 #'         }
-#'     If a \code{DOTSeqDataSets} object is provided, the function skips raw input
+#'     If a \code{\link{DOTSeqDataSets-class}} object is provided, the function skips raw input
 #'     parsing and uses these objects directly.
 #'     }
 #' }
@@ -99,7 +99,7 @@
 #' @param verbose Logical; if \code{TRUE}, prints progress messages.
 #' Default is \code{TRUE}.
 #'
-#' @return A \code{DOTSeqDataSets} object containing:
+#' @return A \code{\link{DOTSeqDataSets-class}} object containing:
 #' \describe{
 #'     \item{\code{DOU}}{
 #'         A \code{\link{DOUData-class}} object with DOU results.
@@ -135,14 +135,14 @@
 #' cond$treatment <- NULL
 #'
 #' # Use raw input list
-#' raw <- list(
+#' d <- DOTSeqDataSetsFromFeatureCounts(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = gtf,
 #'     flattened_bed = bed
 #' )
 #' 
-#' d <- DOTSeq(datasets = raw, modules = "DTE")
+#' d <- DOTSeq(datasets = d, modules = "DTE")
 #'
 #' show(d)
 #' 
@@ -158,7 +158,7 @@
 #' d <- DOTSeq(datasets = d)
 #' 
 #' # Create a DOTSeqDataSets object and use it as input
-#' d <- DOTSeqDataSets(
+#' d <- DOTSeqDataSetsFromFeatureCounts(
 #'     count_table = cnt,
 #'     condition_table = cond,
 #'     flattened_gtf = gtf,

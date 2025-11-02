@@ -46,7 +46,7 @@ circular genomes, and can detect ORFs on the sense (+) or both strands.
 \details{
 This method is optimized for prokaryotic genomes or transcript
 sequences. Direct use for eukaryotic whole genomes is not suitable
-due to the presence of splicing.
+due to the presence of splicing. See also \pkg{ORFik}'s \code{findMapORFs}.
 
 Each FASTA header is treated independently, and the name (up to the
 first space) is used as the \code{seqnames} in the returned \code{GRanges}
@@ -56,9 +56,6 @@ start/end boundary are handled.
 Note: Ensure your FASTA file is valid and headers are formatted as
 \verb{>name info}, with the name first and no hidden characters, as this
 affects coordinate parsing.
-}
-\seealso{
-\code{\link[ORFik]{findMapORFs}}
 }
 \author{
 Haakon Tjeldnes et al. (original),

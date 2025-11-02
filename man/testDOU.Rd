@@ -130,6 +130,6 @@ Stephens, M. (2016) False discovery rates: a new deal.
 Biostatistics, 18:2. DOI: 10.1093/biostatistics/kxw041
 }
 \seealso{
-\code{\link{DOTSeq}}, \code{\link{DOTSeqDataSets}},
+\code{\link{DOTSeq}}, \code{\link{DOTSeqDataSets-class}},
 \code{\link{fitDOU}}, \code{\link{plotDOT}}
 }

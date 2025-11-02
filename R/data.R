@@ -148,9 +148,14 @@ countReads <- function(
 #'
 #' @param count_table A matrix of read counts with features as rows and 
 #' samples as columns.
+#' 
 #' @param condition_table Path to a sample metadata file or a data frame.
 #' Must include columns: \code{run}, \code{strategy}, \code{condition},
 #' \code{replicate}.
+#' 
+#' @param annotation A GRanges object with ORF level annotation, 
+#' typically obtained from \code{\link{getORFs}}.
+#' 
 #' @param formula A formula object specifying the design.
 #' Default is \code{~ condition * strategy}.
 #'
@@ -184,7 +189,7 @@ countReads <- function(
 #' @param verbose Logical; if \code{TRUE}, prints progress messages.
 #' Default is \code{TRUE}.
 #'
-#' @return A \code{DOTSeqDataSets} object containing:
+#' @return A \code{\link{DOTSeqDataSets-class}} object containing:
 #' \describe{
 #'     \item{DOU}{
 #'         A \code{\link{DOUData-class}} object containing pre-filtered 
@@ -250,14 +255,20 @@ DOTSeqDataSetsFromSE <- function(
     
     cond <- parse_condition_table(condition_table)
     
-    matched <- match_runs(cnt, cond, num_feat_cols = 0, baseline = baseline)
+    matched <- match_runs(
+        cnt, 
+        cond, 
+        num_feat_cols = 0, 
+        baseline = baseline, 
+        verbose = verbose
+    )
     cnt <- as.matrix(matched$cnt)
     cond <- matched$cond
     
     se_datasets <- create_datasets(
         count_table = cnt, 
         condition_table = cond,
-        annotation = gr, 
+        annotation = annotation, 
         reduced_formula = reduced_formula, 
         emm_specs = emm_specs, 
         deseq_formula = deseq_fmla$reduced_formula,
@@ -443,7 +454,7 @@ annotate_orf_type <- function(bed, gff_granges) {
 #'
 #' @return A data frame with normalized column names and row names set to
 #' the \code{run} column. Used internally to construct the
-#' \code{DOTSeqDataSets} object.
+#' \code{\link{DOTSeqDataSets-class}} object.
 #'
 #' @keywords internal
 #' 
@@ -542,7 +553,7 @@ parse_condition_table <- function(condition_table) {
 #' 
 #' @importFrom stats relevel
 #' 
-match_runs <- function(cnt, cond, num_feat_cols = 0, baseline = NULL) {
+match_runs <- function(cnt, cond, num_feat_cols = 0, baseline = NULL, verbose = TRUE) {
     # Find common identifiers
     common <- intersect(rownames(cond), names(cnt))
     
@@ -941,7 +952,7 @@ create_datasets <- function(
 #' @param verbose Logical; if \code{TRUE}, prints progress messages.
 #' Default is \code{TRUE}.
 #'
-#' @return A \code{DOTSeqDataSets} object containing:
+#' @return A \code{\link{DOTSeqDataSets-class}} object containing:
 #' \describe{
 #'     \item{DOU}{
 #'         A \code{\link{DOUData-class}} object containing pre-filtered 
@@ -981,14 +992,6 @@ create_datasets <- function(
 #' names(meta) <- c("run", "strategy", "replicate", "treatment", "condition")
 #' cond <- meta[meta$treatment == "chx", ]
 #' cond$treatment <- NULL
-#'
-#' # Create a raw input list
-#' raw <- list(
-#'     count_table = cnt,
-#'     condition_table = cond,
-#'     flattened_gtf = gtf,
-#'     flattened_bed = bed
-#' )
 #' 
 #' # Create a DOTSeqDataSets object
 #' d <- DOTSeqDataSetsFromFeatureCounts(
@@ -1071,7 +1074,13 @@ DOTSeqDataSetsFromFeatureCounts <- function(
 
     cond <- parse_condition_table(condition_table)
     
-    matched <- match_runs(cnt, cond, num_feat_cols = 6, baseline = baseline)
+    matched <- match_runs(
+        cnt, 
+        cond, 
+        num_feat_cols = 6, 
+        baseline = baseline, 
+        verbose = verbose
+    )
     cnt <- matched$cnt
     cond <- matched$cond
 

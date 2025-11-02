@@ -800,7 +800,7 @@ fit_beta_binomial <- function(
 #' (via \code{\link[glmmTMB]{glmmTMB}}). It supports multiple dispersion 
 #' modeling approaches and optional diagnostics using \pkg{DHARMa}.
 #'
-#' @seealso \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSets}}, 
+#' @seealso \code{\link{DOTSeq}}, \code{\link{DOTSeqDataSets-class}}, 
 #' \code{\link{testDOU}}
 #' 
 #' @param data A \code{\link{DOUData-class}} object containing raw ORF-level  

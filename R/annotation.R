@@ -116,7 +116,7 @@ filter_gtf <- function(
 #' @importFrom txdbmaker makeTxDbFromGFF
 #' @importFrom AnnotationDbi select keys
 #' @importFrom S4Vectors mcols mcols<-
-#'
+#' @importFrom stats ave
 #' @export
 #'
 #' @examplesIf requireNamespace("TxDb.Hsapiens.UCSC.hg38.knownGene", quietly = TRUE) && requireNamespace("BSgenome.Hsapiens.UCSC.hg38", quietly = TRUE) && requireNamespace("GenomicFeatures", quietly = TRUE)
@@ -979,7 +979,7 @@ seqnamesPerGroup <- function(grl, keep.names = TRUE) {
 #'
 #' This method is optimized for prokaryotic genomes or transcript 
 #' sequences. Direct use for eukaryotic whole genomes is not suitable 
-#' due to the presence of splicing.
+#' due to the presence of splicing. See also \pkg{ORFik}'s \code{findMapORFs}.
 #'
 #' Each FASTA header is treated independently, and the name (up to the 
 #' first space) is used as the `seqnames` in the returned `GRanges` 
@@ -992,8 +992,6 @@ seqnamesPerGroup <- function(grl, keep.names = TRUE) {
 #'
 #' @author Haakon Tjeldnes et al. (original), 
 #' Chun Shen Lim (modification).
-#' 
-#' @seealso \code{\link[ORFik]{findMapORFs}}
 #' 
 #' @param sequences Character path to a FASTA file, or a `DNAStringSet` 
 #' or `BSgenome` object.

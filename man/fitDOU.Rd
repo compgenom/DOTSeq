@@ -149,6 +149,6 @@ Hartig F (2025). DHARMa: Residual Diagnostics for Hierarchical
 \url{https://github.com/florianhartig/dharma}
 }
 \seealso{
-\code{\link{DOTSeq}}, \code{\link{DOTSeqDataSets}},
+\code{\link{DOTSeq}}, \code{\link{DOTSeqDataSets-class}},
 \code{\link{testDOU}}
 }

@@ -16,17 +16,17 @@ getDOU(object) <- value
 \S4method{getDOU}{DOTSeqDataSets}(object) <- value
 }
 \arguments{
-\item{object}{A \code{DOTSeqDataSets} object.}
+\item{object}{A \code{\link{DOTSeqDataSets-class}} object.}
 
 \item{value}{A replacement object (e.g., a \code{\link{DOUData-class}}).}
 }
 \value{
 For the accessor, a \code{\link{DOUData-class}} object. For the replacement,
-an updated \code{DOTSeqDataSets} object.
+an updated \code{\link{DOTSeqDataSets-class}} object.
 }
 \description{
 These methods allow access to and replacement of the \code{\link{DOUData-class}}
-object stored within a \code{DOTSeqDataSets} container.
+object stored within a \code{\link{DOTSeqDataSets-class}} container.
 }
 \examples{
 # Read in count matrix, condition table, and annotation files
@@ -48,7 +48,7 @@ cond <- meta[meta$treatment == "chx", ]
 cond$treatment <- NULL
 
 # Create a DOTSeqDataSets object
-d <- DOTSeqDataSets(
+d <- DOTSeqDataSetsFromFeatureCounts(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = gtf,
