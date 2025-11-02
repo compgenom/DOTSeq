@@ -86,11 +86,12 @@ plot_orf_usage <- function(
         colors = "Set2"
 ) {
     
-    if (!requireNamespace("ggplot2", quietly = TRUE) || 
+    if (!requireNamespace("eulerr", quietly=TRUE) || 
+        !requireNamespace("ggplot2", quietly = TRUE) || 
         !requireNamespace("ggsignif", quietly = TRUE)) {
         stop(
-            "Model diagnostics require the 'ggplot2' and 'ggsignif' packages. ", 
-            "Please install them by running: install.packages(c('ggplot2', 'ggsignif'))"
+            "Plotting Venn diagrams and ORF usage plots require 'eulerr', 'ggplot2', and 'ggsignif'. ", 
+            "Please install them by running: install.packages(c('eulerr', 'ggplot2', 'ggsignif'))"
         )
     }
     
@@ -277,10 +278,12 @@ plot_venn <- function(
         dte_signif_thresh = 0.05
 ) {
     
-    if (!requireNamespace("eulerr", quietly=TRUE)) {
+    if (!requireNamespace("eulerr", quietly=TRUE) || 
+        !requireNamespace("ggplot2", quietly = TRUE) || 
+        !requireNamespace("ggsignif", quietly = TRUE)) {
         stop(
-            "Plotting Venn diagrams require the 'eulerr' package. ", 
-            "Please install it by running: install.packages('eulerr')"
+            "Plotting Venn diagrams and ORF usage plots require 'eulerr', 'ggplot2', and 'ggsignif'. ", 
+            "Please install and by running: install.packages(c('eulerr', 'ggplot2', 'ggsignif'))"
         )
     }
     
@@ -1303,9 +1306,9 @@ plot_heatmap <- function(paired_data) {
     # Dynamic scaling
     cex_row <- ifelse(n_rows > 50, 0.5, 0.8)
     cex_col <- ifelse(n_cols > 50, 0.5, 0.8)
-    right_margin <- max(5, min(5, n_rows / 5))
+    max_label_width <- max(strwidth(gene_labels, units = "inches", cex = cex_row))
+    right_margin <- max(5, ceiling(max_label_width * 6))
     layout_widths <- c(2, max(6, n_cols / 10))
-    
     layout(matrix(c(1, 2), nrow = 1), widths = layout_widths)
     
     ## Panel 1: Dendrogram
@@ -1764,6 +1767,10 @@ plotDOT <- function(
     
     marginal_plot_type <- if (plot_params$color_by == "significance") "histogram" else "density"
     
+    # Validate order_by
+    if (!is.null(plot_params$order_by) && !is.character(plot_params$order_by)) {
+        stop("order_by must be a character vector or NULL.")
+    }
     
     # Validate annotation_params
     default_annotation_params <- list(
@@ -1857,13 +1864,14 @@ plotDOT <- function(
     if (plot_type == "venn") {
         reset_graphics(function() {
             grid::grid.newpage()
-            grid::grid.draw(plot_venn(
+            venn <- plot_venn(
                 results = results,
                 dou_signif_col = dou_params$signif_col,
                 dte_signif_col = dte_params$signif_col,
                 dou_signif_thresh = dou_params$signif_thresh,
                 dte_signif_thresh = dte_params$signif_thresh
-            ))
+            )
+            grid::grid.draw(venn)
             if (verbose) message("Venn diagram plotted")
         }, force_new_device = force_new_device)
     }
