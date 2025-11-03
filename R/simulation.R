@@ -380,10 +380,8 @@ create_read_numbers <- function(
 #'   simulated DOT effect.}
 #' }
 #'
-#' @importFrom DESeq2 DESeqDataSetFromMatrix vst design<-
 #' @importFrom stats prcomp rgamma runif df model.matrix
 #' @importFrom SummarizedExperiment SummarizedExperiment assay
-#' @importFrom grDevices dev.cur dev.new dev.size
 #'
 #' @export
 #'
@@ -812,105 +810,24 @@ simDOT <- function(
     final_change <- rep(0, length(original_genes))
     names(final_change) <- original_genes
     final_change[names(gcoeffs_ribo)] <- gcoeffs_ribo - gcoeffs_rna
-
-
-    if (isTRUE(diagplot_ribo) | isTRUE(diagplot_rna)) {
-        dds <- DESeqDataSetFromMatrix(
-            countData = round(merged),
-            colData = coldata,
-            design = ~strategy
-        )
-
-        dds_ribo <- dds[, dds$strategy == "ribo"]
-        dds_rna <- dds[, dds$strategy == "rna"]
-
-        design(dds_ribo) <- ~ condition + batch
-        design(dds_rna) <- ~ condition + batch
-
-        vst_ribo <- vst(dds_ribo, blind = FALSE)
-        pca_ribo <- prcomp(t(assay(vst_ribo)))
-
-        vst_rna <- vst(dds_rna, blind = FALSE)
-        pca_rna <- prcomp(t(assay(vst_rna)))
-    }
+    
 
     if (isTRUE(diagplot_ribo)) {
         tryCatch(
             {
-                # Ensure a graphics device is open
-                if (dev.cur() == 1) dev.new()
-
-                # Get current margin and device size
-                current_mar <- par("mar")
-                dev_dims <- dev.size("in") # width, height in inches
-
-                if (dev_dims[1] > 7) {
-                    par(xpd = TRUE, mar = current_mar + c(0, 0, 0, 4)) # enough space for outside legend
-                    legend_inset <- c(1.02, 0)
-                    legend_outside <- TRUE
-                } else if (dev_dims[1] > 5.5) {
-                    par(xpd = TRUE, mar = current_mar + c(0, 0, 0, 2)) # medium space
-                    legend_inset <- c(1.02, 0)
-                    legend_outside <- TRUE
-                } else if (dev_dims[1] > 4) {
-                    par(xpd = TRUE, mar = current_mar + c(0, 0, 0, 0.5)) # small margins
-                    legend_inset <- c(1.02, 0)
-                    legend_outside <- TRUE
-                } else {
-                    message("Legend may overlap with data. Try enlarging the plot area.")
-                    par(xpd = FALSE, mar = c(4, 4, 2, 2)) # tight margins, legend inside
-                    legend_inset <- 0
-                    legend_outside <- FALSE
-                }
-
-                # PCA data
-                percentVar_ribo <- round(100 * pca_ribo$sdev^2 / sum(pca_ribo$sdev^2))
-                colors_ribo <- as.numeric(as.factor(colData(vst_ribo)$condition))
-                shapes_ribo <- as.numeric(as.factor(colData(vst_ribo)$batch))
-
-                # PCA plot
-                plot(
-                    x = pca_ribo$x[, 1],
-                    y = pca_ribo$x[, 2],
-                    col = colors_ribo,
-                    pch = shapes_ribo,
-                    xlab = paste0("PC1: ", percentVar_ribo[1], "% variance"),
-                    ylab = paste0("PC2: ", percentVar_ribo[2], "% variance"),
-                    main = paste0(
-                        "PCA of Ribo-seq (gcoeff: ", gcoeff, ")\n", batch_scenario,
-                        " (num_batches: ", num_batches, ", bcoeff: ", paste(bcoeff, collapse = ", "), ")"
-                    )
+                plot_pca(
+                    gcoeff = gcoeff, 
+                    bcoeff = bcoeff,
+                    batch_scenario = batch_scenario,
+                    num_batches = num_batches,
+                    countdata = merged, 
+                    coldata = coldata, 
+                    strategy = "ribo",
+                    formula1 = ~strategy, 
+                    formula2 = ~ condition + batch
                 )
-
-                # Condition legend
-                legend(
-                    "topleft",
-                    inset = legend_inset,
-                    xpd = legend_outside,
-                    bty = "n",
-                    legend = unique(as.data.frame.array(colData(vst_ribo))$condition),
-                    col = unique(colors_ribo),
-                    pch = 16,
-                    title = "Condition"
-                )
-
-                # Batch legend
-                legend(
-                    "bottomleft",
-                    inset = legend_inset,
-                    xpd = legend_outside,
-                    bty = "n",
-                    legend = unique(as.data.frame.array(colData(vst_ribo))$batch),
-                    pch = unique(shapes_ribo),
-                    col = "black",
-                    title = "Batch"
-                )
-
-                # Reset margins
-                par(xpd = FALSE, mar = c(5, 4, 4, 2) + 0.1)
             },
             error = function(e) {
-                # message("Skipping Ribo-seq PCA plot due to error: ", e$message)
             }
         )
     }
@@ -918,80 +835,19 @@ simDOT <- function(
     if (isTRUE(diagplot_rna)) {
         tryCatch(
             {
-                # Ensure a graphics device is open
-                if (dev.cur() == 1) dev.new()
-
-                # Get current margin and device size
-                current_mar <- par("mar")
-                dev_dims <- dev.size("in") # width, height in inches
-
-                # Adjust margins based on device width
-                if (dev_dims[1] > 7) {
-                    par(xpd = TRUE, mar = current_mar + c(0, 0, 0, 4)) # enough space for outside legend
-                    legend_inset <- c(1.02, 0)
-                    legend_outside <- TRUE
-                } else if (dev_dims[1] > 5.5) {
-                    par(xpd = TRUE, mar = current_mar + c(0, 0, 0, 2)) # medium space
-                    legend_inset <- c(1.02, 0)
-                    legend_outside <- TRUE
-                } else if (dev_dims[1] > 4) {
-                    par(xpd = TRUE, mar = current_mar + c(0, 0, 0, 0.5)) # small margins
-                    legend_inset <- c(1.02, 0)
-                    legend_outside <- TRUE
-                } else {
-                    message("Legend may overlap with data. Try enlarging the plot area.")
-                    par(xpd = FALSE, mar = c(4, 4, 2, 2)) # tight margins, legend inside
-                    legend_inset <- 0
-                    legend_outside <- FALSE
-                }
-
-                # PCA plot
-                percentVar_rna <- round(100 * pca_rna$sdev^2 / sum(pca_rna$sdev^2))
-                colors_rna <- as.numeric(as.factor(colData(vst_rna)$condition))
-                shapes_rna <- as.numeric(as.factor(colData(vst_rna)$batch))
-
-                plot(
-                    x = pca_rna$x[, 1],
-                    y = pca_rna$x[, 2],
-                    col = colors_rna,
-                    pch = shapes_rna,
-                    xlab = paste0("PC1: ", percentVar_rna[1], "% variance"),
-                    ylab = paste0("PC2: ", percentVar_rna[2], "% variance"),
-                    main = paste0(
-                        "PCA of RNA-seq (gcoeff: ", gcoeff, ")\n", batch_scenario,
-                        " (num_batches: ", num_batches, ", bcoeff: ", paste(bcoeff, collapse = ", "), ")"
-                    )
+                plot_pca(
+                    gcoeff = gcoeff, 
+                    bcoeff = bcoeff,
+                    batch_scenario = batch_scenario,
+                    num_batches = num_batches,
+                    countdata = merged, 
+                    coldata = coldata, 
+                    strategy = "rna",
+                    formula1 = ~strategy, 
+                    formula2 = ~ condition + batch
                 )
-
-                # Condition legend
-                legend(
-                    "topleft",
-                    inset = legend_inset,
-                    xpd = legend_outside,
-                    bty = "n",
-                    legend = unique(as.data.frame.array(colData(vst_rna))$condition),
-                    col = unique(colors_rna),
-                    pch = 16,
-                    title = "Condition"
-                )
-
-                # Batch legend
-                legend(
-                    "bottomleft",
-                    inset = legend_inset,
-                    xpd = legend_outside,
-                    bty = "n",
-                    legend = unique(as.data.frame.array(colData(vst_rna))$batch),
-                    pch = unique(shapes_rna),
-                    col = "black",
-                    title = "Batch"
-                )
-
-                # Reset margins
-                par(xpd = FALSE, mar = c(5, 4, 4, 2) + 0.1)
             },
             error = function(e) {
-                # message("Skipping RNA-seq PCA plot due to error: ", e$message)
             }
         )
     }
@@ -1005,4 +861,137 @@ simDOT <- function(
             logFC = final_change
         )
     )
+}
+
+
+#' Plot PCA for simulated RNA-seq or Ribo-seq data
+#'
+#' @description
+#' Generates a PCA plot from simulated RNA-seq or Ribo-seq count data, 
+#' highlighting sample-level variation across conditions and batches. 
+#' The function applies variance-stabilizing transformation (VST), 
+#' performs principal component analysis (PCA), and dynamically adjusts 
+#' plot margins to accommodate legends based on device size and label width.
+#'
+#' @param gcoeff Numeric. Magnitude of log-fold change for DOT effects.
+#' 
+#' @param bcoeff Numeric vector. Batch effect coefficients.
+#' 
+#' @param batch_scenario Character. Describes the batch effect design 
+#' (e.g., \code{"balanced"}, \code{"confounded"}).
+#' 
+#' @param num_batches Integer. Number of batches.
+#' 
+#' @param countdata A matrix or data frame of raw counts (genes x samples).
+#' 
+#' @param coldata A data frame containing sample metadata. Must include 
+#' \code{condition}, \code{batch}, and \code{strategy} columns.
+#' 
+#' @param strategy Character string. Specifies which strategy to plot 
+#' (e.g., \code{"rna"} or \code{"ribo"}).
+#' 
+#' @param formula1 A formula object specifying the initial design for 
+#' DESeq2 object construction. Default is \code{~strategy}.
+#' 
+#' @param formula2 A formula object specifying the design for PCA modeling. 
+#' Default is \code{~ condition + batch}.
+#'
+#' @return A PCA plot is rendered to the active graphics device. The plot 
+#' includes sample points colored by condition and shaped by batch, with 
+#' legends placed dynamically to avoid overlap.
+#'
+#' @importFrom DESeq2 DESeqDataSetFromMatrix design<- 
+#' @importFrom DESeq2 varianceStabilizingTransformation
+#' @importFrom stats prcomp
+#' @importFrom grDevices dev.cur dev.new dev.size
+#' 
+#' @keywords internal
+#' 
+plot_pca <- function(
+        gcoeff, 
+        bcoeff,
+        batch_scenario,
+        num_batches,
+        countdata, 
+        coldata, 
+        strategy = c("ribo", "rna"),
+        formula1 = ~strategy, 
+        formula2 = ~ condition + batch
+) {
+    
+    dds <- DESeqDataSetFromMatrix(
+        countData = round(countdata),
+        colData = coldata,
+        design = formula1
+    )
+    
+    dds <- dds[, dds$strategy == strategy]
+    design(dds) <- formula2
+    
+    # vst <- vst(dds, blind = FALSE)
+    vst <- varianceStabilizingTransformation(dds, blind = FALSE)
+    pca <- prcomp(t(assay(vst)))
+    
+    # Ensure a graphics device is open
+    if (dev.cur() == 1) dev.new()
+    
+    # Get current margin and device size
+    current_mar <- par("mar")
+    dev_dims <- dev.size("in") # width, height in inches
+    
+    max_legend_width <- max(strwidth(unique(colData(vst)$condition), units = "inches"))
+    extra_margin <- max(2, ceiling(max_legend_width * 2.5))  # scale factor can be tuned
+    par(xpd = TRUE, mar = current_mar + c(0, 0, 0, extra_margin))
+    legend_inset <- c(1 + max_legend_width / dev_dims[1], 0)
+    legend_outside <- TRUE
+    
+    # PCA plot
+    percentVar <- round(100 * pca$sdev^2 / sum(pca$sdev^2))
+    colors <- as.numeric(as.factor(colData(vst)$condition))
+    shapes <- as.numeric(as.factor(colData(vst)$batch))
+    
+    if (strategy == "rna") {
+        fig_head <- "RNA-seq" 
+    } else if (strategy == "ribo") {
+        fig_head <- "Ribo-seq"
+    }
+    plot(
+        x = pca$x[, 1],
+        y = pca$x[, 2],
+        col = colors,
+        pch = shapes,
+        xlab = paste0("PC1: ", percentVar[1], "% variance"),
+        ylab = paste0("PC2: ", percentVar[2], "% variance"),
+        main = paste0(
+            "PCA of ", fig_head, " (gcoeff: ", gcoeff, ")\n", batch_scenario,
+            " (num_batches: ", num_batches, ", bcoeff: ", paste(bcoeff, collapse = ", "), ")"
+        )
+    )
+    
+    # Condition legend
+    legend(
+        "topleft",
+        inset = legend_inset,
+        xpd = legend_outside,
+        bty = "n",
+        legend = unique(as.data.frame.array(colData(vst))$condition),
+        col = unique(colors),
+        pch = 16,
+        title = "Condition"
+    )
+    
+    # Batch legend
+    legend(
+        "bottomleft",
+        inset = legend_inset,
+        xpd = legend_outside,
+        bty = "n",
+        legend = unique(as.data.frame.array(colData(vst))$batch),
+        pch = unique(shapes),
+        col = "black",
+        title = "Batch"
+    )
+    
+    # Reset margins
+    par(xpd = FALSE, mar = c(5, 4, 4, 2) + 0.1)
 }
