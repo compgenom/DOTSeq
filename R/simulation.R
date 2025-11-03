@@ -779,6 +779,7 @@ simDOT <- function(
 
     merged <- cbind(sim_ribo_full, sim_rna_full)
     merged <- round(merged)
+    storage.mode(merged) <- "integer"
 
     replicate <- rep(rep(seq(1, num_samples), conditions), num_batches)
 

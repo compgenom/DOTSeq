@@ -140,149 +140,6 @@ countReads <- function(
 }
 
 
-#' Generate DOTSeq count matrix from BAM files and ORF annotations
-#'
-#' This function identifies ORFs from genome and annotation, then counts 
-#' reads from BAM files over those ORFs using `summarizeOverlaps()`, 
-#' handling both single-end and paired-end libraries.
-#'
-#' @param count_table A matrix of read counts with features as rows and 
-#' samples as columns.
-#' 
-#' @param condition_table Path to a sample metadata file or a data frame.
-#' Must include columns: \code{run}, \code{strategy}, \code{condition},
-#' \code{replicate}.
-#' 
-#' @param annotation A GRanges object with ORF level annotation, 
-#' typically obtained from \code{\link{getORFs}}.
-#' 
-#' @param formula A formula object specifying the design.
-#' Default is \code{~ condition * strategy}.
-#'
-#' @param target Character string specifying the non-reference condition 
-#' level to extract the corresponding interaction term. Contrasted 
-#' against the baseline condition. Default is \code{NULL}.
-#'
-#' @param baseline Character string specifying the desired reference 
-#' level. Default is \code{NULL}.
-#'
-#' @param min_count Minimum count threshold for filtering ORFs.
-#' Default is \code{1}.
-#'
-#' @param stringent Logical or \code{NULL}; determines the filtering 
-#' strategy:
-#' \describe{
-#'     \item{\code{TRUE}}{
-#'         Keep ORFs where all replicates in at least one condition 
-#'         pass \code{min_count}.
-#'     }
-#'     \item{\code{FALSE}}{
-#'         Keep ORFs where all replicates in at least one 
-#'         condition-strategy group pass \code{min_count}.
-#'     }
-#'     \item{\code{NULL}}{
-#'         Keep ORFs where total counts across replicates pass
-#'         \code{min_count}.
-#'     }
-#' }
-#'
-#' @param verbose Logical; if \code{TRUE}, prints progress messages.
-#' Default is \code{TRUE}.
-#'
-#' @return A \code{\link{DOTSeqDataSets-class}} object containing:
-#' \describe{
-#'     \item{DOU}{
-#'         A \code{\link{DOUData-class}} object containing pre-filtered 
-#'         raw counts and sample metadata, used for modeling 
-#'         Differential ORF Usage (DOU).
-#'     }
-#'     \item{DTE}{
-#'         A \code{\link{DTEData-class}} object used for modeling 
-#'         Differential Translation Efficiency (DTE).
-#'     }
-#' }
-#' 
-#' @return A matrix of read counts for each ORF (rows) and sample (columns).
-#' 
-#' @rdname DOTSeqDataSets
-#' 
-#' @importFrom methods new
-#' 
-#' @export
-#' 
-DOTSeqDataSetsFromSE <- function(
-        count_table,
-        condition_table,
-        annotation,
-        formula = ~ condition * strategy,
-        target = NULL,
-        baseline = NULL,
-        min_count = 1,
-        stringent = TRUE,
-        verbose = TRUE
-) {
-    # Check required arguments
-    required_args <- list(
-        count_table = count_table,
-        condition_table = condition_table,
-        annotation = annotation
-    )
-    
-    missing_args <- names(required_args)[vapply(required_args, is.null, logical(1))]
-    
-    if (length(missing_args) > 0) {
-        stop(
-            paste(
-                "Missing required arguments:",
-                paste(missing_args, collapse = ", ")
-            )
-        )
-    }
-    
-    # Validate and reduce formula if needed
-    fmla <- reduce_formula(formula, condition_table)
-    reduced_formula <- fmla$reduced_formula
-    emm_specs <- fmla$emm_specs
-    
-    deseq_fmla <- remove_random_effects(formula)
-    deseq_fmla <- reduce_formula(deseq_fmla, condition_table)
-    
-    if (!is.data.frame(count_table)) {
-        stop("count_table must be a data frame.")
-    } 
-    
-    cnt <- count_table
-    
-    cond <- parse_condition_table(condition_table)
-    
-    matched <- match_runs(
-        cnt, 
-        cond, 
-        num_feat_cols = 0, 
-        baseline = baseline, 
-        verbose = verbose
-    )
-    cnt <- as.matrix(matched$cnt)
-    cond <- matched$cond
-    
-    se_datasets <- create_datasets(
-        count_table = cnt, 
-        condition_table = cond,
-        annotation = annotation, 
-        reduced_formula = reduced_formula, 
-        emm_specs = emm_specs, 
-        deseq_formula = deseq_fmla$reduced_formula,
-        min_count = min_count,
-        stringent = stringent,
-        verbose = verbose
-    )
-
-    return(new("DOTSeqDataSets", DOU = se_datasets$sumExp, DTE = se_datasets$dds))
-}
-
-
-
-
 #' Assign strategy levels for RNA-seq and Ribo-seq
 #'
 #' This function identifies and assigns the reference and target levels 
@@ -1146,3 +1003,143 @@ DOTSeqDataSetsFromFeatureCounts <- function(
     return(new("DOTSeqDataSets", DOU = se_datasets$sumExp, DTE = se_datasets$dds))
 }
 
+
+#' Generate DOTSeq count matrix from BAM files and ORF annotations
+#'
+#' This function identifies ORFs from genome and annotation, then counts 
+#' reads from BAM files over those ORFs using `summarizeOverlaps()`, 
+#' handling both single-end and paired-end libraries.
+#'
+#' @param count_table A matrix of read counts with features as rows and 
+#' samples as columns.
+#' 
+#' @param condition_table Path to a sample metadata file or a data frame.
+#' Must include columns: \code{run}, \code{strategy}, \code{condition},
+#' \code{replicate}.
+#' 
+#' @param annotation A GRanges object with ORF level annotation, 
+#' typically obtained from \code{\link{getORFs}}.
+#' 
+#' @param formula A formula object specifying the design.
+#' Default is \code{~ condition * strategy}.
+#'
+#' @param target Character string specifying the non-reference condition 
+#' level to extract the corresponding interaction term. Contrasted 
+#' against the baseline condition. Default is \code{NULL}.
+#'
+#' @param baseline Character string specifying the desired reference 
+#' level. Default is \code{NULL}.
+#'
+#' @param min_count Minimum count threshold for filtering ORFs.
+#' Default is \code{1}.
+#'
+#' @param stringent Logical or \code{NULL}; determines the filtering 
+#' strategy:
+#' \describe{
+#'     \item{\code{TRUE}}{
+#'         Keep ORFs where all replicates in at least one condition 
+#'         pass \code{min_count}.
+#'     }
+#'     \item{\code{FALSE}}{
+#'         Keep ORFs where all replicates in at least one 
+#'         condition-strategy group pass \code{min_count}.
+#'     }
+#'     \item{\code{NULL}}{
+#'         Keep ORFs where total counts across replicates pass
+#'         \code{min_count}.
+#'     }
+#' }
+#'
+#' @param verbose Logical; if \code{TRUE}, prints progress messages.
+#' Default is \code{TRUE}.
+#'
+#' @return A \code{\link{DOTSeqDataSets-class}} object containing:
+#' \describe{
+#'     \item{DOU}{
+#'         A \code{\link{DOUData-class}} object containing pre-filtered 
+#'         raw counts and sample metadata, used for modeling 
+#'         Differential ORF Usage (DOU).
+#'     }
+#'     \item{DTE}{
+#'         A \code{\link{DTEData-class}} object used for modeling 
+#'         Differential Translation Efficiency (DTE).
+#'     }
+#' }
+#' 
+#' @return A matrix of read counts for each ORF (rows) and sample (columns).
+#' 
+#' @rdname DOTSeqDataSets
+#' 
+#' @importFrom methods new
+#' 
+#' @export
+#' 
+DOTSeqDataSetsFromSE <- function(
+        count_table,
+        condition_table,
+        annotation,
+        formula = ~ condition * strategy,
+        target = NULL,
+        baseline = NULL,
+        min_count = 1,
+        stringent = TRUE,
+        verbose = TRUE
+) {
+    # Check required arguments
+    required_args <- list(
+        count_table = count_table,
+        condition_table = condition_table,
+        annotation = annotation
+    )
+    
+    missing_args <- names(required_args)[vapply(required_args, is.null, logical(1))]
+    
+    if (length(missing_args) > 0) {
+        stop(
+            paste(
+                "Missing required arguments:",
+                paste(missing_args, collapse = ", ")
+            )
+        )
+    }
+    
+    # Validate and reduce formula if needed
+    fmla <- reduce_formula(formula, condition_table)
+    reduced_formula <- fmla$reduced_formula
+    emm_specs <- fmla$emm_specs
+    
+    deseq_fmla <- remove_random_effects(formula)
+    deseq_fmla <- reduce_formula(deseq_fmla, condition_table)
+    
+    if (!is.data.frame(count_table)) {
+        stop("count_table must be a data frame.")
+    } 
+    
+    cnt <- count_table
+    
+    cond <- parse_condition_table(condition_table)
+    
+    matched <- match_runs(
+        cnt, 
+        cond, 
+        num_feat_cols = 0, 
+        baseline = baseline, 
+        verbose = verbose
+    )
+    cnt <- as.matrix(matched$cnt)
+    cond <- matched$cond
+    
+    se_datasets <- create_datasets(
+        count_table = cnt, 
+        condition_table = cond,
+        annotation = annotation, 
+        reduced_formula = reduced_formula, 
+        emm_specs = emm_specs, 
+        deseq_formula = deseq_fmla$reduced_formula,
+        min_count = min_count,
+        stringent = stringent,
+        verbose = verbose
+    )
+    
+    return(new("DOTSeqDataSets", DOU = se_datasets$sumExp, DTE = se_datasets$dds))
+}

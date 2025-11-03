@@ -66,6 +66,7 @@ Imports:
     GenomicAlignments,
     GenomicFeatures,
     GenomeInfoDb,
+    GenomeInfoDbData,
     GenomicRanges,
     IRanges,
     rtracklayer,
