@@ -7,8 +7,8 @@
 simDOT(
   ribo,
   rna,
+  annotation = NULL,
   regulation_type = NULL,
-  orfs = NULL,
   te_genes = 10,
   bgenes = 10,
   num_samples = 2,
@@ -32,12 +32,12 @@ simDOT(
 
 \item{rna}{A matrix or data frame of RNA-seq counts (genes x samples).}
 
+\item{annotation}{A GRanges object with ORF level annotation,
+typically obtained from \code{\link{getORFs}}.}
+
 \item{regulation_type}{Character. Specifies the type of DOT effect to
 simulate. Passed to the \code{scenario} argument of
 \code{generate_coefficients}.}
-
-\item{orfs}{A data frame of ORF annotations. Must include \code{gene_id}
-and \code{orf_type} columns.}
 
 \item{te_genes}{Numeric. Percentage of genes to be assigned as
 differentially translated (default: 10).}
@@ -96,15 +96,21 @@ for ribo data (default: \code{FALSE}).}
 for RNA data (default: \code{FALSE}).}
 }
 \value{
-A list with the following components:
+A \code{\link{DOTSeqDataSets-class}} object containing:
 \describe{
-\item{simData}{Combined simulated count matrix (genes x samples).}
-\item{colData}{Data frame containing sample-level metadata
-(condition, replicate, strategy, batch).}
-\item{labels}{Named binary vector indicating true positive (1)
-and negative (0) ORFs for DOT.}
-\item{logFC}{Named vector of true log-fold changes for the
-simulated DOT effect.}
+\item{DOU}{
+A \code{\link{DOUData-class}} object containing simulated count
+matrix (\code{assay} slot), sample metadata (\code{colData} slot), and ORF-level
+annotation (\code{rowRanges} slot). The \code{rowRanges} slot also stores
+labels (named binary vector indicating true positive (1)), and
+logFC (log-fold changes for the simulated DOU effect) for modeling
+Differential ORF Usage (DOU).
+}
+\item{DTE}{
+A \code{\link{DTEData-class}} object used for modeling
+Differential Translation Efficiency (DTE). Stores all data above
+except for \code{rowRanges}
+}
 }
 }
 \description{
@@ -141,29 +147,22 @@ raw_counts <- raw_counts[, grep("Cycling|Interphase",
     colnames(raw_counts))]
 ribo <- raw_counts[, grep("ribo", colnames(raw_counts))]
 rna <- raw_counts[, grep("rna", colnames(raw_counts))]
-orfs <- rowData(getDOU(d))
+rowranges <- rowRanges(getDOU(d))
 r <- "uORF_up_mORF_down"
 g <- 1.5
-simData <- simDOT(
+d <- simDOT(
     ribo,
     rna,
-    orfs = orfs,
+    annotation = rowranges,
     regulation_type = r,
     gcoeff = g,
     num_samples = 1,
     num_batches = 2
 )
 
-featCol <- cnt[, c("Geneid", "Chr", "Start", "End", "Strand", "Length")]
-cnt <- cbind(featCol, as.data.frame(simData$simData))
-cond <- as.data.frame(simData$colData)
+show(d)
 
-d <- DOTSeqDataSetsFromFeatureCounts(
-    count_table = cnt,
-    condition_table = cond,
-    flattened_gtf = flat,
-    flattened_bed = bed
-)
+rowData(getDOU(d))
 
 }
 \references{

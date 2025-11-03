@@ -308,12 +308,12 @@ create_read_numbers <- function(
 #' 
 #' @param rna A matrix or data frame of RNA-seq counts (genes x samples).
 #' 
+#' @param annotation A GRanges object with ORF level annotation, 
+#' typically obtained from \code{\link{getORFs}}.
+#' 
 #' @param regulation_type Character. Specifies the type of DOT effect to
 #' simulate. Passed to the \code{scenario} argument of
 #' \code{generate_coefficients}.
-#' 
-#' @param orfs A data frame of ORF annotations. Must include \code{gene_id}
-#' and \code{orf_type} columns.
 #' 
 #' @param te_genes Numeric. Percentage of genes to be assigned as
 #' differentially translated (default: 10).
@@ -369,19 +369,26 @@ create_read_numbers <- function(
 #' @param diagplot_rna Logical. If \code{TRUE}, generate diagnostic plots
 #' for RNA data (default: \code{FALSE}).
 #'
-#' @return A list with the following components:
+#' @return A \code{\link{DOTSeqDataSets-class}} object containing:
 #' \describe{
-#'     \item{simData}{Combined simulated count matrix (genes x samples).}
-#'     \item{colData}{Data frame containing sample-level metadata 
-#'     (condition, replicate, strategy, batch).}
-#'     \item{labels}{Named binary vector indicating true positive (1)
-#'     and negative (0) ORFs for DOT.}
-#'     \item{logFC}{Named vector of true log-fold changes for the
-#'   simulated DOT effect.}
+#'     \item{DOU}{
+#'         A \code{\link{DOUData-class}} object containing simulated count 
+#'         matrix (\code{assay} slot), sample metadata (\code{colData} slot), and ORF-level 
+#'         annotation (\code{rowRanges} slot). The \code{rowRanges} slot also stores 
+#'         labels (named binary vector indicating true positive (1)), and 
+#'         logFC (log-fold changes for the simulated DOU effect) for modeling 
+#'         Differential ORF Usage (DOU).
+#'     }
+#'     \item{DTE}{
+#'         A \code{\link{DTEData-class}} object used for modeling 
+#'         Differential Translation Efficiency (DTE). Stores all data above
+#'         except for \code{rowRanges}
+#'     }
 #' }
 #'
 #' @importFrom stats prcomp rgamma runif df model.matrix
 #' @importFrom SummarizedExperiment SummarizedExperiment assay
+#' @importFrom S4Vectors mcols mcols<-
 #'
 #' @export
 #'
@@ -413,29 +420,22 @@ create_read_numbers <- function(
 #'     colnames(raw_counts))]
 #' ribo <- raw_counts[, grep("ribo", colnames(raw_counts))]
 #' rna <- raw_counts[, grep("rna", colnames(raw_counts))]
-#' orfs <- rowData(getDOU(d))
+#' rowranges <- rowRanges(getDOU(d))
 #' r <- "uORF_up_mORF_down"
 #' g <- 1.5
-#' simData <- simDOT(
+#' d <- simDOT(
 #'     ribo,
 #'     rna,
-#'     orfs = orfs,
+#'     annotation = rowranges,
 #'     regulation_type = r,
 #'     gcoeff = g,
 #'     num_samples = 1,
 #'     num_batches = 2
 #' )
 #'
-#' featCol <- cnt[, c("Geneid", "Chr", "Start", "End", "Strand", "Length")]
-#' cnt <- cbind(featCol, as.data.frame(simData$simData))
-#' cond <- as.data.frame(simData$colData)
-#'
-#' d <- DOTSeqDataSetsFromFeatureCounts(
-#'     count_table = cnt,
-#'     condition_table = cond,
-#'     flattened_gtf = flat,
-#'     flattened_bed = bed
-#' )
+#' show(d)
+#' 
+#' rowData(getDOU(d))
 #' 
 #' @references
 #' Frazee, A. C., Jaffe, A. E., Langmead, B., & Leek, J. T. (2015). 
@@ -452,8 +452,8 @@ create_read_numbers <- function(
 simDOT <- function(
     ribo,
     rna,
+    annotation = NULL,
     regulation_type = NULL,
-    orfs = NULL,
     te_genes = 10,
     bgenes = 10,
     num_samples = 2,
@@ -477,21 +477,30 @@ simDOT <- function(
 
     # Find genes that exist in ALL three input objects
     original_genes <- intersect(rownames(ribo), rownames(rna))
-    if (!is.null(regulation_type) & !is.null(orfs)) {
-        common_genes_all <- intersect(original_genes, rownames(orfs))
+    if (!is.null(regulation_type) & !is.null(annotation)) {
+        common_genes_all <- intersect(original_genes, names(annotation))
     } else {
         common_genes_all <- original_genes
     }
     if (length(common_genes_all) == 0) {
-        stop("No common genes found across all three input datasets (ribo, rna, orfs).")
+        stop("No common genes found across all three input datasets (ribo, rna, annotation).")
     }
 
     # Filter all inputs to this common set of genes, keeping them as matrices
     ribo_subset <- ribo[common_genes_all, , drop = FALSE]
     rna_subset <- rna[common_genes_all, , drop = FALSE]
-    if (!is.null(regulation_type) & !is.null(orfs)) {
+    if (!is.null(regulation_type) & !is.null(annotation)) {
         message("simulating Differential ORF Usage (DOU)")
-        orfs_filtered <- orfs[common_genes_all, , drop = FALSE]
+        # Clean up GRanges
+        cols_to_keep <- c("gene_id", "orf_type")
+        mcols(annotation) <- mcols(annotation)[, cols_to_keep, drop = FALSE]
+        
+        orfs <- data.frame(row.names = names(annotation), gene_id = mcols(annotation)$gene_id, orf_type = mcols(annotation)$orf_type)
+        
+        # Create a dataframe for filtered ORFs 
+        orfs_filtered <- annotation[common_genes_all, , drop = FALSE]
+        orfs_filtered <- data.frame(row.names = names(orfs_filtered), gene_id = mcols(orfs_filtered)$gene_id, orf_type = mcols(orfs_filtered)$orf_type)
+        
     } else {
         message("simulating Differential Translation Efficiency (DTE)")
     }
@@ -510,9 +519,9 @@ simDOT <- function(
     # Final alignment of all data to the filtered gene list
     counts_ribo_filtered <- ribo_subset[common_filtered_genes, , drop = FALSE]
     counts_rna_filtered <- rna_subset[common_filtered_genes, , drop = FALSE]
-    if (!is.null(regulation_type) & !is.null(orfs)) {
+    if (!is.null(regulation_type) & !is.null(annotation)) {
         orfs_filtered <- orfs_filtered[common_filtered_genes, , drop = FALSE]
-    } else {}
+    } 
 
     total_samples <- num_samples * conditions * num_batches
     group <- rep(rep(seq(0, conditions - 1), each = num_samples), num_batches)
@@ -596,7 +605,7 @@ simDOT <- function(
         scale_p0 = scale_p0
     )
 
-    if (!is.null(regulation_type) & !is.null(orfs)) {
+    if (!is.null(regulation_type) & !is.null(annotation)) {
         coeffs_list <- generate_coefficients(
             orfs = orfs_filtered,
             scenario = regulation_type,
@@ -760,9 +769,18 @@ simDOT <- function(
         ncol = total_samples, 
         dimnames = list(original_genes, final_cols_rna)
     )
+    
+    sim_logfc <- matrix(
+        0, 
+        nrow = length(original_genes), 
+        ncol = 1, 
+        dimnames = list(original_genes, "logFC")
+    )
 
     sim_ribo_full[common_filtered_genes, ] <- sim_ribo_filtered
     sim_rna_full[common_filtered_genes, ] <- sim_rna_filtered
+    
+    sim_logfc[common_filtered_genes, ] <- gcoeffs_ribo - gcoeffs_rna
 
     uorf_ids <- rownames(orfs[orfs$orf_type == "uORF", ])
     dorf_ids <- rownames(orfs[orfs$orf_type == "dORF", ])
@@ -770,7 +788,7 @@ simDOT <- function(
     scale_uorf <- 0.1
     scale_dorf_ribo <- 0.01
     scale_dorf_rna <- 0.1
-
+    
     sim_ribo_full[uorf_ids, ] <- sim_ribo_full[uorf_ids, ] * scale_uorf
     sim_ribo_full[dorf_ids, ] <- sim_ribo_full[dorf_ids, ] * scale_dorf_ribo
 
@@ -807,11 +825,15 @@ simDOT <- function(
     } else { # DTE
         final_labels[names(labels)] <- labels
     }
-
-    final_change <- rep(0, length(original_genes))
-    names(final_change) <- original_genes
-    final_change[names(gcoeffs_ribo)] <- gcoeffs_ribo - gcoeffs_rna
     
+    # Store simData in DOTSeqDataSets
+    mcols(annotation)$status <- final_labels
+    mcols(annotation)$logFC <- sim_logfc[, 1]
+    d <- DOTSeqDataSetsFromSE(
+        count_table = as.data.frame(merged), 
+        condition_table = coldata, 
+        annotation = annotation
+    )
 
     if (isTRUE(diagplot_ribo)) {
         tryCatch(
@@ -853,15 +875,7 @@ simDOT <- function(
         )
     }
 
-
-    return(
-        list(
-            simData = merged, 
-            colData = coldata, 
-            labels = final_labels, 
-            logFC = final_change
-        )
-    )
+    return(d)
 }
 
 

@@ -813,12 +813,14 @@ create_datasets <- function(
 #' \describe{
 #'     \item{DOU}{
 #'         A \code{\link{DOUData-class}} object containing pre-filtered 
-#'         raw counts and sample metadata, used for modeling 
-#'         Differential ORF Usage (DOU).
+#'         raw counts (\code{assay} slot), sample metadata 
+#'         (\code{colData} slot), and ORF-level annotation (\code{rowRanges}) 
+#'         used for modeling Differential ORF Usage (DOU).
 #'     }
 #'     \item{DTE}{
 #'         A \code{\link{DTEData-class}} object used for modeling 
-#'         Differential Translation Efficiency (DTE).
+#'         Differential Translation Efficiency (DTE). Stores all data above
+#'         except for \code{rowRanges}.
 #'     }
 #' }
 #' 
@@ -1057,16 +1059,16 @@ DOTSeqDataSetsFromFeatureCounts <- function(
 #' \describe{
 #'     \item{DOU}{
 #'         A \code{\link{DOUData-class}} object containing pre-filtered 
-#'         raw counts and sample metadata, used for modeling 
-#'         Differential ORF Usage (DOU).
+#'         raw counts (\code{assay} slot), sample metadata 
+#'         (\code{colData} slot), and ORF-level annotation (\code{rowRanges}) 
+#'         used for modeling Differential ORF Usage (DOU).
 #'     }
 #'     \item{DTE}{
 #'         A \code{\link{DTEData-class}} object used for modeling 
-#'         Differential Translation Efficiency (DTE).
+#'         Differential Translation Efficiency (DTE). Stores all data above
+#'         except for \code{rowRanges}.
 #'     }
 #' }
-#' 
-#' @return A matrix of read counts for each ORF (rows) and sample (columns).
 #' 
 #' @rdname DOTSeqDataSets
 #' 

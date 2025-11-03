@@ -10,7 +10,7 @@
 #' @docType package
 #' @name DOTSeq
 #' @useDynLib DOTSeq, .registration = TRUE
-#' @import GenomicRanges GenomicAlignments GenomeInfoDb
+#' @import GenomicRanges GenomicAlignments GenomeInfoDb GenomeInfoDbData
 #' @importFrom Rcpp sourceCpp
 #' @importFrom methods is
 #' @importFrom stats model.matrix
