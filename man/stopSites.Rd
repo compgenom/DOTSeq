@@ -34,6 +34,11 @@ stopSites(grl, is.sorted = FALSE)
 }
 
 }
+\references{
+Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al.
+ORFik: a comprehensive R toolkit for the analysis of translation.
+BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
+}
 \seealso{
 Other ORFHelpers: 
 \code{\link{longestORFs}()}

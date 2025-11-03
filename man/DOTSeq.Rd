@@ -229,7 +229,7 @@ Useful links:
 \code{\link{testDOU}}, \code{\link{plotDOT}}
 }
 \author{
-\strong{Maintainer}: Chun Shen Lim \email{chunshen.lim@ieee.org} (\href{https://orcid.org/0000-0001-7015-0125}{ORCID})
+\strong{Maintainer}: Chun Shen Lim \email{lim.bioinfo@gmail.com} (\href{https://orcid.org/0000-0001-7015-0125}{ORCID})
 
 Authors:
 \itemize{

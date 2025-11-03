@@ -28,6 +28,12 @@ gr_minus <- GRanges(seqnames = c("chr2", "chr2"),
 grl <- GRangesList(tx1 = gr_plus, tx2 = gr_minus)
 widthPerGroup(grl)
 }
+
+}
+\references{
+Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al.
+ORFik: a comprehensive R toolkit for the analysis of translation.
+BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
 }
 \author{
 Haakon Tjeldnes et al.

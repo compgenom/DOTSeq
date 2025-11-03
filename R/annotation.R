@@ -144,6 +144,16 @@ filter_gtf <- function(
 #' )
 #' print(gr)
 #' 
+#' @references
+#' Lawrence, M., Huber, W., Pagès, H., Aboyoun, P., Carlson, M., 
+#' Gentleman, R., Morgan, M., Carey, V. (2013). Software for Computing 
+#' and Annotating Genomic Ranges. PLoS Computational Biology, 9. 
+#' DOI: 10.1371/journal.pcbi.1003118
+#' 
+#' Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al. 
+#' ORFik: a comprehensive R toolkit for the analysis of translation. 
+#' BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
+#' 
 getORFs <- function(
         sequences,
         annotation,
@@ -503,6 +513,7 @@ utils::globalVariables(c(".", ".I", ".N", ".SD", ":="))
 #' @family ORFHelpers
 #' 
 #' @keywords internal
+#' 
 #' @examples
 #' \dontrun{
 #' ORF1 = GRanges("1", IRanges(10,21), "+")
@@ -510,6 +521,11 @@ utils::globalVariables(c(".", ".I", ".N", ".SD", ":="))
 #' grl <- GRangesList(ORF1 = ORF1, ORF2 = ORF2)
 #' longestORFs(grl) # get only longest
 #' }
+#' 
+#' @references
+#' Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al. 
+#' ORFik: a comprehensive R toolkit for the analysis of translation. 
+#' BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
 #' 
 longestORFs <- function(grl) {
     if(length(grl) == 0) return(grl) # if empty
@@ -569,7 +585,12 @@ longestORFs <- function(grl) {
 #'               Rle(strand(c("-", "+", "*", "+", "-")), c(1, 2, 2, 3, 2)))
 #' strandBool(gr)
 #' }
-#'
+#' 
+#' @references
+#' Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al. 
+#' ORFik: a comprehensive R toolkit for the analysis of translation. 
+#' BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
+#' 
 strandBool <- function(grl) {
     if (is(grl, "GRanges") | is(grl, "GAlignments") | is(grl, "GAlignmentPairs")) {
         posIndices <- as.character(strand(grl)) == "+"
@@ -602,6 +623,11 @@ strandBool <- function(grl) {
 #' @importFrom GenomicRanges start strand
 #' 
 #' @keywords internal
+#' 
+#' @references
+#' Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al. 
+#' ORFik: a comprehensive R toolkit for the analysis of translation. 
+#' BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
 #' 
 strandPerGroup <- function(grl, keep.names = TRUE) {
     # validGRL(class(grl))
@@ -640,6 +666,11 @@ strandPerGroup <- function(grl, keep.names = TRUE) {
 #' grl <- GRangesList(tx1 = gr_plus, tx2 = gr_minus)
 #' stopSites(grl, is.sorted = FALSE)
 #' }
+#' 
+#' @references
+#' Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al. 
+#' ORFik: a comprehensive R toolkit for the analysis of translation. 
+#' BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
 #' 
 stopSites <- function(
         grl, 
@@ -694,7 +725,12 @@ stopSites <- function(
 #'  sorted within group.
 #'  
 #' @keywords internal
-#'
+#' 
+#' @references
+#' Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al. 
+#' ORFik: a comprehensive R toolkit for the analysis of translation. 
+#' BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
+#' 
 sortPerGroup <- function(grl, ignore.strand = FALSE, quick.rev = FALSE){
     if (quick.rev) {
         return(reverseMinusStrandPerGroup(grl))
@@ -724,6 +760,12 @@ sortPerGroup <- function(grl, ignore.strand = FALSE, quick.rev = FALSE){
 #' @param onlyIfIncreasing logical, default (TRUE), only reverse if decreasing
 #' @return a \code{\link[GenomicRanges]{GRangesList}}
 #' @keywords internal
+#' 
+#' @references
+#' Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al. 
+#' ORFik: a comprehensive R toolkit for the analysis of translation. 
+#' BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
+#' 
 reverseMinusStrandPerGroup <- function(grl, onlyIfIncreasing = TRUE) {
     minus <- !strandBool(grl)
     if (onlyIfIncreasing) {
@@ -748,6 +790,12 @@ reverseMinusStrandPerGroup <- function(grl, onlyIfIncreasing = TRUE) {
 #' @param grl a \code{\link[GenomicRanges]{GRangesList}}
 #' @param keep.names a logical, keep names or not, default: (TRUE)
 #' @return an integer vector of counts
+#' 
+#' @references
+#' Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al. 
+#' ORFik: a comprehensive R toolkit for the analysis of translation. 
+#' BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
+#' 
 numExonsPerGroup <- function(grl, keep.names = TRUE) {
     # validGRL(class(grl))
     return(lengths(grl, keep.names))
@@ -775,6 +823,12 @@ utils::globalVariables(c("group", "grnames"))
 #' @return an equally named GRangesList, where each group is sorted within
 #' group.
 #' @keywords internal
+#' 
+#' @references
+#' Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al. 
+#' ORFik: a comprehensive R toolkit for the analysis of translation. 
+#' BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
+#' 
 gSort <- function(grl, decreasing = FALSE, byStarts = TRUE) {
     if (length(grl) == 0) return(GRangesList())
     
@@ -832,6 +886,12 @@ gSort <- function(grl, decreasing = FALSE, byStarts = TRUE) {
 #' grl <- GRangesList(tx1 = gr_plus, tx2 = gr_minus)
 #' lastExonEndPerGroup(grl)
 #' }
+#' 
+#' @references
+#' Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al. 
+#' ORFik: a comprehensive R toolkit for the analysis of translation. 
+#' BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
+#' 
 lastExonEndPerGroup <- function(grl,keep.names = TRUE) {
     # validGRL(class(grl))
     if (keep.names) {
@@ -863,6 +923,11 @@ lastExonEndPerGroup <- function(grl,keep.names = TRUE) {
 #' grl <- GRangesList(tx1 = gr_plus, tx2 = gr_minus)
 #' lastExonStartPerGroup(grl)
 #' }
+#' 
+#' @references
+#' Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al. 
+#' ORFik: a comprehensive R toolkit for the analysis of translation. 
+#' BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
 #' 
 lastExonStartPerGroup <- function(grl, keep.names = TRUE) {
     # validGRL(class(grl))
@@ -897,6 +962,12 @@ lastExonStartPerGroup <- function(grl, keep.names = TRUE) {
 #' grl <- GRangesList(tx1 = gr_plus, tx2 = gr_minus)
 #' lastExonPerGroup(grl)
 #' }
+#' 
+#' @references
+#' Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al. 
+#' ORFik: a comprehensive R toolkit for the analysis of translation. 
+#' BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
+#' 
 lastExonPerGroup <- function(grl) {
     # validGRL(class(grl))
     return(tails(grl, 1L))
@@ -927,6 +998,12 @@ lastExonPerGroup <- function(grl) {
 #' grl <- GRangesList(tx1 = gr_plus, tx2 = gr_minus)
 #' widthPerGroup(grl)
 #' }
+#' 
+#' @references
+#' Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al. 
+#' ORFik: a comprehensive R toolkit for the analysis of translation. 
+#' BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
+#' 
 widthPerGroup <- function(grl, keep.names = TRUE) {
     # validGRL(class(grl))
     if (keep.names) {
@@ -961,6 +1038,12 @@ widthPerGroup <- function(grl, keep.names = TRUE) {
 #' grl <- GRangesList(tx1 = gr_plus, tx2 = gr_minus)
 #' seqnamesPerGroup(grl)
 #' }
+#' 
+#' @references
+#' Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al. 
+#' ORFik: a comprehensive R toolkit for the analysis of translation. 
+#' BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
+#' 
 seqnamesPerGroup <- function(grl, keep.names = TRUE) {
     # validGRL(class(grl))
     if (keep.names) {
@@ -1014,6 +1097,11 @@ seqnamesPerGroup <- function(grl, keep.names = TRUE) {
 #' @importFrom BSgenome getSeq
 #' @importFrom Rcpp sourceCpp
 #' @useDynLib DOTSeq, .registration = TRUE
+#' 
+#' @references
+#' Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al. 
+#' ORFik: a comprehensive R toolkit for the analysis of translation. 
+#' BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
 #' 
 findORFsFasta <- function(
         sequences,

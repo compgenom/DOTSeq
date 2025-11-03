@@ -1,18 +1,20 @@
 Package: DOTSeq
 Type: Package
 Title: Differential Analysis of Translation Efficiency and Usage of Open Reading Frames
-Version: 0.99.0
+Version: 0.99.1
 Authors@R: c(
     person(
         given = "Chun Shen", 
         family = "Lim", 
-        email="chunshen.lim@ieee.org", 
+        email="lim.bioinfo@gmail.com", 
         role = c("aut","cre"), 
-        comment = c(ORCID = "0000-0001-7015-0125")),
+        comment = c(ORCID = "0000-0001-7015-0125")
+        ),
     person(
         given = "Gabrielle", 
         family = "Chieng", 
-        role = c("aut","ctb")),
+        role = c("aut","ctb")
+        ),
     person(
         "Marsden", 
         role="fnd"

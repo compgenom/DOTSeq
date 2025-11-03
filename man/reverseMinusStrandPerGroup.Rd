@@ -18,6 +18,11 @@ a \code{\link[GenomicRanges]{GRangesList}}
 Reverse minus strand per group in a GRangesList
 Only reverse if minus strand is in increasing order
 }
+\references{
+Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al.
+ORFik: a comprehensive R toolkit for the analysis of translation.
+BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
+}
 \author{
 Haakon Tjeldnes et al.
 }

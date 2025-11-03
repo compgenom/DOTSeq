@@ -110,3 +110,13 @@ gr <- getORFs(
 print(gr)
 \dontshow{\}) # examplesIf}
 }
+\references{
+Lawrence, M., Huber, W., Pagès, H., Aboyoun, P., Carlson, M.,
+Gentleman, R., Morgan, M., Carey, V. (2013). Software for Computing
+and Annotating Genomic Ranges. PLoS Computational Biology, 9.
+DOI: 10.1371/journal.pcbi.1003118
+
+Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al.
+ORFik: a comprehensive R toolkit for the analysis of translation.
+BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
+}

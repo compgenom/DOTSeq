@@ -1,3 +1,12 @@
+CHANGES IN VERSION 0.99.1
+
+- Simulation Enhancements: The simDOT() function now returns a DOTSeqDataSets 
+object, providing a structured container for simulated data and improving 
+downstream compatibility.
+
+- Improved Plotting: Plot functions now dynamically adjust margins and panel 
+sizes for better layout.
+
 CHANGES IN VERSION 0.99.0
 
 - Unified Workflow: The DOTSeq() wrapper function provides a streamlined 

@@ -171,9 +171,9 @@ Polyester: Simulating RNA-seq datasets with differential transcript
 expression. Bioinformatics, 31(17), 2778-2784.
 DOI: 10.1093/bioinformatics/btv272
 
-Chothani S, Adami E, Ouyang JF, Viswanathan S, Hubner N, Cook SA,
-Schafer S, Rackham OJL.  (2019). deltaTE: Detection of translationally
-regulated genes by integrative analysis of Ribo-seq and RNA-seq data.
-Current Protocols in Molecular Biology, 129, e108.
+Chothani, S., Adami, E., Ouyang, J. F., Viswanathan, S., Hubner, N.,
+Cook, S. A., Schafer, S., Rackham, O. J. L.  (2019). deltaTE: Detection
+of translationally regulated genes by integrative analysis of Ribo-seq
+and RNA-seq data. Current Protocols in Molecular Biology, 129, e108.
 DOI: 10.1002/cpmb.108
 }

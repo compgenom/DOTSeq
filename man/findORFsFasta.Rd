@@ -57,6 +57,11 @@ Note: Ensure your FASTA file is valid and headers are formatted as
 \verb{>name info}, with the name first and no hidden characters, as this
 affects coordinate parsing.
 }
+\references{
+Tjeldnes, H., Labun, K., Torres Cleuren, Y. et al.
+ORFik: a comprehensive R toolkit for the analysis of translation.
+BMC Bioinformatics 22, 336 (2021). DOI: 10.1186/s12859-021-04254-w
+}
 \author{
 Haakon Tjeldnes et al. (original),
 Chun Shen Lim (modification).
