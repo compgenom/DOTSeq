@@ -411,7 +411,7 @@ provide a fuller picture of translational regulation.
 
 # References
 
-# Preparing annotations (#annotation)
+# Preparing annotations {#annotation}
 
 Besides using the `orf_to_gtf.py` wrapper [@lim2025riboss], 
 we can generate ORF-level annotation natively in R using the `getORFs()` 
