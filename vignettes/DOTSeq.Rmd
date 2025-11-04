@@ -65,8 +65,8 @@ for parsing GTF files, and the
 container for storing count matrices and metadata 
 [@lawrence2009rtracklayer; @pages2024txdbmaker; @lawrence2013software; @morgan2025summarized].
 
-```{r setup, warning=FALSE}
-library(DOTSeq, quietly = TRUE)
+```{r setup, message=FALSE}
+library(DOTSeq)
 library(SummarizedExperiment, quietly = TRUE)
 ```
 
@@ -168,10 +168,10 @@ and DTE via negative-binomial GLM (`DESeq2`).
 While each step can be run individually, we construct `DOTSeqDataSets` with 
 `DOTSeqDataSetsFromFeatureCounts()`, followed by the `DOTSeq()` main 
 function here for simplicity. To capture the translation-specific 
-interaction effect ($\beta_{\text{int}}$), `DOTSeq()` uses
-`formula = ~ condition * strategy` with `dispersion_modeling = "auto"` 
-by default. The design and dispersion formulas can be customised to 
-include batch and random effects.
+interaction effect ($\beta_{\text{int}}$), `DOTSeq()` uses 
+`formula = ~ condition * strategy` with `dispersion_modeling = "auto"` by 
+default. The design and dispersion formulas can be customised to include 
+batch and random effects. 
 
 ```{r dotseq, warning=FALSE}
 # Create a DOTSeqDataSets object
@@ -179,7 +179,8 @@ datasets <- DOTSeqDataSetsFromFeatureCounts(
     count_table = cnt,
     condition_table = cond,
     flattened_gtf = gtf,
-    flattened_bed = bed
+    flattened_bed = bed,
+    verbose = FALSE
 )
 
 # Run the DOTSeq workflow
