@@ -29,10 +29,12 @@ reading frames (ORFs) from ribosome profiling (Ribo-seq)
 [@lim2025differential]. Translation is a tightly regulated process, 
 where multiple ORFs within the same gene can modulate protein synthesis.
 
-While useful, traditional gene-level approaches (e.g., `annota2seq` and 
-`terapadog` available at Bioconductor 
-[@oertlin2019generally; @carancini2025terapadog]) may overlook these 
-regulatory layers. `DOTSeq` addresses this limitation by 
+While useful, traditional gene-level approaches (e.g., 
+[annota2seq](https://bioconductor.org/packages/release/bioc/html/anota2seq.html) 
+and 
+[terapadog](https://bioconductor.org/packages/release/bioc/html/terapadog.html) 
+available at Bioconductor [@oertlin2019generally; @carancini2025terapadog]) 
+may overlook these regulatory layers. `DOTSeq` addresses this limitation by 
 modelling translation at the ORF level.
 
 `DOTSeq` provides two complementary modules:
@@ -40,11 +42,13 @@ modelling translation at the ORF level.
 - **Differential ORF Usage (DOU)**: Detects *cis*-translational regulation 
 by testing whether the relative usage of ORFs within a gene changes across 
 biological conditions. Implemented via a beta-binomial generalised linear 
-model (GLM) (`glmmTMB`) [@RJ-2017-066].
+model (GLM) ([glmmTMB](https://cran.r-project.org/web/packages/glmmTMB/index.html)) 
+[@RJ-2017-066].
 
 - **Differential Translation Efficiency (DTE)**: Tests for changes in 
 ribosome occupancy relative to RNA abundance across conditions using a 
-negative-binomial GLM (`DESeq2`) [@love2014moderated].
+negative-binomial GLM ([DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html)) 
+[@love2014moderated].
 
 Together, **DOU** and **DTE** modules allow global identification of 
 translation-specific effects, revealing regulatory events such as 
@@ -52,10 +56,13 @@ uORF-mediated repression.
 
 # Load required library
 We start by loading the `DOTSeq` package and its dependencies. 
-`DOTSeq` builds on the Bioconductor ecosystem, e.g., `rtracklayer`, 
-`txdbmaker`, and `GenomicFeatures` for parsing GTF files and annotation 
-features and the `SummarizedExperiment` container for storing count 
-matrices and metadata 
+`DOTSeq` builds on the Bioconductor ecosystem, e.g., 
+[rtracklayer](https://www.bioconductor.org/packages/release/bioc/html/rtracklayer.html) 
+and 
+[txdbmaker](https://www.bioconductor.org/packages/release/bioc/html/txdbmaker.html) 
+for parsing GTF files, and the 
+[SummarizedExperiment](https://bioconductor.org/packages/release/bioc/html/SummarizedExperiment.html) 
+container for storing count matrices and metadata 
 [@lawrence2009rtracklayer; @pages2024txdbmaker; @lawrence2013software; @morgan2025summarized].
 
 ```{r setup, warning=FALSE}
@@ -100,9 +107,11 @@ head(cnt)
 ```
 
 # ORF annotation files 
-Flattened ORF-level annotations were generated using the orf_to_gtf.py 
-wrapper from RIBOSS [@lim2025riboss]. This pre-processing step ensures 
-that each ORF occupies a distinct, non-overlapping genomic interval, 
+Flattened ORF-level annotations were generated using the `orf_to_gtf.py` 
+wrapper for RIBOSS [@lim2025riboss]. Alternatively, annotations can be 
+prepared within R using `getORFs()` 
+(see [Preparing annotations](#annotation)). This pre-processing step 
+ensures that each ORF occupies a distinct, non-overlapping genomic interval, 
 avoiding ambiguity when assigning reads. This design follows the same 
 logic as `DEXSeq`'s exon flattening, but at the level of ORFs rather 
 than exons [@anders2012detecting].
@@ -165,7 +174,7 @@ by default. The design and dispersion formulas can be customised to
 include batch and random effects.
 
 ```{r dotseq, warning=FALSE}
-# Prepare input as a named list
+# Create a DOTSeqDataSets object
 datasets <- DOTSeqDataSetsFromFeatureCounts(
     count_table = cnt,
     condition_table = cond,
@@ -391,6 +400,119 @@ plotDOT(
 )
 ```
 
+# Summary
+
+`DOTSeq` offers a unified framework for modelling translational control at 
+the ORF level. `DOTSeq` has two modules capturing distinct biological 
+signals: **DOU** tests for shifts in relative usage within genes 
+(*cis*-regulation), whereas **DTE** tests for changes in per-ORF translation 
+efficiency relative to transcript abundance. They can be used together to 
+provide a fuller picture of translational regulation.
+
+# References
+
+<a name="annotation"/>
+# Preparing annotations
+
+Besides using the `orf_to_gtf.py` wrapper [@lim2025riboss], 
+we can generate ORF-level annotation natively in R using the `getORFs()` 
+function. This approach creates a `GRanges` object.
+
+```{r get-orfs, eval = FALSE, fig.small = TRUE}
+falink <- "https://ftp.ensembl.org/pub/release-78/fasta/drosophila_melanogaster/cdna/Drosophila_melanogaster.BDGP5.cdna.all.fa.gz"
+gtflink <- "https://ftp.ensembl.org/pub/release-78/gtf/drosophila_melanogaster/Drosophila_melanogaster.BDGP5.78.gtf.gz"
+
+annotation <- basename(gtflink)
+sequences <- basename(falink)
+
+download.file(gtflink, destfile=annotation)
+download.file(falink, destfile=sequences)
+
+# This will generate flattened ORF-level annotation
+gr <- getORFs(
+    sequences = sequences,
+    annotation = annotation,
+    organism = "Drosophila melanogaster"
+)
+
+invisible(file.remove(c(annotation, sequences)))
+```
+
+We perform read counting using the RNA-seq BAM files from the 
+[pasillaBamSubset](https://bioconductor.org/packages/release/data/experiment/html/pasillaBamSubset.html) 
+package. Note that this dataset is not derived from a Ribo-seq experiment 
+and is used solely for illustrative purposes. It should not be used for 
+biological interpretation.
+
+```{r pasilla, eval = FALSE, fig.small = TRUE}
+library(pasillaBamSubset)
+library(GenomeInfoDb)
+
+bam_list <- c(untreated1_chr4(), untreated3_chr4())
+
+# Set the chromosome names according to the BAM files
+seqlevelsStyle(gr) = "UCSC"
+
+cnt <- countReads(gr = gr, bam_files = bam_list)
+```
+
+Here we make use the ORF-level annotation and create count and condition 
+tables as input for `DOTSeqDataSetsFromSE()`. This is alternative to 
+using `DOTSeqDataSetsFromFeatureCounts()` as demonstrated at the beginning.
+
+```{r expand, eval = FALSE, fig.small = TRUE}
+set.seed(42)
+
+# Create count_table
+# Create two replicates for each condition with random scaling
+rna_treated_reps <- sapply(1:2, function(i) {
+    cnt[["untreated3_chr4.bam"]] * runif(nrow(cnt), min = 0.5, max = 2)
+})
+rna_control_reps <- sapply(1:2, function(i) {
+    cnt[["untreated3_chr4.bam"]] * runif(nrow(cnt), min = 0.1, max = 0.5)
+})
+ribo_treated_reps <- sapply(1:2, function(i) {
+    cnt[["untreated1_chr4.bam"]] * runif(nrow(cnt), min = 0.5, max = 2)
+})
+ribo_control_reps <- sapply(1:2, function(i) {
+    cnt[["untreated1_chr4.bam"]] * runif(nrow(cnt), min = 0.1, max = 0.5)
+})
+
+# Combine and name columns
+colnames(rna_treated_reps) <- paste0("rna_treated", 1:2)
+colnames(rna_control_reps) <- paste0("rna_control", 1:2)
+colnames(ribo_treated_reps) <- paste0("ribo_treated", 1:2)
+colnames(ribo_control_reps) <- paste0("ribo_control", 1:2)
+
+cnt_expanded <- cbind(rna_treated_reps, rna_control_reps, ribo_treated_reps, ribo_control_reps)
+
+# Convert numbers to integer
+cnt_expanded <- round(cnt_expanded)
+storage.mode(cnt_expanded) <- "integer"
+
+rownames(cnt_expanded) <- rownames(cnt)
+cnt_expanded <- as.data.frame(cnt_expanded)
+
+
+# Create condition_table
+# Sample names from cnt_expanded
+sample_names <- colnames(cnt_expanded)
+
+# Define condition and strategy for each sample
+condition <- c(rep("treated", 2), rep("control", 2), rep("treated", 2), rep("control", 2))
+strategy <- c(rep("RNA", 4), rep("Ribo", 4))
+
+cond <- data.frame(
+    run = sample_names,
+    replicate = c(1,2),
+    condition = factor(condition, levels = c("control", "treated")),
+    strategy = factor(strategy, levels = c("RNA", "Ribo"))
+)
+
+# Create a DOTSeqDataSets object
+d <- DOTSeqDataSetsFromSE(count_table = cnt_expanded, condition_table = cond, annotation = gr)
+```
+
 # Simulation and benchmarking
 
 `DOTSeq` includes the function `simDOT()` for generating simulated Ribo-seq 
@@ -410,17 +532,6 @@ within genes.
 - The **DTE** module performs better at large-magnitude changes in 
 translation efficiency. This module captures ORF-level changes in ribosome 
 occupancy relative to RNA abundance.
-
-# Summary
-
-`DOTSeq` offers a unified framework for modelling translational control at 
-the ORF level. `DOTSeq` has two modules capturing distinct biological 
-signals: **DOU** tests for shifts in relative usage within genes 
-(*cis*-regulation), whereas **DTE** tests for changes in per-ORF translation 
-efficiency relative to transcript abundance. They can be used together to 
-provide a fuller picture of translational regulation.
-
-# References
 
 # Session info
 ```{r sessionInfo}

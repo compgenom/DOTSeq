@@ -1,3 +1,9 @@
+CHANGES IN VERSION 0.99.2
+
+- Vignette Improvement: Expanded documentation now demonstrates the use of 
+getORFs(), countReads(), and DOTSeqDataSetsFromSE() with the 
+pasillaBamSubset package.
+
 CHANGES IN VERSION 0.99.1
 
 - Simulation Enhancements: The simDOT() function now returns a DOTSeqDataSets 

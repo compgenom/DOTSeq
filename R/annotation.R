@@ -35,7 +35,7 @@ filter_gtf <- function(
         if (col %in% names(mcols(gtf))) {
             gtf <- gtf[!is.na(mcols(gtf)[[col]]), ]
         } else {
-            warning("Column", col, "not found in gtf")
+            warning("Column ", col, " not found in gtf")
         }
     }
     
