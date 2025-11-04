@@ -411,12 +411,13 @@ provide a fuller picture of translational regulation.
 
 # References
 
-<a name="annotation"/>
-# Preparing annotations
+# Preparing annotations (#annotation)
 
 Besides using the `orf_to_gtf.py` wrapper [@lim2025riboss], 
 we can generate ORF-level annotation natively in R using the `getORFs()` 
-function. This approach creates a `GRanges` object.
+function, which is based on the 
+[ORFik](https://www.bioconductor.org/packages/release/bioc/html/ORFik.html)'s 
+engine [@tjeldnes2021orfik]. This approach creates a `GRanges` object.
 
 ```{r get-orfs, eval = FALSE}
 falink <- "https://ftp.ensembl.org/pub/release-78/fasta/drosophila_melanogaster/cdna/Drosophila_melanogaster.BDGP5.cdna.all.fa.gz"
@@ -484,7 +485,12 @@ colnames(rna_control_reps) <- paste0("rna_control", 1:2)
 colnames(ribo_treated_reps) <- paste0("ribo_treated", 1:2)
 colnames(ribo_control_reps) <- paste0("ribo_control", 1:2)
 
-cnt_expanded <- cbind(rna_treated_reps, rna_control_reps, ribo_treated_reps, ribo_control_reps)
+cnt_expanded <- cbind(
+    rna_treated_reps, 
+    rna_control_reps, 
+    ribo_treated_reps, 
+    ribo_control_reps
+)
 
 # Convert numbers to integer
 cnt_expanded <- round(cnt_expanded)
@@ -499,7 +505,12 @@ cnt_expanded <- as.data.frame(cnt_expanded)
 sample_names <- colnames(cnt_expanded)
 
 # Define condition and strategy for each sample
-condition <- c(rep("treated", 2), rep("control", 2), rep("treated", 2), rep("control", 2))
+condition <- c(
+    rep("treated", 2), 
+    rep("control", 2), 
+    rep("treated", 2), 
+    rep("control", 2)
+)
 strategy <- c(rep("RNA", 4), rep("Ribo", 4))
 
 cond <- data.frame(
@@ -510,7 +521,11 @@ cond <- data.frame(
 )
 
 # Create a DOTSeqDataSets object
-d <- DOTSeqDataSetsFromSE(count_table = cnt_expanded, condition_table = cond, annotation = gr)
+d <- DOTSeqDataSetsFromSE(
+    count_table = cnt_expanded, 
+    condition_table = cond, 
+    annotation = gr
+)
 ```
 
 # Simulation and benchmarking
