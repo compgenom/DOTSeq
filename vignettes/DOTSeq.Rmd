@@ -418,7 +418,7 @@ Besides using the `orf_to_gtf.py` wrapper [@lim2025riboss],
 we can generate ORF-level annotation natively in R using the `getORFs()` 
 function. This approach creates a `GRanges` object.
 
-```{r get-orfs, eval = FALSE, fig.small = TRUE}
+```{r get-orfs, eval = FALSE}
 falink <- "https://ftp.ensembl.org/pub/release-78/fasta/drosophila_melanogaster/cdna/Drosophila_melanogaster.BDGP5.cdna.all.fa.gz"
 gtflink <- "https://ftp.ensembl.org/pub/release-78/gtf/drosophila_melanogaster/Drosophila_melanogaster.BDGP5.78.gtf.gz"
 
@@ -444,7 +444,7 @@ package. Note that this dataset is not derived from a Ribo-seq experiment
 and is used solely for illustrative purposes. It should not be used for 
 biological interpretation.
 
-```{r pasilla, eval = FALSE, fig.small = TRUE}
+```{r pasilla, eval = FALSE}
 library(pasillaBamSubset)
 library(GenomeInfoDb)
 
@@ -460,7 +460,7 @@ Here we make use the ORF-level annotation and create count and condition
 tables as input for `DOTSeqDataSetsFromSE()`. This is alternative to 
 using `DOTSeqDataSetsFromFeatureCounts()` as demonstrated at the beginning.
 
-```{r expand, eval = FALSE, fig.small = TRUE}
+```{r expand, eval = FALSE}
 set.seed(42)
 
 # Create count_table
