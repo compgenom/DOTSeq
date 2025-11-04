@@ -106,11 +106,11 @@ names(cnt) <- gsub(".*(SRR[0-9]+).*", "\\1", names(cnt))
 head(cnt)
 ```
 
-# ORF annotation files 
+# ORF annotation 
 Flattened ORF-level annotations were generated using the `orf_to_gtf.py` 
 wrapper for RIBOSS [@lim2025riboss]. Alternatively, annotations can be 
 prepared within R using `getORFs()` 
-(see [Preparing annotations](#annotation)). This pre-processing step 
+(see [Prepare annotations](#annotation)). This pre-processing step 
 ensures that each ORF occupies a distinct, non-overlapping genomic interval, 
 avoiding ambiguity when assigning reads. This design follows the same 
 logic as `DEXSeq`'s exon flattening, but at the level of ORFs rather 
@@ -411,7 +411,7 @@ provide a fuller picture of translational regulation.
 
 # References
 
-# Preparing annotations {#annotation}
+# Prepare annotations {#annotation}
 
 Besides using the `orf_to_gtf.py` wrapper [@lim2025riboss], 
 we can generate ORF-level annotation natively in R using the `getORFs()` 
