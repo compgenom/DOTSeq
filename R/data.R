@@ -108,7 +108,6 @@ group_bam_files <- function(bam_files) {
 #' )
 #' file.remove(output_files)
 #' 
-#' 
 getExonicReads <- function(gr, bam_files, coding_genes_only = TRUE, verbose = TRUE) {
     
     if (!inherits(metadata(gr)$txdb, "TxDb")) {
