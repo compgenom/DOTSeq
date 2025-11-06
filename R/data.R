@@ -114,10 +114,6 @@ getExonicReads <- function(gr, bam_files, coding_genes_only = TRUE, verbose = TR
         stop("gr must contain a TxDb object in the metadata slot.")
     }
     
-    if (verbose) {
-        start_filterbam <- Sys.time()
-        message("starting BAM filtering")
-    }
     # Filter annotations to coding genes
     annotation <- metadata(gr)$txdb
     exons_by_genes <- exonsBy(annotation, by = "gene")
@@ -132,6 +128,12 @@ getExonicReads <- function(gr, bam_files, coding_genes_only = TRUE, verbose = TR
     
     # Get BAM header seqlevels
     for (bam in bam_files) {
+        
+        if (verbose) {
+            start_filterbam <- Sys.time()
+            message("starting filtering ", bam)
+        }
+        
         bamfile <- BamFile(bam)
         bam_header <- scanBamHeader(BamFile(bam))
         bam_seqlevels <- names(bam_header[[1]])
@@ -164,9 +166,9 @@ getExonicReads <- function(gr, bam_files, coding_genes_only = TRUE, verbose = TR
             elapsed_filterbam <- runtime(end_filterbam, start_filterbam)
             
             if (!is.null(elapsed_filterbam$mins)) {
-                message(sprintf("read filtering runtime: %d mins %.3f secs", elapsed_filterbam$mins, elapsed_filterbam$secs))
+                message(sprintf("BAM filtering runtime: %d mins %.3f secs", elapsed_filterbam$mins, elapsed_filterbam$secs))
             } else {
-                message(sprintf("read filtering runtime: %.3f secs", elapsed_filterbam$secs))
+                message(sprintf("BAM filtering runtime: %.3f secs", elapsed_filterbam$secs))
             }
         }
     }
@@ -191,6 +193,7 @@ getExonicReads <- function(gr, bam_files, coding_genes_only = TRUE, verbose = TR
 #' @importFrom GenomicAlignments summarizeOverlaps
 #' @importFrom Rsamtools BamFileList
 #' 
+#' @export
 #' @examplesIf requireNamespace("pasillaBamSubset", quietly = TRUE) && requireNamespace("GenomicRanges", quietly = TRUE)
 #' library(GenomicRanges)
 #' library(pasillaBamSubset)

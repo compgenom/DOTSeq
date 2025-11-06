@@ -53,6 +53,5 @@ output_files <- list.files(
     full.names = TRUE
 )
 file.remove(output_files)
-
 \dontshow{\}) # examplesIf}
 }
