@@ -201,12 +201,10 @@ getORFs <- function(
             end_annotate <- Sys.time()
             elapsed_annotate <- runtime(end_annotate, start_annotate)
             
-            format_upper <- toupper(format)
-            
             if (!is.null(elapsed_annotate$mins)) {
-                message(sprintf("%s parsing runtime: %d mins %.3f secs", format_upper, elapsed_annotate$mins, elapsed_annotate$secs))
+                message(sprintf("annotation reading runtime: %d mins %.3f secs", elapsed_annotate$mins, elapsed_annotate$secs))
             } else {
-                message(sprintf("%s parsing runtime: %.3f secs", format_upper, elapsed_annotate$secs))
+                message(sprintf("annotation reading runtime: %.3f secs", elapsed_annotate$secs))
             }
             
             start_seq <- Sys.time()
@@ -488,6 +486,8 @@ getORFs <- function(
         
         message("flattened ", length(gr), " ORFs to ", length(flattened_gr))
     }
+    
+    metadata(flattened_gr)$txdb <- annotation
     return(flattened_gr)
 }
 

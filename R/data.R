@@ -56,6 +56,124 @@ group_bam_files <- function(bam_files) {
 }
 
 
+#' Filter BAM files to retain only reads overlapping exonic regions
+#'
+#' @description
+#' This function filters BAM files to retain reads overlapping exonic 
+#' regions #' defined in a TxDb object stored in the metadata of a 
+#' GRanges object. Optionally, it restricts to coding genes only. 
+#' Filtered BAMs are sorted and saved with `.exonic.sorted.bam` suffixes.
+#'
+#' @param gr A \code{GRanges} object with a \code{TxDb} object stored 
+#' in its metadata slot under \code{metadata(gr)$txdb}.
+#' @param bam_files A character vector of paths to BAM files to be 
+#' filtered.
+#' @param coding_genes_only Logical; if \code{TRUE}, restrict filtering 
+#' to coding genes only (i.e., genes with CDS).
+#' @param verbose Logical; if \code{TRUE}, print progress and runtime 
+#' messages.
+#'
+#' @return This function does not return a value. It creates filtered 
+#' and sorted BAM files for each input BAM.
+#' 
+#' @importFrom S4Vectors metadata metadata<-
+#' @importFrom GenomicFeatures cdsBy exonsBy transcripts
+#' @importFrom BiocGenerics unlist
+#' @importFrom Rsamtools scanBamHeader BamFile filterBam ScanBamParam
+#' @importFrom Rsamtools indexBam sortBam
+#' @importFrom GenomeInfoDb keepSeqlevels
+#' 
+#' @export
+#' @examplesIf requireNamespace("TxDb.Dmelanogaster.UCSC.dm3.ensGene", quietly = TRUE) && requireNamespace("pasillaBamSubset", quietly = TRUE)
+#' library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
+#' library(pasillaBamSubset)
+#' library(GenomeInfoDb)
+#' 
+#' txdb_chr4 <- keepSeqlevels(
+#'     TxDb.Dmelanogaster.UCSC.dm3.ensGene, 
+#'     "chr4", 
+#'     pruning.mode = "coarse"
+#' )
+#' gr <- GRanges(seqnames = "chr4", ranges = IRanges(start = 233, end = 2300))
+#' metadata(gr)$txdb <- txdb_chr4
+#' 
+#' getExonicReads(gr, bam_files = c(untreated1_chr4()))
+#' 
+#' # Get the directory of the BAM file and clean up output files
+#' bam_dir <- dirname(untreated1_chr4())
+#' output_files <- list.files(
+#'     path = bam_dir,
+#'     pattern = "*exonic.*",
+#'     full.names = TRUE
+#' )
+#' file.remove(output_files)
+#' 
+#' 
+getExonicReads <- function(gr, bam_files, coding_genes_only = TRUE, verbose = TRUE) {
+    
+    if (!inherits(metadata(gr)$txdb, "TxDb")) {
+        stop("gr must contain a TxDb object in the metadata slot.")
+    }
+    
+    if (verbose) {
+        start_filterbam <- Sys.time()
+        message("starting BAM filtering")
+    }
+    # Filter annotations to coding genes
+    annotation <- metadata(gr)$txdb
+    exons_by_genes <- exonsBy(annotation, by = "gene")
+    
+    if (coding_genes_only) {
+        cds_by_genes <- cdsBy(annotation, by = "gene")
+        common_genes <- intersect(names(exons_by_genes), names(cds_by_genes))
+        exons_by_genes <- exons_by_genes[common_genes]
+    }
+    
+    exons_by_genes <- unlist(exons_by_genes)
+    
+    # Get BAM header seqlevels
+    for (bam in bam_files) {
+        bamfile <- BamFile(bam)
+        bam_header <- scanBamHeader(BamFile(bam))
+        bam_seqlevels <- names(bam_header[[1]])
+        
+        # Get seqlevels from annotation
+        annotation_seqlevels <- seqlevels(exons_by_genes)
+        
+        # Find common seqlevels
+        common_seqlevels <- intersect(annotation_seqlevels, bam_seqlevels)
+        
+        # Keep only common seqlevels in annotation
+        exons_for_bam <- keepSeqlevels(exons_by_genes, common_seqlevels, pruning.mode = "coarse")
+        
+        # Filter reads
+        if (!file.exists(paste0(bam, ".bai"))) {
+            indexBam(bam)
+        }
+        
+        filtered_bam <- paste0(tools::file_path_sans_ext(bam), ".exonic.bam")
+        filterBam(file = bam,
+                  destination = filtered_bam,
+                  indexDestination = FALSE,
+                  param = ScanBamParam(which = exons_for_bam))
+        sorted_bam <- paste0(tools::file_path_sans_ext(filtered_bam), ".sorted")
+        sortBam(file = filtered_bam, destination = sorted_bam)
+        invisible(file.remove(filtered_bam))
+        
+        if (verbose) {
+            end_filterbam <- Sys.time()
+            elapsed_filterbam <- runtime(end_filterbam, start_filterbam)
+            
+            if (!is.null(elapsed_filterbam$mins)) {
+                message(sprintf("read filtering runtime: %d mins %.3f secs", elapsed_filterbam$mins, elapsed_filterbam$secs))
+            } else {
+                message(sprintf("read filtering runtime: %.3f secs", elapsed_filterbam$secs))
+            }
+        }
+    }
+}
+
+
 #' Count reads from BAM files over genomic features
 #'
 #' Uses \code{\link[GenomicAlignments]{summarizeOverlaps}} to count reads 
@@ -74,7 +192,16 @@ group_bam_files <- function(bam_files) {
 #' @importFrom GenomicAlignments summarizeOverlaps
 #' @importFrom Rsamtools BamFileList
 #' 
-#' @keywords internal
+#' @examplesIf requireNamespace("pasillaBamSubset", quietly = TRUE) && requireNamespace("GenomicRanges", quietly = TRUE)
+#' library(GenomicRanges)
+#' library(pasillaBamSubset)
+#' 
+#' bam_list <- c(untreated1_chr4(), untreated3_chr4())
+#' 
+#' gr <- GRanges(seqnames = "chr4", 
+#'     ranges = IRanges(start = 233, end = 2300))
+#'     
+#' countReads(gr = gr, bam_files = bam_list)
 #' 
 countReads <- function(
         gr, 

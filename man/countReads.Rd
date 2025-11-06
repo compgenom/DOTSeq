@@ -31,4 +31,16 @@ Uses \code{\link[GenomicAlignments]{summarizeOverlaps}} to count reads
 overlapping genomic ranges, handling both single-end and paired-end
 BAM files.
 }
-\keyword{internal}
+\examples{
+\dontshow{if (requireNamespace("pasillaBamSubset", quietly = TRUE) && requireNamespace("GenomicRanges", quietly = TRUE)) withAutoprint(\{ # examplesIf}
+library(GenomicRanges)
+library(pasillaBamSubset)
+
+bam_list <- c(untreated1_chr4(), untreated3_chr4())
+
+gr <- GRanges(seqnames = "chr4", 
+    ranges = IRanges(start = 233, end = 2300))
+    
+countReads(gr = gr, bam_files = bam_list)
+\dontshow{\}) # examplesIf}
+}

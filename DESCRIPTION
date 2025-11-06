@@ -37,6 +37,7 @@ LinkingTo: Rcpp
 Suggests:
     BSgenome.Hsapiens.UCSC.hg38,
     TxDb.Hsapiens.UCSC.hg38.knownGene,
+    TxDb.Dmelanogaster.UCSC.dm3.ensGene,
     pasillaBamSubset,
     BiocStyle, 
     biomaRt,
