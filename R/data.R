@@ -77,6 +77,7 @@ group_bam_files <- function(bam_files) {
 #' and sorted BAM files for each input BAM.
 #' 
 #' @importFrom S4Vectors metadata metadata<-
+#' @importFrom AnnotationDbi loadDb
 #' @importFrom GenomicFeatures cdsBy exonsBy transcripts
 #' @importFrom BiocGenerics unlist
 #' @importFrom Rsamtools scanBamHeader BamFile filterBam ScanBamParam
@@ -110,12 +111,12 @@ group_bam_files <- function(bam_files) {
 #' 
 getExonicReads <- function(gr, bam_files, coding_genes_only = TRUE, verbose = TRUE) {
     
-    if (!inherits(metadata(gr)$txdb, "TxDb")) {
-        stop("gr must contain a TxDb object in the metadata slot.")
+    if (!file.exists(metadata(gr)$txdb)) {
+        stop("The TxDb object has been removed. Please rerun getORFs().")
     }
     
     # Filter annotations to coding genes
-    annotation <- metadata(gr)$txdb
+    annotation <- loadDb(metadata(gr)$txdb)
     exons_by_genes <- exonsBy(annotation, by = "gene")
     
     if (coding_genes_only) {

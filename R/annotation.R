@@ -68,8 +68,9 @@ filter_gtf <- function(
 #' to a FASTA file),
 #' a \code{DNAStringSet} object, or a \code{BSgenome} object.
 #' @param annotation Transcript annotation. Can be a character string (path 
-#' to a GTF or GFF file)
-#' or a \code{TxDb} object.
+#' to a GTF or GFF file) or a \code{TxDb} object.
+#' @param txdb_output_dir TxDb output directory. The TxDb file path is 
+#' linked to the GRanges returned in the metadata slot. Default: \code{NULL}.
 #' @param organism Character string specifying the organism name (used  
 #' only when building a TxDb from a GTF/GFF file). Default is 
 #' \code{"Homo sapiens"}.
@@ -114,7 +115,7 @@ filter_gtf <- function(
 #' @importFrom IRanges IRanges
 #' @importFrom GenomicFeatures cdsBy exonsBy mapFromTranscripts transcripts genes
 #' @importFrom txdbmaker makeTxDbFromGFF
-#' @importFrom AnnotationDbi select keys
+#' @importFrom AnnotationDbi select keys saveDb loadDb
 #' @importFrom S4Vectors mcols mcols<-
 #' @importFrom stats ave
 #' @export
@@ -157,6 +158,7 @@ filter_gtf <- function(
 getORFs <- function(
         sequences,
         annotation,
+        txdb_output_dir = NULL,
         organism = "Homo sapiens", 
         require_ids = c("hgnc_id", "protein_id", "ccdsid"),
         source_filter = NULL,
@@ -188,26 +190,29 @@ getORFs <- function(
         # Apply filter to GTF
         gtf <- filter_gtf(gtf_file = annotation, require_ids = require_ids, source_filter = source_filter, verbose = verbose)
         
-        format <- if (grepl("\\.gtf", annotation, ignore.case = TRUE)) "gtf" else "gff"
-        
-        annotation <- makeTxDbFromGFF(
-            file = annotation, 
-            format = format, 
-            organism = organism, 
-            circ_seqs = circ_seqs
-        )
-        
-        if (verbose) {
-            end_annotate <- Sys.time()
-            elapsed_annotate <- runtime(end_annotate, start_annotate)
+        if (grepl("(\\.gtf|\\.gff)", annotation, ignore.case = TRUE)) {
+            format <- if (grepl("\\.gtf", annotation, ignore.case = TRUE)) "gtf" else "gff"
+            annotation <- makeTxDbFromGFF(
+                file = annotation, 
+                format = format, 
+                organism = organism, 
+                circ_seqs = circ_seqs
+            )
             
-            if (!is.null(elapsed_annotate$mins)) {
-                message(sprintf("annotation reading runtime: %d mins %.3f secs", elapsed_annotate$mins, elapsed_annotate$secs))
-            } else {
-                message(sprintf("annotation reading runtime: %.3f secs", elapsed_annotate$secs))
+            if (verbose) {
+                end_annotate <- Sys.time()
+                elapsed_annotate <- runtime(end_annotate, start_annotate)
+                
+                if (!is.null(elapsed_annotate$mins)) {
+                    message(sprintf("annotation reading runtime: %d mins %.3f secs", elapsed_annotate$mins, elapsed_annotate$secs))
+                } else {
+                    message(sprintf("annotation reading runtime: %.3f secs", elapsed_annotate$secs))
+                }
             }
-            
-            start_seq <- Sys.time()
+        } else if (grepl("\\.sqlite", annotation, ignore.case = TRUE)) {
+            annotation <- loadDb(annotation)
+        } else {
+            stop("Input annotation file not recognised. Please provde .gtf, .gff or .sqlite (TxDb) file")
         }
         
         # Extract exons grouped by transcript
@@ -222,8 +227,9 @@ getORFs <- function(
         stop("Unsupported 'annotation' input type: must be file path or TxDb object.")
     }
     
-    
     # Load sequences
+    start_seq <- Sys.time()
+    
     if (is.character(sequences)) {
         sequences <- path.expand(sequences)
         if (!file.exists(sequences)) stop("File does not exist: ", sequences)
@@ -487,7 +493,37 @@ getORFs <- function(
         message("flattened ", length(gr), " ORFs to ", length(flattened_gr))
     }
     
-    metadata(flattened_gr)$txdb <- annotation
+    
+    # Construct filename
+    if (inherits(annotation, "TxDb")) {
+        md <- metadata(annotation)
+        
+        get_md_value <- function(md, key, default = "unknown") {
+            val <- md[md$name == key, "value"]
+            if (length(val) == 0 || is.null(val) || is.na(val)) default else val
+        }
+        
+        source   <- get_md_value(md, "Data source")
+        if (dir.exists(dirname(source))) {
+            txdb_filename <- paste0(tools::file_path_sans_ext(source), ".sqlite")
+        } else if (!is.null(txdb_output_dir)) {
+            output_dir <- normalizePath(txdb_output_dir)
+            if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
+            txdb_filename <- file.path(output_dir, paste0(basename(source), ".sqlite"))
+        } else {
+            txdb_filename <- file.path(getwd(), paste0(basename(source), ".sqlite"))
+        }
+        
+        saveDb(annotation, file = txdb_filename) 
+        
+        metadata(flattened_gr)$txdb <- txdb_filename
+        
+    } else {
+        warning("Annotation is not a TxDb object; returning GRanges without linking to a TxDb file.")
+    }
+    
+    message("TxDb saved to: ", txdb_filename)
+    
     return(flattened_gr)
 }
 

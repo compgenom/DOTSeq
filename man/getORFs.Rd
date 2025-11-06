@@ -7,6 +7,7 @@
 getORFs(
   sequences,
   annotation,
+  txdb_output_dir = NULL,
   organism = "Homo sapiens",
   require_ids = c("hgnc_id", "protein_id", "ccdsid"),
   source_filter = NULL,
@@ -24,8 +25,10 @@ to a FASTA file),
 a \code{DNAStringSet} object, or a \code{BSgenome} object.}
 
 \item{annotation}{Transcript annotation. Can be a character string (path
-to a GTF or GFF file)
-or a \code{TxDb} object.}
+to a GTF or GFF file) or a \code{TxDb} object.}
+
+\item{txdb_output_dir}{TxDb output directory. The TxDb file path is
+linked to the GRanges returned in the metadata slot. Default: \code{NULL}.}
 
 \item{organism}{Character string specifying the organism name (used
 only when building a TxDb from a GTF/GFF file). Default is
