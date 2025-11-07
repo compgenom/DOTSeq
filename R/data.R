@@ -161,10 +161,12 @@ getExonicReads <- function(gr, bam_files, coding_genes_only = TRUE, verbose = TR
         }
         
         filtered_bam <- paste0(tools::file_path_sans_ext(bam), ".exonic.bam")
-        filterBam(file = bam,
-                  destination = filtered_bam,
-                  indexDestination = FALSE,
-                  param = ScanBamParam(which = exons_for_bam))
+        filterBam(
+            file = bam,
+            destination = filtered_bam,
+            indexDestination = FALSE,
+            param = ScanBamParam(which = exons_for_bam)
+        )
         sorted_bam <- paste0(tools::file_path_sans_ext(filtered_bam), ".sorted")
         sortBam(file = filtered_bam, destination = sorted_bam)
         invisible(file.remove(filtered_bam))
