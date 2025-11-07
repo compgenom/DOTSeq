@@ -460,6 +460,14 @@ seqlevelsStyle(gr) = "UCSC"
 # Keep only reads mapped to the exons of coding genes
 getExonicReads(gr = gr, bam_files = bam_list, coding_genes_only = TRUE)
 
+# Get the list of filtered BAM files
+bam_dir <- dirname(untreated1_chr4())
+bam_list <- list.files(
+    path = bam_dir,
+    pattern = "*exonic.*",
+    full.names = TRUE
+)
+
 cnt <- countReads(gr = gr, bam_files = bam_list)
 ```
 
