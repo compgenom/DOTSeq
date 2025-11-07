@@ -34,14 +34,21 @@ Filtered BAMs are sorted and saved with \code{.exonic.sorted.bam} suffixes.
 library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
 library(pasillaBamSubset)
 library(GenomeInfoDb)
+library(AnnotationDbi)
 
+# Save a subset of TxDb as an sqlite file
 txdb_chr4 <- keepSeqlevels(
     TxDb.Dmelanogaster.UCSC.dm3.ensGene, 
     "chr4", 
     pruning.mode = "coarse"
 )
+txdb_path <- file.path(getwd(), "dm3_chr4.sqlite")
+saveDb(txdb_chr4, file = txdb_path)
+
+# Create a GRanges object with a link to the TxDb sqlite file, 
+# which is required for getExonicReads()
 gr <- GRanges(seqnames = "chr4", ranges = IRanges(start = 233, end = 2300))
-metadata(gr)$txdb <- txdb_chr4
+metadata(gr)$txdb <- txdb_path
 
 getExonicReads(gr, bam_files = c(untreated1_chr4()))
 
@@ -52,6 +59,6 @@ output_files <- list.files(
     pattern = "*exonic.*",
     full.names = TRUE
 )
-file.remove(output_files)
+file.remove(c(txdb_path, output_files))
 \dontshow{\}) # examplesIf}
 }
