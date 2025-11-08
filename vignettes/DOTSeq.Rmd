@@ -472,7 +472,7 @@ cnt <- countReads(gr = gr, bam_files = bam_list)
 ```
 
 Here we make use the ORF-level annotation and create count and condition 
-tables as input for `DOTSeqDataSetsFromSO()`. This is alternative to 
+tables as input for `DOTSeqDataSetsFromSummarizeOverlaps()`. This is alternative to 
 using `DOTSeqDataSetsFromFeatureCounts()` as demonstrated at the beginning.
 
 ```{r expand, eval = FALSE}
