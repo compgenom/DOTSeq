@@ -53,8 +53,8 @@ dir.create(package_dir, showWarnings = TRUE, recursive = TRUE)
 if (!require("BiocManager", quietly = TRUE))
   install.packages("BiocManager", lib = package_dir)
 
-# Initialise usage of Bioconductor devel version
-BiocManager::install(version = "devel")
+# Initialise usage of Bioconductor 3.22
+options(repos = BiocManager::repositories(version = "3.22"))
 
 # Install DOTSeq and required packages with automatic update confirmation
 BiocManager::install("compgenom/DOTSeq", lib = package_dir, ask = FALSE)
@@ -116,8 +116,12 @@ done
 ```
 
 #### Step 2. Prepare ORF-level GTF and BED files
-DOTSeq uses the [`RIBOSS`](https://github.com/lcscs12345/riboss) engine 
-to generate flattened annotations from GENCODE, Ensembl, or Araport GTFs.
+Step-by-step on how to prepare ORF-level annotation is available in the 
+[vignettes](https://github.com/compgenom/DOTSeq/tree/main/vignettes). 
+GTF files from GENCODE, Ensembl, or Araport should be used as input.
+
+Alternatively, DOTSeq accept flattened annotation files generated using 
+the [`RIBOSS`](https://github.com/lcscs12345/riboss) engine. 
 
 ```shell
 # Generate ORF-level GTF using DOTSeq's Python script
