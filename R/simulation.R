@@ -829,7 +829,7 @@ simDOT <- function(
     # Store simData in DOTSeqDataSets
     mcols(annotation)$status <- final_labels
     mcols(annotation)$logFC <- sim_logfc[, 1]
-    d <- DOTSeqDataSetsFromSE(
+    d <- DOTSeqDataSetsFromSummarizeOverlaps(
         count_table = as.data.frame(merged), 
         condition_table = coldata, 
         annotation = annotation

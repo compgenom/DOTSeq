@@ -589,7 +589,7 @@ match_runs <- function(cnt, cond, num_feat_cols = 0, baseline = NULL, verbose = 
     } else {
         stop(
             "count_table format currently not supported. ", 
-            "Please use DOTSeqDataSetsFromSE or DOTSeqDataSetsFromFeaturCounts."
+            "Please use DOTSeqDataSetsFromSummarizeOverlaps or DOTSeqDataSetsFromFeaturCounts."
         )
     }
     
@@ -963,6 +963,8 @@ create_datasets <- function(
 #'     }
 #' }
 #' 
+#' @seealso \code{\link{DOTSeqDataSetsFromFeatureCounts}}
+#' 
 #' @rdname DOTSeqDataSets
 #' 
 #' @importFrom methods new
@@ -1145,14 +1147,20 @@ DOTSeqDataSetsFromFeatureCounts <- function(
 }
 
 
-#' Generate DOTSeq count matrix from BAM files and ORF annotations
+#' Construct DOTSeqDatasets from summarizeOverlaps read counts 
+#' for Differential ORF Translation Analysis
+#' 
+#' @description
+#' This function initialize and construct the 
+#' \code{\link{DOTSeqDataSets-class}} object. This includes loading count 
+#' and metadata tables, read a \code{GRanges} object with ORF-level 
+#' annotation, filtering ORFs based on count thresholds, and preparing 
+#' objects for downstream differential translation analysis using 
+#' beta-binomial and negative binomial GLM.
 #'
-#' This function identifies ORFs from genome and annotation, then counts 
-#' reads from BAM files over those ORFs using `summarizeOverlaps()`, 
-#' handling both single-end and paired-end libraries.
-#'
-#' @param count_table A matrix of read counts with features as rows and 
-#' samples as columns.
+#' @param count_table A dataframe of read counts with features as rows and 
+#' samples as columns. Generated from \code{\link{countReads}} based on 
+#' \code{\link[GenomicAlignments]{summarizeOverlaps}}.
 #' 
 #' @param condition_table Path to a sample metadata file or a data frame.
 #' Must include columns: \code{run}, \code{strategy}, \code{condition},
@@ -1209,13 +1217,15 @@ DOTSeqDataSetsFromFeatureCounts <- function(
 #'     }
 #' }
 #' 
+#' @seealso \code{\link{DOTSeqDataSetsFromFeatureCounts}}
+#' 
 #' @rdname DOTSeqDataSets
 #' 
 #' @importFrom methods new
 #' 
 #' @export
 #' 
-DOTSeqDataSetsFromSE <- function(
+DOTSeqDataSetsFromSummarizeOverlaps <- function(
         count_table,
         condition_table,
         annotation,

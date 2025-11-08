@@ -2,7 +2,7 @@
 % Please edit documentation in R/data.R
 \name{DOTSeqDataSetsFromFeatureCounts}
 \alias{DOTSeqDataSetsFromFeatureCounts}
-\alias{DOTSeqDataSetsFromSE}
+\alias{DOTSeqDataSetsFromSummarizeOverlaps}
 \title{Construct DOTSeqDatasets from featureCounts output for
 Differential ORF Translation Analysis}
 \usage{
@@ -19,7 +19,7 @@ DOTSeqDataSetsFromFeatureCounts(
   verbose = TRUE
 )
 
-DOTSeqDataSetsFromSE(
+DOTSeqDataSetsFromSummarizeOverlaps(
   count_table,
   condition_table,
   annotation,
@@ -32,8 +32,9 @@ DOTSeqDataSetsFromSE(
 )
 }
 \arguments{
-\item{count_table}{A matrix of read counts with features as rows and
-samples as columns.}
+\item{count_table}{A dataframe of read counts with features as rows and
+samples as columns. Generated from \code{\link{countReads}} based on
+\code{\link[GenomicAlignments]{summarizeOverlaps}}.}
 
 \item{condition_table}{Path to a sample metadata file or a data frame.
 Must include columns: \code{run}, \code{strategy}, \code{condition},
@@ -118,9 +119,12 @@ and metadata tables, parsing ORF annotations, filtering ORFs based on
 count thresholds, and preparing objects for downstream differential
 translation analysis using beta-binomial and negative binomial GLM.
 
-This function identifies ORFs from genome and annotation, then counts
-reads from BAM files over those ORFs using \code{summarizeOverlaps()},
-handling both single-end and paired-end libraries.
+This function initialize and construct the
+\code{\link{DOTSeqDataSets-class}} object. This includes loading count
+and metadata tables, read a \code{GRanges} object with ORF-level
+annotation, filtering ORFs based on count thresholds, and preparing
+objects for downstream differential translation analysis using
+beta-binomial and negative binomial GLM.
 }
 \examples{
 # Read in count matrix, condition table, and annotation files
@@ -151,4 +155,9 @@ d <- DOTSeqDataSetsFromFeatureCounts(
 
 show(d)
 
+}
+\seealso{
+\code{\link{DOTSeqDataSetsFromFeatureCounts}}
+
+\code{\link{DOTSeqDataSetsFromFeatureCounts}}
 }
