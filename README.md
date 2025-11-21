@@ -125,7 +125,7 @@ the [`RIBOSS`](https://github.com/lcscs12345/riboss) engine.
 
 ```shell
 # Generate ORF-level GTF using DOTSeq's Python script
-python DOTSeq/inst/python_scripts/orf_to_gtf.py \
+python DOTSeq/inst/scripts/orf_to_gtf.py \
   --gtf DOTSeq/inst/extdata/gencode.v47.annotation.gtf.gz \
   --transcripts DOTSeq/inst/extdata/gencode.v47.pc_transcripts.fa.gz \
   --output DOTSeq/inst/extdata/dotseq
