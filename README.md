@@ -35,7 +35,7 @@ dir.create(package_dir, showWarnings = TRUE, recursive = TRUE)
 if (!require("BiocManager", quietly = TRUE))
   install.packages("BiocManager", lib = package_dir)
 
-# For R 4.6, install Bioc devel, DOTSeq, and required packages 
+# For R 4.6, initialise Bioc devel to install DOTSeq, and required packages 
 # with automatic update confirmation
 BiocManager::install(version="devel")
 BiocManager::install("DOTSeq", lib = package_dir, ask = FALSE)
