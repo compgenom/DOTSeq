@@ -37,7 +37,7 @@ if (!require("BiocManager", quietly = TRUE))
 
 # For R 4.6, initialise Bioc devel and
 # install DOTSeq and required packages with automatic update confirmation
-BiocManager::install(version="devel"")
+BiocManager::install(version="devel")
 BiocManager::install("DOTSeq", lib = package_dir, ask = FALSE)
 
 # For R 4.5
