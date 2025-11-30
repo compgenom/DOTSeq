@@ -28,6 +28,7 @@ test_that("reduce_formula removes single-level terms and retains valid ones", {
     )
 })
 
+
 test_that("reduce_formula throws error when no valid terms remain", {
     df <- data.frame(
         batch = factor(rep(1, 4)) # only one variable, single-level
@@ -47,6 +48,7 @@ test_that("reduce_formula throws error when no valid terms remain", {
         "Invalid formula: interaction term"
     )
 })
+
 
 test_that("reduce_formula throws error for multiple interaction terms", {
     df <- data.frame(

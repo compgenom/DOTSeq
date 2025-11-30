@@ -76,7 +76,7 @@ setClass(
 #' @return TRUE if valid, or a character string describing the error.
 #' @rdname DOUData-validity
 #' @name DOUData-validity
-#' @importFrom SummarizedExperiment assayNames assay
+#' @import SummarizedExperiment
 setValidity("DOUData", function(object) {
     
     # Check counts

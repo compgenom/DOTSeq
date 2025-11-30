@@ -40,7 +40,7 @@ filter_gtf <- function(
     }
     
     if (!is.null(source_filter)) {
-        if ("source" %in% names(gtf)) {
+        if ("source" %in% names(mcols(gtf))) {
             gtf <- gtf[gtf$source == source_filter, ]
         } else {
             warning("Column 'source' not found in gtf")
@@ -111,7 +111,7 @@ filter_gtf <- function(
 #' @importFrom Biostrings readDNAStringSet
 #' @importFrom BiocGenerics unlist
 #' @importFrom BSgenome getSeq
-#' @importFrom GenomicRanges reduce strand GRanges
+#' @import GenomicRanges
 #' @importFrom IRanges IRanges
 #' @importFrom GenomicFeatures cdsBy exonsBy mapFromTranscripts transcripts genes
 #' @importFrom txdbmaker makeTxDbFromGFF
@@ -139,11 +139,17 @@ filter_gtf <- function(
 #' tx_seqs <- extractTranscriptSeqs(genome, tx1)
 #'
 #' # Run getORFs on the transcript sequence
+#' txdb_output_dir <- tempdir()
 #' gr <- getORFs(
 #'     sequences = tx_seqs,
-#'     annotation = txdb
+#'     annotation = txdb,
+#'     txdb_output_dir = txdb_output_dir
 #' )
 #' print(gr)
+#' 
+#' # Clean up
+#' sqlite_files <- list.files(txdb_output_dir, pattern = "\\.sqlite$", full.names = TRUE)
+#' unlink(sqlite_files)
 #' 
 #' @references
 #' Lawrence, M., Huber, W., Pagès, H., Aboyoun, P., Carlson, M., 
@@ -221,8 +227,6 @@ getORFs <- function(
     } else if (inherits(annotation, "TxDb")) {
         start_seq <- Sys.time()
         exons_by_tx <- exonsBy(annotation, by = "tx", use.names = TRUE)
-    } else if (inherits(annotation, "GRangesList")) {
-        exons_by_tx <- annotation
     } else {
         stop("Unsupported 'annotation' input type: must be file path or TxDb object.")
     }
@@ -503,16 +507,22 @@ getORFs <- function(
             if (length(val) == 0 || is.null(val) || is.na(val)) default else val
         }
         
-        source   <- get_md_value(md, "Data source")
-        if (dir.exists(dirname(source))) {
-            txdb_filename <- paste0(tools::file_path_sans_ext(source), ".sqlite")
-        } else if (!is.null(txdb_output_dir)) {
-            output_dir <- normalizePath(txdb_output_dir)
-            if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
-            txdb_filename <- file.path(output_dir, paste0(basename(source), ".sqlite"))
-        } else {
-            txdb_filename <- file.path(getwd(), paste0(basename(source), ".sqlite"))
-        }
+        
+        source <- get_md_value(md, "Data source")
+        
+        # Determine base name and default output directory
+        base_name <- basename(source)
+        base_name <- tools::file_path_sans_ext(base_name)
+        default_dir <- if (grepl("/", source)) normalizePath(dirname(source)) else getwd()
+        
+        # Use txdb_output_dir if provided, otherwise default_dir
+        output_dir <- if (!is.null(txdb_output_dir)) txdb_output_dir else default_dir
+        
+        # Ensure directory exists
+        if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
+        
+        # Build filename
+        txdb_filename <- file.path(output_dir, paste0(base_name, ".sqlite"))
         
         saveDb(annotation, file = txdb_filename) 
         
@@ -544,7 +554,7 @@ utils::globalVariables(c(".", ".I", ".N", ".SD", ":="))
 #' (same as input)
 #' 
 #' @importFrom data.table data.table
-#' @importFrom GenomicRanges seqnames width width<-
+#' @import GenomicRanges
 #' 
 #' @family ORFHelpers
 #' 
@@ -656,7 +666,7 @@ strandBool <- function(grl) {
 #' @param keep.names a boolean, keep names or not, default: (TRUE)
 #' @return a vector named/unnamed of characters
 #' @importFrom IRanges heads PartitioningByEnd
-#' @importFrom GenomicRanges start strand
+#' @import GenomicRanges
 #' 
 #' @keywords internal
 #' 
@@ -1017,7 +1027,7 @@ lastExonPerGroup <- function(grl) {
 #' @param grl a \code{\link[GenomicRanges]{GRangesList}}
 #' @param keep.names a boolean, keep names or not, default: (TRUE)
 #' 
-#' @importFrom GenomicRanges width width<-
+#' @import GenomicRanges
 #' 
 #' @return an integer vector (named/unnamed) of widths
 #' 
@@ -1057,7 +1067,7 @@ widthPerGroup <- function(grl, keep.names = TRUE) {
 #' @param grl a \code{\link[GenomicRanges]{GRangesList}}
 #' @param keep.names a boolean, keep names or not, default: (TRUE)
 #' @importFrom IRanges heads
-#' @importFrom GenomicRanges seqnames
+#' @import GenomicRanges
 #' 
 #' @return a character vector or Rle of seqnames(if seqnames == T)
 #' 

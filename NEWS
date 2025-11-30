@@ -1,3 +1,13 @@
+CHANGES IN VERSION 0.99.3
+
+- BAM filtering: Introduced getExonicReads() for extracting exonic reads from 
+BAM files.
+
+- Improved unit test coverage: Added more tests and achieved 81% coverage.
+
+- Improved clarity: Renamed DOTSeqDataSetsFromSE() to 
+DOTSeqDataSetsFromFeatureCounts() for alignment with input type.
+
 CHANGES IN VERSION 0.99.2
 
 - Vignette Improvement: Expanded documentation now demonstrates the use of 

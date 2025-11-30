@@ -110,7 +110,7 @@
 #' }
 #'
 #' @importFrom DESeq2 DESeq design resultsNames lfcShrink
-#' @importFrom SummarizedExperiment rowRanges assay rowData rowData<-
+#' @import SummarizedExperiment
 #' @importFrom S4Vectors metadata metadata<- mcols mcols<-
 #'
 #' @export

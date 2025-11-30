@@ -16,7 +16,7 @@
 #'
 #' @importFrom emmeans emmeans
 #' @importFrom boot inv.logit
-#' @importFrom SummarizedExperiment rowData
+#' @import SummarizedExperiment
 #' 
 #' @export
 #' @examples

@@ -387,7 +387,7 @@ create_read_numbers <- function(
 #' }
 #'
 #' @importFrom stats prcomp rgamma runif df model.matrix
-#' @importFrom SummarizedExperiment SummarizedExperiment assay
+#' @import SummarizedExperiment
 #' @importFrom S4Vectors mcols mcols<-
 #'
 #' @export

@@ -69,3 +69,17 @@ test_that("fitDOU returns expected structure for successfully fitted ORFs", {
         expect_type(fitResults(res)$diagnostics, "list")
     }
 })
+
+
+test_that("PostHoc accessors work as expected", {
+    ph <- PostHoc(type = "glmmTMB", results = list(aic = 100))
+    
+    expect_equal(modelType(ph), "glmmTMB")
+    expect_type(fitResults(ph), "list")
+    expect_true("aic" %in% names(fitResults(ph)))
+    
+    # Edge case: default constructor
+    ph_default <- PostHoc()
+    expect_equal(modelType(ph_default), "fitError")
+    expect_type(fitResults(ph_default), "list")
+})

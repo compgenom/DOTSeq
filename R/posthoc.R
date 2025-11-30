@@ -57,7 +57,7 @@
 #' @importFrom ashr ash get_pm get_qvalue get_lfdr get_lfsr
 #' @importFrom methods is
 #' @importFrom S4Vectors Rle DataFrame
-#' @importFrom SummarizedExperiment SummarizedExperiment rowData
+#' @import SummarizedExperiment
 #' @importFrom pbapply pblapply
 #' @importFrom stats AIC aggregate anova as.dendrogram as.formula 
 #' @importFrom stats p.adjust pnorm complete.cases
@@ -435,7 +435,7 @@ testDOU <- function(
 #' with \code{results(dds, contrast = ...)} for custom differential 
 #' testing.
 #'
-#' @importFrom SummarizedExperiment colData
+#' @import SummarizedExperiment
 #' @importFrom stats model.matrix
 #' @importFrom utils combn
 #' @importFrom DESeq2 resultsNames

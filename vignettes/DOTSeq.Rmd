@@ -480,18 +480,10 @@ set.seed(42)
 
 # Create count_table
 # Create two replicates for each condition with random scaling
-rna_treated_reps <- sapply(1:2, function(i) {
-    cnt[["untreated3_chr4.bam"]] * runif(nrow(cnt), min = 0.5, max = 2)
-})
-rna_control_reps <- sapply(1:2, function(i) {
-    cnt[["untreated3_chr4.bam"]] * runif(nrow(cnt), min = 0.1, max = 0.5)
-})
-ribo_treated_reps <- sapply(1:2, function(i) {
-    cnt[["untreated1_chr4.bam"]] * runif(nrow(cnt), min = 0.5, max = 2)
-})
-ribo_control_reps <- sapply(1:2, function(i) {
-    cnt[["untreated1_chr4.bam"]] * runif(nrow(cnt), min = 0.1, max = 0.5)
-})
+rna_treated_reps <- do.call(cbind, replicate(2, cnt[["untreated3_chr4.exonic.sorted.bam"]] * runif(nrow(cnt), min = 0.5, max = 2), simplify = FALSE))
+rna_control_reps <- do.call(cbind, replicate(2, cnt[["untreated3_chr4.exonic.sorted.bam"]] * runif(nrow(cnt), min = 0.1, max = 0.5), simplify = FALSE))
+ribo_treated_reps <- do.call(cbind, replicate(2, cnt[["untreated1_chr4.exonic.sorted.bam"]] * runif(nrow(cnt), min = 0.5, max = 2), simplify = FALSE))
+ribo_control_reps <- do.call(cbind, replicate(2, cnt[["untreated1_chr4.exonic.sorted.bam"]] * runif(nrow(cnt), min = 0.1, max = 0.5), simplify = FALSE))
 
 # Combine and name columns
 colnames(rna_treated_reps) <- paste0("rna_treated", 1:2)
@@ -540,6 +532,9 @@ d <- DOTSeqDataSetsFromSummarizeOverlaps(
     condition_table = cond, 
     annotation = gr
 )
+
+invisible(file.remove(bam_list))
+invisible(file.remove(sub("\\.gz$", ".sqlite", annotation)))
 ```
 
 # Simulation and benchmarking

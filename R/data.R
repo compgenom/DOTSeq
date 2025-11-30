@@ -88,8 +88,8 @@ group_bam_files <- function(bam_files) {
 #' @examplesIf requireNamespace("TxDb.Dmelanogaster.UCSC.dm3.ensGene", quietly = TRUE) && requireNamespace("pasillaBamSubset", quietly = TRUE)
 #' library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
 #' library(pasillaBamSubset)
-#' library(GenomeInfoDb)
 #' library(AnnotationDbi)
+#' library(GenomeInfoDb)
 #' 
 #' # Save a subset of TxDb as an sqlite file
 #' txdb_chr4 <- keepSeqlevels(
@@ -379,7 +379,7 @@ assign_strategy_levels <- function(input_df, strategy_col = "strategy") {
 #' Non-overlapping ORFs will have \code{NA}.
 #'
 #' @importFrom utils read.table
-#' @importFrom GenomicRanges GRanges findOverlaps
+#' @import GenomicRanges
 #' @importFrom S4Vectors queryHits subjectHits mcols mcols<-
 #' @importFrom IRanges IRanges
 #'
@@ -739,8 +739,7 @@ match_runs <- function(cnt, cond, num_feat_cols = 0, baseline = NULL, verbose = 
 #'
 #' @keywords internal
 #' 
-#' @importFrom SummarizedExperiment SummarizedExperiment assay
-#' @importFrom SummarizedExperiment colData colData<- rowData rowData<-
+#' @import SummarizedExperiment
 #' @importFrom DESeq2 DESeqDataSetFromMatrix
 #' @importFrom S4Vectors metadata metadata<-
 #' 
@@ -968,7 +967,7 @@ create_datasets <- function(
 #' @rdname DOTSeqDataSets
 #' 
 #' @importFrom methods new
-#' @importFrom SummarizedExperiment mcols mcols<-
+#' @import SummarizedExperiment
 #' @importFrom rtracklayer import
 #' @importFrom utils read.table
 #'

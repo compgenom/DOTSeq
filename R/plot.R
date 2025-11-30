@@ -74,8 +74,7 @@ get_lfsr_annotation <- function(
 #' 
 #' @keywords internal
 #' 
-#' @importFrom SummarizedExperiment rowRanges strand 
-#' @importFrom SummarizedExperiment mcols mcols<- 
+#' @import SummarizedExperiment
 #' 
 plot_orf_usage <- function(
         data, 
@@ -1595,7 +1594,7 @@ reset_graphics <- function(plot_fn, force_new_device = TRUE) {
 #' The volcano plot highlights extreme and top-ranked ORFs, while 
 #' the heatmap summarizes DOU across top genes.
 #'
-#' @importFrom SummarizedExperiment rowData
+#' @import SummarizedExperiment
 #' @importFrom graphics par layout
 #' @importFrom grid grid.newpage grid.draw
 #' @importFrom utils modifyList
@@ -1903,7 +1902,7 @@ plotDOT <- function(
                 ", p-value: ",
                 format.pval(correlation_results$p.value, digits = 3, eps = .Machine$double.eps)
             )
-            if (verbose) message("composite plot colored by significance plotted")
+            if (verbose) message("composite plot colored by ", plot_params$color_by, " plotted")
         }, force_new_device = force_new_device)
     }
     
@@ -1931,7 +1930,7 @@ plotDOT <- function(
                 legend_position = plot_params$legend_position,
                 verbose = verbose
             )
-            if (verbose) message("volcano plot colored by significance plotted")
+            if (verbose) message("volcano plot colored by ", plot_params$color_by, " plotted")
         }, force_new_device = force_new_device)
     }
     

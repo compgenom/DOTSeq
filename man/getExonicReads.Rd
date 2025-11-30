@@ -33,8 +33,8 @@ Filtered BAMs are sorted and saved with \code{.exonic.sorted.bam} suffixes.
 \dontshow{if (requireNamespace("TxDb.Dmelanogaster.UCSC.dm3.ensGene", quietly = TRUE) && requireNamespace("pasillaBamSubset", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
 library(pasillaBamSubset)
-library(GenomeInfoDb)
 library(AnnotationDbi)
+library(GenomeInfoDb)
 
 # Save a subset of TxDb as an sqlite file
 txdb_chr4 <- keepSeqlevels(

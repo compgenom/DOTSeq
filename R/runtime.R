@@ -69,7 +69,7 @@ runtime <- function(end_time, start_time, units = "secs") {
 #' Missing columns across models are filled with \code{NA} to ensure a
 #' consistent structure.
 #'
-#' @importFrom SummarizedExperiment rowData
+#' @import SummarizedExperiment
 #' @importFrom stats setNames
 #' 
 #' @keywords internal

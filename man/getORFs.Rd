@@ -106,11 +106,17 @@ tx1 <- head(exons_by_tx, 100)
 tx_seqs <- extractTranscriptSeqs(genome, tx1)
 
 # Run getORFs on the transcript sequence
+txdb_output_dir <- tempdir()
 gr <- getORFs(
     sequences = tx_seqs,
-    annotation = txdb
+    annotation = txdb,
+    txdb_output_dir = txdb_output_dir
 )
 print(gr)
+
+# Clean up
+sqlite_files <- list.files(txdb_output_dir, pattern = "\\\\.sqlite$", full.names = TRUE)
+unlink(sqlite_files)
 \dontshow{\}) # examplesIf}
 }
 \references{
