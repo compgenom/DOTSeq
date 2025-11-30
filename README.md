@@ -25,8 +25,6 @@ and empirical Bayes shrinkage is applied via
 
 
 ## INSTALLATION
-Please ensure the dependencies listed above are installed using the 
-following steps before installing `DOTSeq`:
 ```r
 # Create a directory for R packages if not already
 package_dir <- file.path(Sys.getenv("HOME"), "R/4.5")
