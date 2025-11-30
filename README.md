@@ -24,22 +24,6 @@ and empirical Bayes shrinkage is applied via
 [`ashr`](https://CRAN.R-project.org/package=ashr).
 
 
-## DEPENDENCIES
-* R (>= 4.5.0)
-* biomaRt (>=2.65.0)
-* SummarizedExperiment (>= 1.39.1)
-* Bioc.gff (>= 0.99.17)
-* DESeq2 (>=1.49.4)
-* GenomicRanges (>=1.61.5)
-* IRanges (>=2.43.5)
-* S4Vectors (0.47.4)
-* ashr (>=2.2-63)
-* DHARMa (>=0.4.7)
-* emmeans (>=1.11.2-8)
-* glmmTMB (>=1.1.12)
-* eulerr (>=7.0.4)
-* pbapply (>=1.7-4)
-
 ## INSTALLATION
 Please ensure the dependencies listed above are installed using the 
 following steps before installing `DOTSeq`:
@@ -53,10 +37,13 @@ dir.create(package_dir, showWarnings = TRUE, recursive = TRUE)
 if (!require("BiocManager", quietly = TRUE))
   install.packages("BiocManager", lib = package_dir)
 
-# Initialise usage of Bioconductor 3.22
-options(repos = BiocManager::repositories(version = "3.22"))
+# For R 4.6, initialise Bioc devel and
+# install DOTSeq and required packages with automatic update confirmation
+BiocManager::install(version="devel"")
+BiocManager::install("DOTSeq", lib = package_dir, ask = FALSE)
 
-# Install DOTSeq and required packages with automatic update confirmation
+# For R 4.5
+options(repos = BiocManager::repositories(version = "3.22"))
 BiocManager::install("compgenom/DOTSeq", lib = package_dir, ask = FALSE)
 ```
 
