@@ -1,5 +1,4 @@
 library(Biostrings)
-library(withr)
 
 context("findORFsFasta and findORFsFastaCpp")
 
@@ -58,6 +57,9 @@ test_that("findORFsFasta detects ORFs on both strands", {
 
 # Input types
 test_that("findORFsFasta works with FASTA file input", {
+    testthat::skip_if_not_installed("withr")
+    library(withr)
+    
     fasta_path <- tempfile(fileext = ".fa")
     writeLines(c(">seq1", "ATGAAATAA", ">seq2", "ATGCCCTAG"), fasta_path)
     withr::defer(unlink(fasta_path))

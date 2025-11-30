@@ -1,5 +1,3 @@
-library(withr)
-
 test_that("DOTSeqDataSetsFromFeatureCounts returns valid DOTSeqDataSets object and handles invalid inputs", {
     dir <- system.file("extdata", package = "DOTSeq")
     
@@ -102,10 +100,11 @@ test_that("DOTSeqDataSetsFromFeatureCounts returns valid DOTSeqDataSets object a
 
 
 test_that("DOTSeqDataSetsFromSummarizeOverlaps returns valid DOTSeqDataSets object", {
-    
+    testthat::skip_if_not_installed("withr")
     testthat::skip_if_not_installed("pasillaBamSubset")
     testthat::skip_if_not_installed("TxDb.Dmelanogaster.UCSC.dm3.ensGene")
     
+    library(withr)
     library(pasillaBamSubset)
     library(GenomeInfoDb)
     library(AnnotationDbi)
@@ -117,7 +116,10 @@ test_that("DOTSeqDataSetsFromSummarizeOverlaps returns valid DOTSeqDataSets obje
         "chr4", 
         pruning.mode = "coarse"
     )
-    txdb_path <- file.path(getwd(), "dm3_chr4.sqlite")
+    
+    temp_dir <- tempdir()
+    
+    txdb_path <- file.path(temp_dir, "dm3_chr4.sqlite")
     saveDb(txdb_chr4, file = txdb_path)
     withr::defer(unlink(txdb_path))  # cleanup
     
@@ -133,15 +135,9 @@ test_that("DOTSeqDataSetsFromSummarizeOverlaps returns valid DOTSeqDataSets obje
     seqlevelsStyle(gr) = "UCSC"
     
     # Keep only reads mapped to the exons of coding genes
-    getExonicReads(gr = gr, bam_files = bam_list, coding_genes_only = TRUE)
+    getExonicReads(gr = gr, bam_files = bam_list, bam_output_dir = temp_dir, coding_genes_only = TRUE)
     
-    # Get the list of filtered BAM files
-    bam_dir <- dirname(untreated1_chr4())
-    bam_list <- list.files(
-        path = bam_dir,
-        pattern = "*exonic.*",
-        full.names = TRUE
-    )
+    bam_list <- list.files(temp_dir, pattern = "exonic", full.names = TRUE)
     
     # Run countReads
     cnt <- countReads(gr = gr, bam_files = bam_list, verbose = FALSE)
@@ -225,7 +221,7 @@ test_that("DOTSeqDataSetsFromSummarizeOverlaps returns valid DOTSeqDataSets obje
 
 
 test_that("DOTSeqDataSetsFromSummarizeOverlaps returns valid DOTSeqDataSets object and handles invalid inputs", {
-    
+    testthat::skip_if_not_installed("withr")
     testthat::skip_if_not_installed("pasillaBamSubset")
     testthat::skip_if_not_installed("TxDb.Dmelanogaster.UCSC.dm3.ensGene")
     
@@ -252,11 +248,11 @@ test_that("DOTSeqDataSetsFromSummarizeOverlaps returns valid DOTSeqDataSets obje
     bam_list <- c(untreated1_chr4(), untreated3_chr4())
     
     # Filter exonic reads
-    getExonicReads(gr = gr, bam_files = bam_list, coding_genes_only = TRUE)
+    temp_dir <- tempdir()
+    getExonicReads(gr = gr, bam_files = bam_list, bam_output_dir = temp_dir, coding_genes_only = TRUE)
     
     # Get filtered BAM files
-    bam_dir <- dirname(untreated1_chr4())
-    bam_list <- list.files(path = bam_dir, pattern = "*exonic.*", full.names = TRUE)
+    bam_list <- list.files(path = temp_dir, pattern = "*exonic.*", full.names = TRUE)
     withr::defer(unlink(bam_list))  # cleanup
     
     # Count reads

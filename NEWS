@@ -1,3 +1,11 @@
+CHANGES IN VERSION 0.99.4
+
+- New Features: Added seqlevels_style and bam_output_dir arguments to 
+getExonicReads() to enable chromosome renaming and custom output directory.
+
+- Bug Fixes: Added writhr to DESCRIPTION and fixed vignette.
+
+
 CHANGES IN VERSION 0.99.3
 
 - BAM filtering: Introduced getExonicReads() for extracting exonic reads from 
@@ -8,11 +16,13 @@ BAM files.
 - Improved clarity: Renamed DOTSeqDataSetsFromSE() to 
 DOTSeqDataSetsFromFeatureCounts() for alignment with input type.
 
+
 CHANGES IN VERSION 0.99.2
 
 - Vignette Improvement: Expanded documentation now demonstrates the use of 
 getORFs(), countReads(), and DOTSeqDataSetsFromSE() with the 
 pasillaBamSubset package.
+
 
 CHANGES IN VERSION 0.99.1
 
@@ -22,6 +32,7 @@ downstream compatibility.
 
 - Improved Plotting: Plot functions now dynamically adjust margins and panel 
 sizes for better layout.
+
 
 CHANGES IN VERSION 0.99.0
 

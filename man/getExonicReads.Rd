@@ -4,61 +4,81 @@
 \alias{getExonicReads}
 \title{Filter BAM files to retain only reads overlapping exonic regions}
 \usage{
-getExonicReads(gr, bam_files, coding_genes_only = TRUE, verbose = TRUE)
+getExonicReads(
+  gr,
+  seqlevels_style = "UCSC",
+  bam_files,
+  bam_output_dir = tempdir(),
+  coding_genes_only = TRUE,
+  verbose = TRUE
+)
 }
 \arguments{
-\item{gr}{A \code{GRanges} object with a \code{TxDb} object stored
-in its metadata slot under \code{metadata(gr)$txdb}.}
+\item{gr}{A \code{GRanges} object with a \code{TxDb} SQLite file path stored
+in its metadata under \code{metadata(gr)$txdb}.}
 
-\item{bam_files}{A character vector of paths to BAM files to be
-filtered.}
+\item{seqlevels_style}{Character; the naming style for chromosome
+identifiers (e.g., \code{"UCSC"}, \code{"NCBI"}). This is applied to both
+the GRanges object and the TxDb annotation. Default is \code{"UCSC"}.}
 
-\item{coding_genes_only}{Logical; if \code{TRUE}, restrict filtering
-to coding genes only (i.e., genes with CDS).}
+\item{bam_files}{A character vector of paths to BAM files to be filtered.}
 
-\item{verbose}{Logical; if \code{TRUE}, print progress and runtime
-messages.}
+\item{bam_output_dir}{A writable directory where filtered BAM files will be
+saved. Defaults to \code{tempdir()}.}
+
+\item{coding_genes_only}{Logical; if \code{TRUE}, restrict filtering to
+coding genes only (i.e., genes with CDS). Default is \code{TRUE}.}
+
+\item{verbose}{Logical; if \code{TRUE}, print progress and runtime messages.
+Default is \code{TRUE}.}
 }
 \value{
-This function does not return a value. It creates filtered
-and sorted BAM files for each input BAM.
+This function is called for its side effect of creating filtered and
+sorted BAM files in \code{bam_output_dir}. It returns \code{NULL} invisibly.
 }
 \description{
-This function filters BAM files to retain reads overlapping exonic
-regions #' defined in a TxDb object stored in the metadata of a
-GRanges object. Optionally, it restricts to coding genes only.
-Filtered BAMs are sorted and saved with \code{.exonic.sorted.bam} suffixes.
+Filters one or more BAM files to retain reads overlapping exonic regions
+defined in a TxDb object stored in the metadata of a GRanges object.
+Optionally restricts filtering to coding genes only (genes with CDS).
+Filtered BAMs are sorted and saved with the suffix \code{.exonic.sorted.bam}
+in a user-specified or temporary directory.
+}
+\details{
+The function uses \code{Rsamtools::filterBam()} to extract reads overlapping
+exonic regions and \code{Rsamtools::sortBam()} to sort the filtered BAM.
+The output files are named based on the input BAM file with the suffix
+\code{.exonic.sorted.bam}.
 }
 \examples{
-\dontshow{if (requireNamespace("TxDb.Dmelanogaster.UCSC.dm3.ensGene", quietly = TRUE) && requireNamespace("pasillaBamSubset", quietly = TRUE)) withAutoprint(\{ # examplesIf}
+\dontshow{if (requireNamespace("TxDb.Dmelanogaster.UCSC.dm3.ensGene", quietly = TRUE) && requireNamespace("pasillaBamSubset", quietly = TRUE) && requireNamespace("withr", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
 library(pasillaBamSubset)
 library(AnnotationDbi)
 library(GenomeInfoDb)
+library(withr)
 
-# Save a subset of TxDb as an sqlite file
+# Save a subset of TxDb as an SQLite file
 txdb_chr4 <- keepSeqlevels(
-    TxDb.Dmelanogaster.UCSC.dm3.ensGene, 
-    "chr4", 
+    TxDb.Dmelanogaster.UCSC.dm3.ensGene,
+    "chr4",
     pruning.mode = "coarse"
 )
-txdb_path <- file.path(getwd(), "dm3_chr4.sqlite")
+txdb_path <- file.path(tempdir(), "dm3_chr4.sqlite")
 saveDb(txdb_chr4, file = txdb_path)
 
-# Create a GRanges object with a link to the TxDb sqlite file, 
-# which is required for getExonicReads()
+# Create a GRanges object with a link to the TxDb SQLite file
 gr <- GRanges(seqnames = "chr4", ranges = IRanges(start = 233, end = 2300))
 metadata(gr)$txdb <- txdb_path
 
-getExonicReads(gr, bam_files = c(untreated1_chr4()))
-
-# Get the directory of the BAM file and clean up output files
-bam_dir <- dirname(untreated1_chr4())
-output_files <- list.files(
-    path = bam_dir,
-    pattern = "*exonic.*",
-    full.names = TRUE
+# Filter BAM file and save output in a temporary directory
+temp_dir <- tempdir()
+getExonicReads(gr,
+    bam_files = untreated1_chr4(),
+    bam_output_dir = temp_dir
 )
-file.remove(c(txdb_path, output_files))
+
+# Clean up
+withr::defer(unlink(txdb_path))
+withr::defer(unlink(list.files(temp_dir, pattern = "exonic", full.names = TRUE)))
 \dontshow{\}) # examplesIf}
 }

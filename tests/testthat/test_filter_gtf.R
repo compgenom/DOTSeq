@@ -1,7 +1,6 @@
 library(rtracklayer)
 library(GenomicRanges)
 library(S4Vectors)
-library(withr)
 
 # Helper to create a valid GTF file
 create_valid_gtf <- function(path) {
@@ -15,6 +14,9 @@ create_valid_gtf <- function(path) {
 
 
 test_that("filter_gtf filters by required IDs", {
+    library(withr)
+    testthat::skip_if_not_installed("withr")
+    
     gtf_path <- tempfile(fileext = ".gtf")
     create_valid_gtf(gtf_path)
     withr::defer(unlink(gtf_path))  # cleanup
@@ -28,6 +30,9 @@ test_that("filter_gtf filters by required IDs", {
 
 
 test_that("filter_gtf applies source filter", {
+    library(withr)
+    testthat::skip_if_not_installed("withr")
+    
     gtf_path <- tempfile(fileext = ".gtf")
     create_valid_gtf(gtf_path)
     withr::defer(unlink(gtf_path))
@@ -39,6 +44,9 @@ test_that("filter_gtf applies source filter", {
 
 
 test_that("filter_gtf returns empty GRanges if no match", {
+    library(withr)
+    testthat::skip_if_not_installed("withr")
+    
     gtf_path <- tempfile(fileext = ".gtf")
     create_valid_gtf(gtf_path)
     withr::defer(unlink(gtf_path))
@@ -49,6 +57,9 @@ test_that("filter_gtf returns empty GRanges if no match", {
 
 
 test_that("filter_gtf warns if required column missing", {
+    library(withr)
+    testthat::skip_if_not_installed("withr")
+    
     gtf_path <- tempfile(fileext = ".gtf")
     create_valid_gtf(gtf_path)
     withr::defer(unlink(gtf_path))

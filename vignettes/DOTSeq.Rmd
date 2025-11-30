@@ -421,6 +421,8 @@ function, which is based on the
 engine [@tjeldnes2021orfik]. This approach creates a `GRanges` object.
 
 ```{r get-orfs, eval = FALSE}
+library(withr)
+
 falink <- "https://ftp.ensembl.org/pub/release-78/fasta/drosophila_melanogaster/cdna/Drosophila_melanogaster.BDGP5.cdna.all.fa.gz"
 gtflink <- "https://ftp.ensembl.org/pub/release-78/gtf/drosophila_melanogaster/Drosophila_melanogaster.BDGP5.78.gtf.gz"
 
@@ -437,7 +439,7 @@ gr <- getORFs(
     organism = "Drosophila melanogaster"
 )
 
-invisible(file.remove(c(annotation, sequences)))
+withr::defer(unlink(c(annotation, sequences)))
 ```
 
 We perform read counting using the RNA-seq BAM files from the 
@@ -454,21 +456,19 @@ library(GenomeInfoDb)
 
 bam_list <- c(untreated1_chr4(), untreated3_chr4())
 
-# Set the chromosome names according to the BAM files
-seqlevelsStyle(gr) = "UCSC"
-
 # Keep only reads mapped to the exons of coding genes
-getExonicReads(gr = gr, bam_files = bam_list, coding_genes_only = TRUE)
+temp_dir <- tempdir()
+getExonicReads(gr = gr, seqlevels_style = "UCSC", bam_files = bam_list, bam_output_dir = temp_dir, coding_genes_only = TRUE)
 
 # Get the list of filtered BAM files
-bam_dir <- dirname(untreated1_chr4())
 bam_list <- list.files(
-    path = bam_dir,
+    path = temp_dir,
     pattern = "*exonic.*",
     full.names = TRUE
 )
 
 cnt <- countReads(gr = gr, bam_files = bam_list)
+withr::defer(unlink(bam_list))
 ```
 
 Here we make use the ORF-level annotation and create count and condition 

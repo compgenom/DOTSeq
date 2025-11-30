@@ -56,67 +56,80 @@ group_bam_files <- function(bam_files) {
 }
 
 
+
 #' Filter BAM files to retain only reads overlapping exonic regions
 #'
 #' @description
-#' This function filters BAM files to retain reads overlapping exonic 
-#' regions #' defined in a TxDb object stored in the metadata of a 
-#' GRanges object. Optionally, it restricts to coding genes only. 
-#' Filtered BAMs are sorted and saved with `.exonic.sorted.bam` suffixes.
+#' Filters one or more BAM files to retain reads overlapping exonic regions
+#' defined in a TxDb object stored in the metadata of a GRanges object.
+#' Optionally restricts filtering to coding genes only (genes with CDS).
+#' Filtered BAMs are sorted and saved with the suffix `.exonic.sorted.bam`
+#' in a user-specified or temporary directory.
 #'
-#' @param gr A \code{GRanges} object with a \code{TxDb} object stored 
-#' in its metadata slot under \code{metadata(gr)$txdb}.
-#' @param bam_files A character vector of paths to BAM files to be 
-#' filtered.
-#' @param coding_genes_only Logical; if \code{TRUE}, restrict filtering 
-#' to coding genes only (i.e., genes with CDS).
-#' @param verbose Logical; if \code{TRUE}, print progress and runtime 
-#' messages.
+#' @param gr A \code{GRanges} object with a \code{TxDb} SQLite file path stored
+#' in its metadata under \code{metadata(gr)$txdb}.
+#' @param seqlevels_style Character; the naming style for chromosome 
+#' identifiers (e.g., \code{"UCSC"}, \code{"NCBI"}). This is applied to both 
+#' the GRanges object and the TxDb annotation. Default is \code{"UCSC"}.
+#' @param bam_files A character vector of paths to BAM files to be filtered.
+#' @param bam_output_dir A writable directory where filtered BAM files will be
+#' saved. Defaults to \code{tempdir()}.
+#' @param coding_genes_only Logical; if \code{TRUE}, restrict filtering to
+#' coding genes only (i.e., genes with CDS). Default is \code{TRUE}.
+#' @param verbose Logical; if \code{TRUE}, print progress and runtime messages.
+#' Default is \code{TRUE}.
 #'
-#' @return This function does not return a value. It creates filtered 
-#' and sorted BAM files for each input BAM.
-#' 
+#' @return This function is called for its side effect of creating filtered and
+#' sorted BAM files in \code{bam_output_dir}. It returns \code{NULL} invisibly.
+#'
+#' @details
+#' The function uses \code{Rsamtools::filterBam()} to extract reads overlapping
+#' exonic regions and \code{Rsamtools::sortBam()} to sort the filtered BAM.
+#' The output files are named based on the input BAM file with the suffix
+#' \code{.exonic.sorted.bam}.
+#'
 #' @importFrom S4Vectors metadata metadata<-
 #' @importFrom AnnotationDbi loadDb
-#' @importFrom GenomicFeatures cdsBy exonsBy transcripts
+#' @importFrom GenomicFeatures cdsBy exonsBy
 #' @importFrom BiocGenerics unlist
 #' @importFrom Rsamtools scanBamHeader BamFile filterBam ScanBamParam
 #' @importFrom Rsamtools indexBam sortBam
 #' @importFrom GenomeInfoDb keepSeqlevels
-#' 
+#'
 #' @export
-#' @examplesIf requireNamespace("TxDb.Dmelanogaster.UCSC.dm3.ensGene", quietly = TRUE) && requireNamespace("pasillaBamSubset", quietly = TRUE)
+#'
+#' @examplesIf requireNamespace("TxDb.Dmelanogaster.UCSC.dm3.ensGene", quietly = TRUE) && requireNamespace("pasillaBamSubset", quietly = TRUE) && requireNamespace("withr", quietly = TRUE)
 #' library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
 #' library(pasillaBamSubset)
 #' library(AnnotationDbi)
 #' library(GenomeInfoDb)
-#' 
-#' # Save a subset of TxDb as an sqlite file
+#' library(withr)
+#'
+#' # Save a subset of TxDb as an SQLite file
 #' txdb_chr4 <- keepSeqlevels(
-#'     TxDb.Dmelanogaster.UCSC.dm3.ensGene, 
-#'     "chr4", 
+#'     TxDb.Dmelanogaster.UCSC.dm3.ensGene,
+#'     "chr4",
 #'     pruning.mode = "coarse"
 #' )
-#' txdb_path <- file.path(getwd(), "dm3_chr4.sqlite")
+#' txdb_path <- file.path(tempdir(), "dm3_chr4.sqlite")
 #' saveDb(txdb_chr4, file = txdb_path)
-#' 
-#' # Create a GRanges object with a link to the TxDb sqlite file, 
-#' # which is required for getExonicReads()
+#'
+#' # Create a GRanges object with a link to the TxDb SQLite file
 #' gr <- GRanges(seqnames = "chr4", ranges = IRanges(start = 233, end = 2300))
 #' metadata(gr)$txdb <- txdb_path
-#' 
-#' getExonicReads(gr, bam_files = c(untreated1_chr4()))
-#' 
-#' # Get the directory of the BAM file and clean up output files
-#' bam_dir <- dirname(untreated1_chr4())
-#' output_files <- list.files(
-#'     path = bam_dir,
-#'     pattern = "*exonic.*",
-#'     full.names = TRUE
+#'
+#' # Filter BAM file and save output in a temporary directory
+#' temp_dir <- tempdir()
+#' getExonicReads(gr,
+#'     bam_files = untreated1_chr4(),
+#'     bam_output_dir = temp_dir
 #' )
-#' file.remove(c(txdb_path, output_files))
+#'
+#' # Clean up
+#' withr::defer(unlink(txdb_path))
+#' withr::defer(unlink(list.files(temp_dir, pattern = "exonic", full.names = TRUE)))
 #' 
-getExonicReads <- function(gr, bam_files, coding_genes_only = TRUE, verbose = TRUE) {
+getExonicReads <- function(gr, seqlevels_style = "UCSC", bam_files, bam_output_dir = tempdir(), coding_genes_only = TRUE, verbose = TRUE) {
     
     if (!file.exists(metadata(gr)$txdb)) {
         stop("The TxDb object has been removed. Please rerun getORFs().")
@@ -124,6 +137,17 @@ getExonicReads <- function(gr, bam_files, coding_genes_only = TRUE, verbose = TR
     
     # Filter annotations to coding genes
     annotation <- loadDb(metadata(gr)$txdb)
+    
+    tryCatch(
+        {
+            seqlevelsStyle(gr) <- seqlevels_style
+            seqlevelsStyle(annotation) <- seqlevels_style
+        }, 
+        error = function(e) {
+            warning("Failed to set seqlevels style: ", conditionMessage(e))
+        }
+    )
+    
     exons_by_genes <- exonsBy(annotation, by = "gene")
     
     if (coding_genes_only) {
@@ -142,7 +166,6 @@ getExonicReads <- function(gr, bam_files, coding_genes_only = TRUE, verbose = TR
             message("starting filtering ", bam)
         }
         
-        bamfile <- BamFile(bam)
         bam_header <- scanBamHeader(BamFile(bam))
         bam_seqlevels <- names(bam_header[[1]])
         
@@ -155,19 +178,32 @@ getExonicReads <- function(gr, bam_files, coding_genes_only = TRUE, verbose = TR
         # Keep only common seqlevels in annotation
         exons_for_bam <- keepSeqlevels(exons_by_genes, common_seqlevels, pruning.mode = "coarse")
         
+        if (length(exons_for_bam) == 0) {
+            warning(
+                "No overlapping chromosomes found for BAM: ", bam,
+                "\nCheck seqlevels_style: ", seqlevels_style
+            )
+            next
+        }
+        
         # Filter reads
         if (!file.exists(paste0(bam, ".bai"))) {
             indexBam(bam)
         }
         
-        filtered_bam <- paste0(tools::file_path_sans_ext(bam), ".exonic.bam")
+        if (!dir.exists(bam_output_dir)) dir.create(bam_output_dir, recursive = TRUE)
+        
+        filtered_bam <- file.path(bam_output_dir, paste0(tools::file_path_sans_ext(basename(bam)), ".exonic.bam"))
+        
+        sorted_bam <- paste0(tools::file_path_sans_ext(filtered_bam), ".sorted")
+        
         filterBam(
             file = bam,
             destination = filtered_bam,
             indexDestination = FALSE,
             param = ScanBamParam(which = exons_for_bam)
         )
-        sorted_bam <- paste0(tools::file_path_sans_ext(filtered_bam), ".sorted")
+        
         sortBam(file = filtered_bam, destination = sorted_bam)
         invisible(file.remove(filtered_bam))
         
