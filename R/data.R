@@ -315,6 +315,468 @@ countReads <- function(
 }
 
 
+#' Pad a sparse count matrix with missing cell barcode columns
+#'
+#' Align a sparse matrix by a desired set/order of column names (cell barcodes),
+#' adding zero-filled columns for any barcodes not currently present. This is
+#' primarily used when summing sparse matrices generated from different chunks
+#' that may contain different subsets of cells.
+#'
+#' @param M A sparse matrix (typically a \code{dgCMatrix}) with non-NULL column
+#'   names representing cell barcodes. Row names are preserved.
+#' @param cols Character vector of target column names (barcodes). The returned
+#'   matrix will have columns exactly in this order. Missing barcodes are added
+#'   as all-zero columns.
+#'
+#' @return A sparse matrix with the same number of rows as \code{M} and columns
+#'   exactly equal to \code{cols} (same order). If \code{cols} contains names not
+#'   present in \code{M}, they are appended as zero columns before reordering.
+#'
+#' @details
+#' This function assumes that \code{colnames(M)} uniquely identify columns and
+#' can be used as a key for alignment across matrices. It will error if column
+#' names are \code{NULL}.
+#'
+#' When repeatedly called in a loop, this can incur overhead due to repeated
+#' sparse matrix reallocation and subsetting; consider accumulating triplets
+#' (\code{i}, \code{j}, \code{x}) and building a single sparse matrix when
+#' performance is critical.
+#' 
+#' @importFrom Matrix Matrix cbind2
+#' @importFrom IRanges IRanges
+#' 
+#' @keywords internal
+#' 
+pad_cols <- function(M, cols) {
+    # Pad sparse matrix M to include 'cols' (barcodes), adding zero columns where missing.
+    if (is.null(colnames(M))) stop("Matrix has NULL column names; cannot align by barcodes.")
+    missing <- setdiff(cols, colnames(M))
+    if (length(missing) > 0L) {
+        zero <- Matrix(0, nrow = nrow(M), ncol = length(missing),
+                       dimnames = list(rownames(M), missing), sparse = TRUE)
+        M <- cbind2(M, zero)
+    }
+    m <- M[, cols, drop = FALSE]
+    return(m)
+}
+
+
+#' Convert paired-end alignments to fragment ranges
+#'
+#' Given a \code{GAlignmentPairs} object, construct a \code{GRanges} representing
+#' the full inferred fragment span for each pair by taking the minimum start and
+#' maximum end across the first and last mate. This is useful for counting
+#' overlaps at the fragment level rather than at the read level.
+#'
+#' @param gap A \code{GAlignmentPairs} object (typically produced by
+#'   \code{GenomicAlignments::readGAlignmentPairs()}).
+#' @param ignore.strand Logical. If \code{TRUE}, returned ranges have strand
+#'   set to \code{"*"} regardless of input. If \code{FALSE}, the strand from the
+#'   first mate is used.
+#'
+#' @return A \code{GRanges} object with one range per input pair, with:
+#' \itemize{
+#'   \item \code{seqnames} from the first mate,
+#'   \item \code{start = min(start(first), start(last))},
+#'   \item \code{end   = max(end(first),   end(last))},
+#'   \item \code{strand} depending on \code{ignore.strand}.
+#' }
+#'
+#' @details
+#' This function assumes mates are on the same reference sequence. For unusual
+#' cases where mates map to different chromosomes, the resulting behavior may be
+#' undefined and should be handled upstream (e.g., by filtering such pairs).
+#'
+#' @import GenomicRanges
+#' @importFrom GenomicAlignments first last
+#' @importFrom IRanges IRanges
+#' @importFrom S4Vectors Rle
+#' @keywords internal
+fragmentize_pairs <- function(gap, ignore.strand = TRUE) {
+    fst <- first(gap)
+    lst <- last(gap)
+    GRanges(
+        seqnames = seqnames(fst),
+        ranges   = IRanges(start = pmin(start(fst), start(lst)),
+                           end   = pmax(end(fst),   end(lst))),
+        strand   = if (ignore.strand) Rle("*") else strand(fst)
+    )
+}
+
+
+#' Tally per-chunk single-cell feature counts using per-seqname NCList indexes
+#'
+#' Vectorized overlap counting for a chunk of alignments with cell barcode (CB)
+#' and optional UMI (UB) annotations. Reads are split by \code{seqnames} and
+#' overlapped against pre-built \code{GNCList} indexes for the matching seqname.
+#' Counts are accumulated into a sparse matrix of dimension
+#' \code{n_features x n_cells}.
+#'
+#' @param read_gr \code{GRanges} of read (or fragment) intervals for a single
+#'   chunk. Must be aligned to the same reference naming as the feature indexes.
+#' @param cb Character vector of cell barcodes (one per read in \code{read_gr}).
+#'   \code{NA} values are dropped.
+#' @param ub Optional character vector of UMIs (one per read). If \code{NULL},
+#'   UMI-based deduplication is disabled regardless of \code{dedup}.
+#' @param mapq_vec Optional integer/numeric vector of MAPQ values (one per read).
+#'   If provided, reads with \code{mapq < mapq_min} are dropped.
+#'
+#' @param gr_common \code{GRanges} of all features used to define the global row
+#'   space. (Not directly used for overlap here, but defines global indexing.)
+#' @param feature_ids Character vector of length \code{n_features} giving global
+#'   feature identifiers used as row names of the returned matrix.
+#' @param n_features Integer number of global features (rows).
+#'
+#' @param nclist_by_seq Named list of \code{GNCList} objects, one per seqname,
+#'   built from the per-seqname split of \code{gr_common}. Names must correspond
+#'   to seqnames present in \code{read_gr}.
+#' @param subj_global_idx_by_seq Named list mapping each seqname to an integer
+#'   vector of global feature indices (rows of \code{gr_common}) corresponding
+#'   to the features used to build \code{nclist_by_seq[[seq]]}. This is used to
+#'   translate \code{subjectHits()} (local per-seqname feature indices) into
+#'   global row indices in \code{1:n_features}.
+#'
+#' @param ignore.strand Logical; passed to \code{findOverlaps()}.
+#' @param mapq_min Minimum MAPQ threshold. Only used if \code{mapq_vec} is not
+#'   \code{NULL}.
+#' @param cells Optional character vector of allowed cell barcodes. If provided,
+#'   only these cells are retained and output columns are returned in this order.
+#' @param dedup Logical. If \code{TRUE} and \code{ub} is provided, deduplicate
+#'   UMIs per \code{(cell, feature)} within the chunk (i.e., each unique UMI
+#'   contributes at most 1 count to a \code{(cell, feature)} pair).
+#' @param mode Character overlap mode placeholder. Currently unused in the
+#'   implementation shown; reserved for future extensions (e.g., intersection
+#'   logic).
+#'
+#' @return A sparse matrix (\code{dgCMatrix}) with \code{n_features} rows and one
+#'   column per cell observed/retained in the chunk. Row names are \code{feature_ids}.
+#'   Column names are either:
+#' \itemize{
+#'   \item \code{cells} (if provided; fixed order), or
+#'   \item sorted unique barcodes observed in the chunk (if \code{cells} is \code{NULL}).
+#' }
+#' If no reads pass filtering or no overlaps are found, returns \code{NULL}.
+#'
+#' @details
+#' \strong{Deduplication semantics.} When \code{dedup=TRUE} and \code{ub} is not
+#' \code{NULL}, counts are deduplicated by unique triplets \code{(cell, feature, UMI)}
+#' within the current chunk and seqname. If the same \code{(cell, feature, UMI)}
+#' appears multiple times in the chunk, it is counted once.
+#'
+#' \strong{Column ordering.} If \code{cells} is supplied, columns are aligned to
+#' this whitelist/order (via \code{match()}). Otherwise, columns are based on
+#' the set of barcodes present within the chunk (sorted).
+#'
+#' \strong{Performance notes.} This function currently constructs and merges
+#' per-seqname sparse matrices using repeated column union and padding. For very
+#' large numbers of cells, it can be faster to accumulate triplets and build a
+#' single sparse matrix per chunk.
+#'
+#' @seealso \code{\link[GenomicRanges]{findOverlaps}}, \code{\link[GenomicRanges]{GNCList}},
+#'   \code{\link[Matrix]{sparseMatrix}}
+#'
+#' @import GenomicRanges
+#' @importFrom Matrix sparseMatrix
+#' @importFrom S4Vectors queryHits subjectHits
+#' 
+#' @keywords internal
+#' 
+tally_chunk_vec <- function(read_gr, cb, ub, mapq_vec,
+                            gr_common, feature_ids, n_features,
+                            nclist_by_seq, subj_global_idx_by_seq,
+                            ignore.strand, mapq_min, cells, dedup, mode) {
+    
+    # Filter reads by CB, MAPQ
+    keep_read <- !is.na(cb)
+    if (!is.null(mapq_vec)) keep_read <- keep_read & (mapq_vec >= mapq_min)
+    if (!any(keep_read)) return(NULL)
+    read_gr <- read_gr[keep_read]
+    cb <- cb[keep_read]
+    ub <- if (!is.null(ub)) ub[keep_read] else NULL
+    mapq_vec <- if (!is.null(mapq_vec)) mapq_vec[keep_read] else NULL
+    
+    # Split reads by seqname to use the matching NCList
+    reads_by_seq <- split(read_gr, seqnames(read_gr))
+    seq_levels <- names(reads_by_seq)
+    if (length(seq_levels) == 0L) return(NULL)
+    
+    # Accumulate i (feature idx), j (cell idx) vectors across seqnames
+    i_all <- integer(0); j_all <- integer(0)
+    
+    for (seqn in seq_levels) {
+        # Skip if features have no index for this seqname
+        if (!(seqn %in% names(nclist_by_seq))) next
+        
+        reads_seq <- reads_by_seq[[seqn]]
+        if (length(reads_seq) == 0L) next
+        
+        # Overlaps against NCList
+        hits <- findOverlaps(reads_seq, nclist_by_seq[[seqn]], ignore.strand = ignore.strand)
+        if (length(hits) == 0L) next
+        q <- queryHits(hits)    # indices into reads_seq
+        s <- subjectHits(hits)  # indices into features subset on this seqname
+        
+        # Map to global read indices: indices of reads_seq inside full read_gr after filtering
+        reads_seq_global_idx <- which(as.character(seqnames(read_gr)) == seqn)
+        q_global <- reads_seq_global_idx[q]
+        # Map to global feature row indices (rows of gr_common)
+        s_global <- subj_global_idx_by_seq[[seqn]][s]
+        
+        # Extract per-hit cell barcodes and UMIs
+        cell_hits <- cb[q_global]
+        umi_hits  <- if (!is.null(ub)) ub[q_global] else NULL
+        
+        # Optional restrict to whitelist of cells
+        if (!is.null(cells)) {
+            keep_c <- cell_hits %in% cells
+            if (!any(keep_c)) next
+            cell_hits <- cell_hits[keep_c]
+            s_global  <- s_global[keep_c]
+            umi_hits  <- if (!is.null(umi_hits)) umi_hits[keep_c] else NULL
+        }
+        
+        if (length(cell_hits) == 0L) next
+        
+        # Vectorizsd UMI dedup per (cell, feature)
+        if (dedup && !is.null(umi_hits)) {
+            # Drop NA UMIs
+            ok <- !is.na(umi_hits)
+            if (!any(ok)) next
+            cell_hits <- cell_hits[ok]; s_global <- s_global[ok]; umi_hits <- umi_hits[ok]
+            keys <- paste(cell_hits, s_global, umi_hits, sep = "\t")
+            dedup_idx <- !duplicated(keys)
+            cell_hits <- cell_hits[dedup_idx]
+            s_global  <- s_global[dedup_idx]
+        }
+        # One record per hit to count as 1
+        # Factorize cells for columns
+        cell_levels <- if (!is.null(cells)) cells else sort(unique(cell_hits))
+        j <- match(cell_hits, cell_levels)
+        i <- s_global
+        
+        # Append to accumulator vectors
+        i_all <- c(i_all, i)
+        # Build a sparse matrix once, using full union of cell_levels across seqnames.
+        # Capture j values relative to 'cell_levels', use a local sparse then pad+sum.
+        # Return a sparse matrix per chunk with column names = unique cells in chunk.
+        
+        # Build chunk-level sparse immediately for this seqname
+        M_seq <- sparseMatrix(i = i, j = j, x = 1L,
+                              dims = c(n_features, length(cell_levels)),
+                              dimnames = list(feature_ids, cell_levels))
+        # Combine per-seqname matrices into one chunk matrix
+        if (!exists("M_chunk", inherits = FALSE)) {
+            M_chunk <- M_seq
+        } else {
+            cols_union <- union(colnames(M_chunk), colnames(M_seq))
+            M_chunk <- pad_cols(M_chunk, cols_union) + pad_cols(M_seq, cols_union)
+        }
+    }
+    
+    if (!exists("M_chunk", inherits = FALSE)) return(NULL)
+    return(M_chunk)
+}
+
+
+#' Count single-cell reads/UMIs from BAM over genomic features (optimized)
+#'
+#' Vectorized, memory-efficient counting from BAMs with CB/UB tags.
+#' Overlaps are computed against per-seqname NCList indexes; UMIs are deduplicated
+#' per (cell, feature) if provided. Results are sparse matrices (features × cells).
+#'
+#' @param gr GRanges of genomic features (e.g., ORFs). Must be on the same reference
+#'   naming style as BAMs or convertible via seqlevelsStyle.
+#' @param bam Character vector of BAM paths (STARsolo/CellRanger or similar).
+#' @param seqlevels_style Character; the naming style for chromosome 
+#' identifiers (e.g., \code{"UCSC"}, \code{"NCBI"}). This is applied to both 
+#' the GRanges object and the TxDb annotation. Default is \code{"UCSC"}.
+#' @param tags Named list with `cell` and `umi` tag names (default CB/UB).
+#' @param ignore.strand Logical: whether to ignore strand in overlaps.
+#' @param yieldSize Integer chunk size for streaming from BAM.
+#' @param mapq Minimum MAPQ to keep (default 10).
+#' @param dedup Logical: if TRUE and UMI tag present, deduplicate UMIs per (cell, feature).
+#' @param mode Overlap mode; currently supports "Union" (others placeholder for extension).
+#' @param cells Optional character vector of barcodes to keep; if provided, columns are
+#'   restricted to these and ordered accordingly.
+#' @param verbose Logical for progress messages.
+#' @param BPPARAM A BiocParallelParam. Default:
+#'   \code{BiocParallel::MulticoreParam(workers = 12, stop.on.error = FALSE, progressbar = TRUE)}.
+#'   
+#' @return A sparse dgCMatrix (features × cells), with rownames taken from `names(gr)` if present.
+#' 
+#' @import GenomicRanges 
+#' @importFrom GenomicAlignments first last readGAlignmentPairs readGAlignments
+#' @importFrom Rsamtools ScanBamParam BamFile scanBamFlag
+#' @importFrom S4Vectors queryHits subjectHits Rle mcols mcols<-
+#' @importFrom IRanges IRanges
+#' @importFrom Matrix Matrix sparseMatrix
+#' @importFrom GenomeInfoDb seqinfo seqlevels seqlevelsStyle
+#' @importFrom BiocParallel MulticoreParam bpnworkers bplapply
+#' 
+#' @export
+#' 
+countReadsSingleCell <- function(
+        gr,
+        bam,
+        seqlevels_style = "UCSC",
+        tags = list(cell = "CB", umi = "UB"),
+        ignore.strand = TRUE,
+        yieldSize = 1e6,
+        mapq = 10,
+        dedup = TRUE,
+        mode = c("Union", "IntersectionStrict", "IntersectionNotEmpty"),
+        cells = NULL,
+        verbose = TRUE,
+        BPPARAM = MulticoreParam(workers = 12, stop.on.error = FALSE, progressbar=TRUE)
+) {
+    mode <- match.arg(mode)
+    stopifnot(is(gr, "GRanges"))
+    stopifnot(length(bam) == 1L) # Enforce single BAM file
+    stopifnot(file.exists(bam))
+    paired <- length(group_bam_files(bam)$paired) > 0
+    start_counts <- Sys.time()
+    
+    # Global Setup
+    # Setup BAM/GR info
+    bf <- BamFile(bam, yieldSize = yieldSize)
+    # Harmonization and filtering of seqlevels
+    try({
+        seqlevelsStyle(gr) <- if (!is.null(seqlevelsStyle(bf))) {
+            seqlevelsStyle(bf)
+        } else {
+            seqlevels_style
+        }
+    }, silent = TRUE)
+    bam_si   <- seqinfo(bf)
+    common_seqs <- intersect(seqlevels(gr), seqlevels(bam_si))
+    if (length(common_seqs) == 0L) {
+        if (verbose) message("No overlapping seqlevels between features and BAM; returning empty matrix.")
+        feature_ids <- if (!is.null(names(gr))) names(gr) else paste0("feat_", seq_along(gr))
+        return(Matrix(0, nrow = length(feature_ids), ncol = 0,
+                      dimnames = list(feature_ids, character()), sparse = TRUE))
+    }
+    gr_common <- keepSeqlevels(gr, common_seqs, pruning.mode = "coarse")
+    feature_ids <- if (!is.null(names(gr_common))) names(gr_common) else paste0("feat_", seq_along(gr_common))
+    n_features  <- length(gr_common)
+    # Decompose features into regions for parallelization
+    gr_regions <- split(gr_common, seqnames(gr_common))
+    region_names <- names(gr_regions)
+    if (verbose) message(sprintf("Processing BAM %s across %d genomic regions in parallel.", basename(bam), length(region_names)))
+    # Prebuild NCList indexes and global index map (Required for tally_chunk_vec)
+    gr_by_seq <- split(gr_common, seqnames(gr_common))
+    nclist_by_seq <- lapply(gr_by_seq, GNCList)
+    subj_global_idx_by_seq <- lapply(names(gr_by_seq), function(seqn) {
+        which(as.character(seqnames(gr_common)) == seqn)
+    })
+    names(subj_global_idx_by_seq) <- names(gr_by_seq)
+    # Core Parallel Function
+    process_single_region <- function(region_name) {
+        # Get subset of features for this region
+        gr_subset <- gr_regions[[region_name]]
+        # Local setup of ScanBamParam for this specific region (TARGETED I/O)
+        which_ranges <- gr_subset # Restricts I/O to only this region's coordinates
+        param <- ScanBamParam(
+            tag  = c(tags$cell, tags$umi),
+            what = c("mapq"),
+            which = which_ranges, # Critical for efficiency
+            flag = scanBamFlag(isSecondaryAlignment = FALSE,
+                               isSupplementaryAlignment = FALSE)
+        )
+        # Local BamFile object for the worker to stream the BAM
+        bf_local <- BamFile(bam, yieldSize = yieldSize)
+        open(bf_local)
+        on.exit(close(bf_local), add = TRUE)
+        # Initialize accumulator for this region's counts
+        final_mat_region <- Matrix(0, nrow = n_features, ncol = 0,
+                                   dimnames = list(feature_ids, character()), sparse = TRUE)
+        k <- 0L
+        repeat {
+            # Read Chunk (Targeted I/O)
+            if (paired) {
+                ga <- readGAlignmentPairs(bf_local, use.names = FALSE, param = param)
+                if (length(ga) == 0L) break
+                rd_gr <- fragmentize_pairs(ga)
+                tags_list <- mcols(first(ga))
+            } else {
+                ga <- readGAlignments(bf_local, use.names = FALSE, param = param)
+                if (length(ga) == 0L) break
+                rd_gr <- granges(ga)
+                tags_list <- mcols(ga)
+            }
+            # Read seqlevel harmonization
+            rd_gr <- keepSeqlevels(rd_gr, common_seqs, pruning.mode = "coarse")
+            seqinfo(rd_gr) <- seqinfo(gr_common)[common_seqs]
+            cb <- tags_list[[tags$cell]]
+            ub <- if (!is.null(tags$umi) && (tags$umi %in% names(tags_list))) tags_list[[tags$umi]] else NULL
+            mapq_vec <- mcols(ga)[["mapq"]]
+            # Vectorized tally for the chunk (using global NCList/index info)
+            chunk_mat <- tally_chunk_vec(
+                read_gr = rd_gr, cb = cb, ub = ub, mapq_vec = mapq_vec,
+                gr_common = gr_common, feature_ids = feature_ids, n_features = n_features,
+                nclist_by_seq = nclist_by_seq, subj_global_idx_by_seq = subj_global_idx_by_seq,
+                ignore.strand = ignore.strand, mapq_min = mapq,
+                cells = cells, dedup = dedup, mode = mode
+            )
+            # Iterative Accumulation
+            if (!is.null(chunk_mat) && ncol(chunk_mat) > 0L) {
+                k <- k + 1L
+                # The accumulation step is only merging small chunks into the region's final_mat_region
+                if (ncol(final_mat_region) == 0L) {
+                    final_mat_region <- chunk_mat
+                } else {
+                    cols_union <- union(colnames(final_mat_region), colnames(chunk_mat))
+                    final_mat_region <- pad_cols(final_mat_region, cols_union) + pad_cols(chunk_mat, cols_union)
+                }
+            }
+        }
+        # Worker returns the final accumulated sub-matrix for this region
+        return(final_mat_region)
+    }
+    # Parallel Execution and Final Assembly
+    if (verbose) message(sprintf("Starting BiocParallel with %d workers...", bpnworkers(BPPARAM)))
+    sub_matrices <- bplapply(
+        region_names,
+        FUN = process_single_region,
+        BPPARAM = BPPARAM,
+        BPOPTIONS = list( # BPOPTIONS is a list of options
+            export = c( # 'export' is a named field within BPOPTIONS
+                "gr_regions", "gr_common", "n_features", "feature_ids",
+                "common_seqs", "tags", "yieldSize", "mapq", "dedup",
+                "mode", "cells", "paired", "bam",
+                "nclist_by_seq", "subj_global_idx_by_seq",
+                "tally_chunk_vec", "pad_cols", "fragmentize_pairs"
+            )
+        )
+    )
+    # Filter out empty results
+    sub_matrices <- Filter(function(X) ncol(X) > 0L, sub_matrices)
+    # 3. Final Assembly (Serial, Fast)
+    if (length(sub_matrices) == 0L) {
+        mat <- Matrix(0, nrow = n_features, ncol = 0,
+                      dimnames = list(feature_ids, character()), sparse = TRUE)
+    } else {
+        # Rbind the resulting matrices to reduce the total number of cell barcodes to align
+        mat <- Reduce(function(A, B) {
+            # Only need to align the cell barcodes (columns) before summing
+            cols <- union(colnames(A), colnames(B))
+            pad_cols(A, cols) + pad_cols(B, cols)
+        }, sub_matrices)
+    }
+    if (verbose) {
+        end_counts <- Sys.time()
+        elapsed <- runtime(end_counts, start_counts)
+        if (!is.null(elapsed$mins)) {
+            message(sprintf("constructed matrix: %d features x %d cells", nrow(mat), ncol(mat)))
+            message(sprintf("read counting runtime: %d mins %.3f secs", elapsed$mins, elapsed$secs))
+        } else {
+            message(sprintf("constructed matrix: %d features x %d cells", nrow(mat), ncol(mat)))
+            message(sprintf("read counting runtime: %.3f secs", elapsed$secs))
+        }
+    }
+    return(mat)
+}
+
+
 #' Assign strategy levels for RNA-seq and Ribo-seq
 #'
 #' This function identifies and assigns the reference and target levels 
@@ -473,8 +935,8 @@ annotate_orf_type <- function(bed, gff_granges) {
 #' @description
 #' This internal helper function reads and validates the sample metadata
 #' provided either as a file path or a data frame. It ensures that the
-#' required columns—\code{run}, \code{strategy}, \code{condition}, and
-#' \code{replicate}—are present (case-insensitive match), and normalizes
+#' required columns (\code{run}, \code{strategy}, \code{condition}, and
+#' \code{replicate}) are present (case-insensitive match), and normalizes
 #' column names for consistency. If a file path is provided, the function
 #' reads the file and checks the header before loading the full table.
 #' If a data frame is provided, it performs similar validation directly.
@@ -1069,23 +1531,23 @@ DOTSeqDataSetsFromFeatureCounts <- function(
             )
         )
     }
-
+    
     # Validate and reduce formula if needed
     fmla <- reduce_formula(formula, condition_table)
     reduced_formula <- fmla$reduced_formula
     emm_specs <- fmla$emm_specs
-
+    
     deseq_fmla <- remove_random_effects(formula)
     deseq_fmla <- reduce_formula(deseq_fmla, condition_table)
-
+    
     cntCols <- c("Geneid", "Chr", "Start", "End", "Strand", "Length")
-
+    
     if (is.character(count_table) && file.exists(count_table)) {
         # If count_table is a file path (character) and the file exists
         # Read the first line to get column names
         firstLine <- readLines(count_table, n = 1)
         cntHeader <- strsplit(firstLine, "\t|,|\\s+")[[1]]
-
+        
         # Check if all expected columns are present
         if (all(cntCols %in% cntHeader)) {
             cond <- read.table(
@@ -1106,7 +1568,7 @@ DOTSeqDataSetsFromFeatureCounts <- function(
     } else {
         stop("count_table must be either a valid file path or a data frame.")
     }
-
+    
     cond <- parse_condition_table(condition_table)
     
     matched <- match_runs(
@@ -1118,7 +1580,7 @@ DOTSeqDataSetsFromFeatureCounts <- function(
     )
     cnt <- matched$cnt
     cond <- matched$cond
-
+    
     dcounts <- cnt[c(1, 7:ncol(cnt))]
     colnames(dcounts) <- c("GeneID", rownames(cond))
     id <- as.character(dcounts[, 1])
@@ -1127,11 +1589,11 @@ DOTSeqDataSetsFromFeatureCounts <- function(
     rownames(dcounts) <- sprintf("%s%s%03.f", id, ":O", as.numeric(n))
     dcounts <- dcounts[, 2:ncol(dcounts)]
     dcounts <- dcounts[, rownames(cond)]
-
+    
     # Parse flattened GTF and return a GRanges object
     gff_granges <- import(flattened_gtf)
     gff_granges <- gff_granges[gff_granges$type == "exon", ]
-
+    
     # Ensure all required attributes are present in mcols
     if (!("gene_id" %in% names(mcols(gff_granges)))) {
         stop(
@@ -1139,7 +1601,7 @@ DOTSeqDataSetsFromFeatureCounts <- function(
             "attribute in the ninth column."
         )
     }
-
+    
     # Prepare the rowData for the SummarizedExperiment
     # Set the ORF names on the GRanges object
     names(gff_granges) <- paste0(
@@ -1147,25 +1609,25 @@ DOTSeqDataSetsFromFeatureCounts <- function(
         ":O", 
         mcols(gff_granges)$exon_number
     )
-
+    
     # dcounts and gff_granges must have matching names/order before filtering
     dcounts <- dcounts[names(gff_granges), , drop = FALSE]
-
+    
     # Set final dcounts structure
     dcounts <- as.matrix(dcounts)
     storage.mode(dcounts) <- "integer"
-
+    
     stopifnot(identical(rownames(dcounts), names(gff_granges)))
     stopifnot(identical(colnames(dcounts), rownames(cond)))
-
+    
     if (verbose) {
         message("GTF and data parsing successful")
     }
-
+    
     gr <- annotate_orf_type(flattened_bed, gff_granges)
     gr$orf_number <- gr$exon_number
     mcols(gr) <- mcols(gr)[, c("gene_id", "orf_number", "orf_type")] # "transcripts", 
-
+    
     se_datasets <- create_datasets(
         count_table = dcounts, 
         condition_table = cond,

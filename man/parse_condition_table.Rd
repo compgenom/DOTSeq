@@ -20,8 +20,8 @@ the \code{run} column. Used internally to construct the
 \description{
 This internal helper function reads and validates the sample metadata
 provided either as a file path or a data frame. It ensures that the
-required columns—\code{run}, \code{strategy}, \code{condition}, and
-\code{replicate}—are present (case-insensitive match), and normalizes
+required columns (\code{run}, \code{strategy}, \code{condition}, and
+\code{replicate}) are present (case-insensitive match), and normalizes
 column names for consistency. If a file path is provided, the function
 reads the file and checks the header before loading the full table.
 If a data frame is provided, it performs similar validation directly.
