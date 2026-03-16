@@ -48,7 +48,13 @@ filter_gtf <- function(
     }
     
     if (verbose) {
-        message("selected ", length(gtf), " from ", input_length, " transcript IDs in the GTF file")
+        message(
+            "selected ", 
+            length(gtf), 
+            " from ", 
+            input_length, 
+            " transcript IDs in the GTF file"
+        )
     }
     
     return(gtf)

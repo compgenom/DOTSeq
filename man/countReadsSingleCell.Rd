@@ -57,3 +57,44 @@ Vectorized, memory-efficient counting from BAMs with CB/UB tags.
 Overlaps are computed against per-seqname NCList indexes; UMIs are deduplicated
 per (cell, feature) if provided. Results are sparse matrices (features × cells).
 }
+\examples{
+# Minimal GRanges with two ORF-like features on chr1
+gr <- GRanges("chr1", IRanges(c(90, 140), width = 40))
+names(gr) <- c("orf1", "orf2")
+
+# Write a tiny SAM with CB/UB tags for two cells (cellA, cellB)
+# r1 and r2 share the same (cell, UMI) and overlap orf1 -> should deduplicate to 1
+# r3 overlaps orf2 in cellA; r4 overlaps orf2 in cellB
+sam <- c(
+  "@HD\tVN:1.6\tSO:coordinate",
+  "@SQ\tSN:chr1\tLN:1000",
+  "r1\t0\tchr1\t100\t60\t20M\t*\t0\t0\tACGTACGTACGTACGTACGT\tFFFFFFFFFFFFFFFFFFFF\tCB:Z:cellA\tUB:Z:umi1",
+  "r2\t0\tchr1\t110\t60\t20M\t*\t0\t0\tACGTACGTACGTACGTACGT\tFFFFFFFFFFFFFFFFFFFF\tCB:Z:cellA\tUB:Z:umi1", # dup UMI/cell
+  "r3\t0\tchr1\t150\t60\t20M\t*\t0\t0\tACGTACGTACGTACGTACGT\tFFFFFFFFFFFFFFFFFFFF\tCB:Z:cellA\tUB:Z:umi2",
+  "r4\t0\tchr1\t150\t60\t20M\t*\t0\t0\tACGTACGTACGTACGTACGT\tFFFFFFFFFFFFFFFFFFFF\tCB:Z:cellB\tUB:Z:umi1"
+)
+td <- tempdir()
+sam_path <- file.path(td, "toy.sam")
+writeLines(sam, sam_path)
+dest_base <- file.path(td, "toy")
+bam_path <- Rsamtools::asBam(sam_path, destination = dest_base, overwrite = TRUE)
+bam_path <- paste0(dest_base, ".bam")
+Rsamtools::indexBam(bam_path)
+
+# Count per (feature × cell) with UMI deduplication; use SerialParam for portability
+mat <- countReadsSingleCell(
+  gr = gr,
+  bam = bam_path,
+  seqlevels_style = "UCSC",
+  tags = list(cell = "CB", umi = "UB"),
+  mapq = 10,
+  dedup = TRUE,
+  BPPARAM = BiocParallel::SerialParam()
+)
+
+# Inspect the sparse matrix
+print(dim(mat))
+print(colnames(mat))
+as.matrix(mat)
+
+}

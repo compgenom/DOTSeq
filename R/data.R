@@ -352,8 +352,13 @@ pad_cols <- function(M, cols) {
     if (is.null(colnames(M))) stop("Matrix has NULL column names; cannot align by barcodes.")
     missing <- setdiff(cols, colnames(M))
     if (length(missing) > 0L) {
-        zero <- Matrix(0, nrow = nrow(M), ncol = length(missing),
-                       dimnames = list(rownames(M), missing), sparse = TRUE)
+        zero <- Matrix(
+            0, 
+            nrow = nrow(M), 
+            ncol = length(missing),
+            dimnames = list(rownames(M), missing), 
+            sparse = TRUE
+        )
         M <- cbind2(M, zero)
     }
     m <- M[, cols, drop = FALSE]
@@ -397,8 +402,10 @@ fragmentize_pairs <- function(gap, ignore.strand = TRUE) {
     lst <- last(gap)
     GRanges(
         seqnames = seqnames(fst),
-        ranges   = IRanges(start = pmin(start(fst), start(lst)),
-                           end   = pmax(end(fst),   end(lst))),
+        ranges   = IRanges(
+            start = pmin(start(fst), start(lst)),
+            end   = pmax(end(fst),   end(lst))
+        ),
         strand   = if (ignore.strand) Rle("*") else strand(fst)
     )
 }
@@ -561,9 +568,13 @@ tally_chunk_vec <- function(read_gr, cb, ub, mapq_vec,
         # Return a sparse matrix per chunk with column names = unique cells in chunk.
         
         # Build chunk-level sparse immediately for this seqname
-        M_seq <- sparseMatrix(i = i, j = j, x = 1L,
-                              dims = c(n_features, length(cell_levels)),
-                              dimnames = list(feature_ids, cell_levels))
+        M_seq <- sparseMatrix(
+            i = i, 
+            j = j, 
+            x = 1L,
+            dims = c(n_features, length(cell_levels)),
+            dimnames = list(feature_ids, cell_levels)
+        )
         # Combine per-seqname matrices into one chunk matrix
         if (!exists("M_chunk", inherits = FALSE)) {
             M_chunk <- M_seq
@@ -615,6 +626,46 @@ tally_chunk_vec <- function(read_gr, cb, ub, mapq_vec,
 #' 
 #' @export
 #' 
+#' @examples 
+#' # Minimal GRanges with two ORF-like features on chr1
+#' gr <- GRanges("chr1", IRanges(c(90, 140), width = 40))
+#' names(gr) <- c("orf1", "orf2")
+#'
+#' # Write a tiny SAM with CB/UB tags for two cells (cellA, cellB)
+#' # r1 and r2 share the same (cell, UMI) and overlap orf1 -> should deduplicate to 1
+#' # r3 overlaps orf2 in cellA; r4 overlaps orf2 in cellB
+#' sam <- c(
+#'   "@HD\tVN:1.6\tSO:coordinate",
+#'   "@SQ\tSN:chr1\tLN:1000",
+#'   "r1\t0\tchr1\t100\t60\t20M\t*\t0\t0\tACGTACGTACGTACGTACGT\tFFFFFFFFFFFFFFFFFFFF\tCB:Z:cellA\tUB:Z:umi1",
+#'   "r2\t0\tchr1\t110\t60\t20M\t*\t0\t0\tACGTACGTACGTACGTACGT\tFFFFFFFFFFFFFFFFFFFF\tCB:Z:cellA\tUB:Z:umi1", # dup UMI/cell
+#'   "r3\t0\tchr1\t150\t60\t20M\t*\t0\t0\tACGTACGTACGTACGTACGT\tFFFFFFFFFFFFFFFFFFFF\tCB:Z:cellA\tUB:Z:umi2",
+#'   "r4\t0\tchr1\t150\t60\t20M\t*\t0\t0\tACGTACGTACGTACGTACGT\tFFFFFFFFFFFFFFFFFFFF\tCB:Z:cellB\tUB:Z:umi1"
+#' )
+#' td <- tempdir()
+#' sam_path <- file.path(td, "toy.sam")
+#' writeLines(sam, sam_path)
+#' dest_base <- file.path(td, "toy")
+#' bam_path <- Rsamtools::asBam(sam_path, destination = dest_base, overwrite = TRUE)
+#' bam_path <- paste0(dest_base, ".bam")
+#' Rsamtools::indexBam(bam_path)
+#'
+#' # Count per (feature × cell) with UMI deduplication; use SerialParam for portability
+#' mat <- countReadsSingleCell(
+#'   gr = gr,
+#'   bam = bam_path,
+#'   seqlevels_style = "UCSC",
+#'   tags = list(cell = "CB", umi = "UB"),
+#'   mapq = 10,
+#'   dedup = TRUE,
+#'   BPPARAM = BiocParallel::SerialParam()
+#' )
+#'
+#' # Inspect the sparse matrix
+#' print(dim(mat))
+#' print(colnames(mat))
+#' as.matrix(mat)
+#' 
 countReadsSingleCell <- function(
         gr,
         bam,
@@ -652,8 +703,15 @@ countReadsSingleCell <- function(
     if (length(common_seqs) == 0L) {
         if (verbose) message("No overlapping seqlevels between features and BAM; returning empty matrix.")
         feature_ids <- if (!is.null(names(gr))) names(gr) else paste0("feat_", seq_along(gr))
-        return(Matrix(0, nrow = length(feature_ids), ncol = 0,
-                      dimnames = list(feature_ids, character()), sparse = TRUE))
+        return(
+            Matrix(
+                0, 
+                nrow = length(feature_ids), 
+                ncol = 0,
+                dimnames = list(feature_ids, character()), 
+                sparse = TRUE
+            )
+        )
     }
     gr_common <- keepSeqlevels(gr, common_seqs, pruning.mode = "coarse")
     feature_ids <- if (!is.null(names(gr_common))) names(gr_common) else paste0("feat_", seq_along(gr_common))
@@ -679,16 +737,23 @@ countReadsSingleCell <- function(
             tag  = c(tags$cell, tags$umi),
             what = c("mapq"),
             which = which_ranges, # Critical for efficiency
-            flag = scanBamFlag(isSecondaryAlignment = FALSE,
-                               isSupplementaryAlignment = FALSE)
+            flag = scanBamFlag(
+                isSecondaryAlignment = FALSE,
+                isSupplementaryAlignment = FALSE
+            )
         )
         # Local BamFile object for the worker to stream the BAM
         bf_local <- BamFile(bam, yieldSize = yieldSize)
         open(bf_local)
         on.exit(close(bf_local), add = TRUE)
         # Initialize accumulator for this region's counts
-        final_mat_region <- Matrix(0, nrow = n_features, ncol = 0,
-                                   dimnames = list(feature_ids, character()), sparse = TRUE)
+        final_mat_region <- Matrix(
+            0, 
+            nrow = n_features, 
+            ncol = 0,
+            dimnames = list(feature_ids, character()), 
+            sparse = TRUE
+        )
         k <- 0L
         repeat {
             # Read Chunk (Targeted I/O)
@@ -752,8 +817,13 @@ countReadsSingleCell <- function(
     sub_matrices <- Filter(function(X) ncol(X) > 0L, sub_matrices)
     # 3. Final Assembly (Serial, Fast)
     if (length(sub_matrices) == 0L) {
-        mat <- Matrix(0, nrow = n_features, ncol = 0,
-                      dimnames = list(feature_ids, character()), sparse = TRUE)
+        mat <- Matrix(
+            0, 
+            nrow = n_features, 
+            ncol = 0,
+            dimnames = list(feature_ids, character()), 
+            sparse = TRUE
+        )
     } else {
         # Rbind the resulting matrices to reduce the total number of cell barcodes to align
         mat <- Reduce(function(A, B) {

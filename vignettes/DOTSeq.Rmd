@@ -480,10 +480,53 @@ set.seed(42)
 
 # Create count_table
 # Create two replicates for each condition with random scaling
-rna_treated_reps <- do.call(cbind, replicate(2, cnt[["untreated3_chr4.exonic.sorted.bam"]] * runif(nrow(cnt), min = 0.5, max = 2), simplify = FALSE))
-rna_control_reps <- do.call(cbind, replicate(2, cnt[["untreated3_chr4.exonic.sorted.bam"]] * runif(nrow(cnt), min = 0.1, max = 0.5), simplify = FALSE))
-ribo_treated_reps <- do.call(cbind, replicate(2, cnt[["untreated1_chr4.exonic.sorted.bam"]] * runif(nrow(cnt), min = 0.5, max = 2), simplify = FALSE))
-ribo_control_reps <- do.call(cbind, replicate(2, cnt[["untreated1_chr4.exonic.sorted.bam"]] * runif(nrow(cnt), min = 0.1, max = 0.5), simplify = FALSE))
+rna_treated_reps <- do.call(
+    cbind, 
+    replicate(
+        2, 
+        cnt[["untreated3_chr4.exonic.sorted.bam"]] * runif(
+            nrow(cnt), 
+            min = 0.5, 
+            max = 2
+        ), 
+        simplify = FALSE
+    )
+)
+rna_control_reps <- do.call(
+    cbind, 
+    replicate(
+        2, 
+        cnt[["untreated3_chr4.exonic.sorted.bam"]] * runif(
+            nrow(cnt), 
+            min = 0.1, 
+            max = 0.5
+        ), 
+        simplify = FALSE
+    )
+)
+ribo_treated_reps <- do.call(
+    cbind, replicate(
+        2, 
+        cnt[["untreated1_chr4.exonic.sorted.bam"]] * runif(
+            nrow(cnt), 
+            min = 0.5, 
+            max = 2
+        ), 
+        simplify = FALSE
+    )
+)
+ribo_control_reps <- do.call(
+    cbind, 
+    replicate(
+        2, 
+        cnt[["untreated1_chr4.exonic.sorted.bam"]] * runif(
+            nrow(cnt), 
+            min = 0.1, 
+            max = 0.5
+        ), 
+        simplify = FALSE
+    )
+)
 
 # Combine and name columns
 colnames(rna_treated_reps) <- paste0("rna_treated", 1:2)
