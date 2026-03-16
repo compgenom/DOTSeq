@@ -58,6 +58,13 @@ Overlaps are computed against per-seqname NCList indexes; UMIs are deduplicated
 per (cell, feature) if provided. Results are sparse matrices (features × cells).
 }
 \examples{
+suppressPackageStartupMessages({
+  library(GenomicRanges)
+  library(Rsamtools)
+  library(GenomeInfoDb)
+  library(Matrix)
+  library(BiocParallel)
+})
 # Minimal GRanges with two ORF-like features on chr1
 gr <- GRanges("chr1", IRanges(c(90, 140), width = 40))
 names(gr) <- c("orf1", "orf2")

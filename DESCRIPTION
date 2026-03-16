@@ -21,12 +21,14 @@ Authors@R: c(
         )
     )
 Description: 
-    A flexible beta-binomial generalized linear model (GLM) framework for 
-    modeling the expected proportion of ribosome profiling (Ribo-seq) to 
-    RNA-seq counts for individual open reading frames (ORFs) relative to 
-    other ORFs within the same gene. This is complemented by a negative 
-    binomial GLM framework that captures changes in translation efficiency 
-    of individual ORFs across experimental conditions.
+    Differential ORF translation analysis framework for ribosome profiling 
+    (Ribo-seq) with matched RNA-seq. Implements (i) Differential ORF Usage 
+    (DOU), a beta-binomial generalized linear model that models the expected 
+    proportion of Ribo-seq versus RNA-seq reads mapping to each open reading 
+    frame (ORF) within a gene, and (ii) ORF-level Differential Translation 
+    Efficiency (DTE), a negative binomial GLM that capture changes in 
+    translation efficiency of individual ORFs across experimental conditions. 
+    Supports ORF-level read summarization for bulk and single-cell Ribo-seq.
 URL: https://github.com/compgenom/DOTSeq
 BugReports: https://github.com/compgenom/DOTSeq/issues
 Encoding: UTF-8
@@ -81,6 +83,8 @@ Imports:
     S4Vectors,
     SummarizedExperiment
 biocViews: 
+    RiboSeq,
+    SingleCell,
     GeneRegulation,
     GeneExpression, 
     DifferentialExpression, 

@@ -627,6 +627,13 @@ tally_chunk_vec <- function(read_gr, cb, ub, mapq_vec,
 #' @export
 #' 
 #' @examples 
+#' suppressPackageStartupMessages({
+#'   library(GenomicRanges)
+#'   library(Rsamtools)
+#'   library(GenomeInfoDb)
+#'   library(Matrix)
+#'   library(BiocParallel)
+#' })
 #' # Minimal GRanges with two ORF-like features on chr1
 #' gr <- GRanges("chr1", IRanges(c(90, 140), width = 40))
 #' names(gr) <- c("orf1", "orf2")
