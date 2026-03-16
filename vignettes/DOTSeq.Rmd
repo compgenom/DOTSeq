@@ -276,7 +276,12 @@ usage and translation efficiency, potentially indicating strong
 translational control.
 
 ```{r plot-venn, eval = requireNamespace("eulerr", quietly = TRUE), fig.small = TRUE}
-plotDOT(plot_type = "venn", results = results, force_new_device = FALSE)
+plotDOT(
+    plot_type = "venn", 
+    results = results, 
+    id_mapping = FALSE, 
+    force_new_device = FALSE
+)
 ```
 
 ## Composite scatter plot: 
@@ -294,6 +299,7 @@ differential translation across ORFs.
 plotDOT(
     plot_type = "composite", 
     results = results, 
+    id_mapping = FALSE, 
     plot_params = list(color_by = "significance", legend_position = "bottomright"),
     force_new_device = FALSE
 )
@@ -307,6 +313,7 @@ translation across different ORF types.
 plotDOT(
     plot_type = "composite", 
     results = results, 
+    id_mapping = FALSE, 
     data = getDOU(d), 
     plot_params = list(color_by = "orf_type", legend_position = "bottomright"),
     force_new_device = FALSE
