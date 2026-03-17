@@ -1,7 +1,7 @@
 Package: DOTSeq
 Type: Package
 Title: Differential Analysis of Translation Efficiency and Usage of Open Reading Frames
-Version: 0.99.6
+Version: 0.99.7
 Authors@R: c(
     person(
         given = "Chun Shen", 
@@ -40,6 +40,8 @@ Suggests:
     BSgenome.Hsapiens.UCSC.hg38,
     TxDb.Hsapiens.UCSC.hg38.knownGene,
     TxDb.Dmelanogaster.UCSC.dm3.ensGene,
+    org.Hs.eg.db,
+    curl,
     pasillaBamSubset,
     BiocStyle, 
     biomaRt,
@@ -50,7 +52,8 @@ Suggests:
     knitr, 
     rmarkdown, 
     testthat,
-    withr
+    withr,
+    magick
 Imports:
     ashr,
     boot,

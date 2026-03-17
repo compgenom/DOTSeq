@@ -51,28 +51,46 @@ the function automatically falls back to using the
 \code{description} field instead.
 }
 \examples{
-# Human gene example
-mapIDs(
-    c("ENSG00000139618"),
-    dataset = "hsapiens_gene_ensembl",
+\dontshow{if (interactive() && requireNamespace("curl", quietly = TRUE) && curl::has_internet()) withAutoprint(\{ # examplesIf}
+# Ping Ensembl REST to avoid timeouts when the service is down.
+is_ensembl_up <- function(timeout = 3) {
+  url <- "https://rest.ensembl.org/info/ping"
+  out <- try(
+    curl::curl_fetch_memory(url, handle = curl::new_handle(timeout = timeout)),
+    silent = TRUE
+  )
+  is.list(out) && out$status_code >= 200 && out$status_code < 500
+}
+
+if (is_ensembl_up()) {
+  # Human gene example
+  res <- mapIDs(
+    ensembl_ids = c("ENSG00000139618"),
+    dataset     = "hsapiens_gene_ensembl",
     mart_source = "ensembl"
-)
+  )
+  head(res)
 
-# Arabidopsis gene example
-# mapIDs(
-#    c("AT1G01010"),
-#    dataset = "athaliana_eg_gene",
-#    symbol_col = "tair_symbol",
-#    mart_source = "plants"
-# )
+  # Arabidopsis example (uncomment to try)
+  # res <- mapIDs(
+  #   ensembl_ids = c("AT1G01010"),
+  #   dataset     = "athaliana_eg_gene",
+  #   symbol_col  = "tair_symbol",
+  #   mart_source = "plants"
+  # )
+  # head(res)
 
-# Plasmodium falciparum gene example with fallback
-# mapIDs(
-#    c("PF3D7_0100100"),
-#    dataset = "pfalciparum_eg_gene",
-#    mart_source = "protists"
-# )
-
+  # Plasmodium falciparum example (uncomment to try)
+  # res <- mapIDs(
+  #   ensembl_ids = c("PF3D7_0100100"),
+  #   dataset     = "pfalciparum_eg_gene",
+  #   mart_source = "protists"
+  # )
+  # head(res)
+} else {
+  message("Ensembl appears unavailable; skipping online example.")
+}
+\dontshow{\}) # examplesIf}
 }
 \references{
 Durinck S, Spellman P, Birney E, Huber W (2009). Mapping identifiers

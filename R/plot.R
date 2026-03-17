@@ -799,6 +799,8 @@ plot_volcano <- function(
         results <- merge(results, rowdata, by.x = "orf_id", by.y = "row.names")
     }
     
+    if (isFALSE(id_mapping)) id_mapping <- NULL
+    
     if (!is.null(id_mapping)) {
         genes_unique <- id_mapping[!duplicated(id_mapping$ensembl_gene_id), ]
         results$ensembl_gene_id <- sub("[.:].*", "", results$orf_id)
@@ -1793,12 +1795,12 @@ plotDOT <- function(
     
     annotation_params <- modifyList(default_annotation_params, annotation_params)
     annotation_params$sorf_type <- match.arg(
-        annotation_params$sorf_type, 
-        choices = annotation_params$sorf_type
+        annotation_params$sorf_type,
+        choices = valid_source$sorf_type
     )
     annotation_params$mart_source <- match.arg(
-        annotation_params$mart_source, 
-        choices = annotation_params$mart_source
+        annotation_params$mart_source,
+        choices = valid_source$mart_source
     )
     
     
@@ -1853,11 +1855,21 @@ plotDOT <- function(
             }
         }
         
-    } else if (any(c("heatmap", "volcano") %in% plot_type) && isFALSE(id_mapping)) {
-        id_mapping <- NULL 
-        
-    } else if (!isFALSE(id_mapping) && !inherits(id_mapping, "data.frame")) {
-        stop("'id_mapping' must be FALSE, TRUE, or a data.frame")
+    } else if (plot_type %in% c("heatmap", "volcano")) {
+        # only volcano/heatmap support TRUE (auto-lookup) or a data.frame
+        if (!isFALSE(id_mapping) && !isTRUE(id_mapping) &&
+            !is.null(id_mapping) && !is.data.frame(id_mapping)) {
+            stop("'id_mapping' must be FALSE, TRUE, or a data.frame")
+        }
+    } else if (plot_type == "usage") {
+        # usage plot accepts a precomputed data.frame or no mapping at all
+        if (isTRUE(id_mapping)) {
+            # usage plot has no auto-lookup mode; treat TRUE as 'no mapping provided'
+            id_mapping <- NULL
+        }
+        if (!is.null(id_mapping) && !is.data.frame(id_mapping) && !isFALSE(id_mapping)) {
+            stop("'id_mapping' for 'usage' must be NULL/FALSE or a data.frame")
+        }
     }
     
     if (plot_type == "venn") {

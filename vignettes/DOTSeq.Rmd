@@ -67,7 +67,28 @@ container for storing count matrices and metadata
 
 ```{r setup, message=FALSE}
 library(DOTSeq)
-library(SummarizedExperiment, quietly = TRUE)
+suppressPackageStartupMessages(library(SummarizedExperiment))
+suppressPackageStartupMessages(library(curl))
+
+# Internet availability
+has_net <- isTRUE(curl::has_internet())
+
+# Ping Ensembl REST; on any error, return FALSE
+ensembl_ok <- FALSE
+if (has_net) {
+  ensembl_ok <- tryCatch({
+    res <- curl::curl_fetch_memory(
+      "https://rest.ensembl.org/info/ping",
+      handle = curl::new_handle(timeout = 3)
+    )
+    isTRUE(res$status_code >= 200 && res$status_code < 500)
+  }, error = function(e) FALSE)
+}
+
+if (!ensembl_ok) {
+  message("Ensembl not reachable; vignette will fall back to org.Hs.eg.db for gene symbols.")
+  suppressPackageStartupMessages(library(org.Hs.eg.db))
+}
 ```
 
 # Example dataset
@@ -329,14 +350,37 @@ gene symbols using `biomaRt` This mapping improves plot readability by
 displaying gene symbols. The resulting ID mapping dataframe can be 
 stored as a dataframe and reused across plots to avoid repeated downloads.
 
-```{r plot-volcano-by-significance, fig.small = TRUE}
-mapping <- plotDOT(
-    plot_type = "volcano", 
-    results = results,
-    id_mapping = TRUE,
-    plot_params = list(color_by = "significance", top_hits = 3, legend_position = "topright"),
-    force_new_device = FALSE
-)
+```{r id-mapping-online-or-offline, fig.small = TRUE}
+# Try accessing Ensembl REST API 
+mapping <- NULL
+if (isTRUE(ensembl_ok)) {
+    mapping <- try(
+        plotDOT(
+            plot_type   = "volcano",
+            results     = results,
+            id_mapping  = TRUE, 
+            plot_params = list(color_by = "significance", top_hits = 3, legend_position = "topright"),
+            force_new_device = FALSE
+        ),
+    silent = TRUE
+    )
+}
+
+# Fallback to org.Hs.eg.db
+if (is.null(mapping)) {
+    suppressPackageStartupMessages(library(org.Hs.eg.db))
+
+    rd <- rowData(getDOU(d))
+    rd$gene_id <- sub("\\.\\d+$", "", rd$gene_id)
+
+    mapping <- AnnotationDbi::select(
+        org.Hs.eg.db,
+        keys    = unique(rd$gene_id),
+        keytype = "ENSEMBL",
+        columns = "SYMBOL"
+    )
+    names(mapping) <- c("ensembl_gene_id", "hgnc_symbol")
+}
 ```
 
 Similarly, volcano plots can be colour-coded by significance or ORF types, 
