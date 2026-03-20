@@ -147,3 +147,8 @@ a discussion.
 chunshen [dot] lim [at] otago [dot] ac [dot] nz
 - Gabrielle Chieng: 
 gabrielle [dot] chieng [at] postgrad [dot] otago [dot] ac [dot] nz
+
+## CITATION
+Chun Shen Lim, Gabrielle S. W. Chieng. (2026). 
+DOTSeq enables genome-wide detection of differential ORF usage. 
+BioRxiv. DOI: https://doi.org/10.1101/2025.09.24.678201 
