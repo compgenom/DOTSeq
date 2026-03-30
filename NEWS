@@ -1,7 +1,23 @@
+CHANGES IN VERSION 0.99.8
+
+- Updated CITATION.
+
+
+CHANGES IN VERSION 0.99.7
+
+- Improved ID mapping to handle internet connection and BioMart API issues.
+
+
+CHANGES IN VERSION 0.99.6
+
+- Added a unit test and an example for countReadsSingleCell().
+
+
 CHANGES IN VERSION 0.99.5
 
 - New Features: Added countReadsSingleCell() and helper functions to enable 
 single-cell Ribo-seq read counting.
+
 
 CHANGES IN VERSION 0.99.4
 

@@ -11,5 +11,3 @@ citEntry <- bibentry(
   publisher = "Cold Spring Harbor Laboratory",
   doi = "10.1101/2025.09.24.678201"
 )
-
-citEntry
