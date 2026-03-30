@@ -1,6 +1,6 @@
 Package: DOTSeq
 Type: Package
-Title: Differential Analysis of Translation Efficiency and Usage of Open Reading Frames
+Title: Genome-wide Detection of Differential ORF Usage
 Version: 0.99.8
 Authors@R: c(
     person(
