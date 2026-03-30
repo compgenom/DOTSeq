@@ -13,7 +13,8 @@ Authors@R: c(
     person(
         given = "Gabrielle", 
         family = "Chieng", 
-        role = c("aut","ctb")
+        role = c("aut","ctb"),
+        comment = c(ORCID = "0009-0008-8710-9979")
         ),
     person(
         "Marsden", 
