@@ -233,7 +233,7 @@ Useful links:
 
 Authors:
 \itemize{
-  \item Gabrielle Chieng [contributor]
+  \item Gabrielle Chieng (\href{https://orcid.org/0009-0008-8710-9979}{ORCID}) [contributor]
 }
 
 Other contributors:

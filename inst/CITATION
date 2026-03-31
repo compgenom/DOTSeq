@@ -1,4 +1,4 @@
-citEntry <- bibentry(
+bibentry(
   bibtype = "Article",
   title = "DOTSeq enables genome-wide detection of differential ORF usage",
   author = c(
